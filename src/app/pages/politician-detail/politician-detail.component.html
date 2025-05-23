@@ -1,0 +1,130 @@
+<div class="politician-detail-container">
+  <!-- 標題區 -->
+  <div class="profile-header-wrapper">
+    <div class="profile-header">
+      <div class="avatar-container">
+        <img *ngIf="data?.image_url" [src]="data.image_url" cAvatar>
+      </div>
+      <div class="profile-info">
+        <h1 class="profile-name">{{ data?.name }}</h1>
+        <span cBadge color="danger" class="profile-badge">{{ party }}</span>
+        <div class="profile-meta" *ngIf="district">
+          <i class="cil-location-pin"></i>
+          <span>{{ district }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主要內容區 -->
+  <div class="content-container">
+    <!-- 左側基本資料 -->
+    <div class="sidebar-container">
+      <div cCard class="info-card">
+    
+
+      <!-- 罷免進度 -->
+      <div *ngIf="recallData" cCard class="info-card recall-card">
+        <div cCardHeader class="recall-header">
+          <i class="cil-warning"></i>
+          <span>罷免進度</span>
+        </div>
+        <div cCardBody>
+          <div class="recall-progress">
+            <div class="progress-item">
+              <div class="progress-label">目前收件</div>
+              <div class="progress-value">{{ recallData["目前收件"] }}</div>
+            </div>
+            <div class="progress-item">
+              <div class="progress-label">罷免門檻</div>
+              <div class="progress-value">{{ recallData["罷免門檻"] }}</div>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-bar" [style.width]="recallData['進度']"></div>
+              <div class="progress-percentage">{{ recallData["進度"] }}</div>
+            </div>
+            <div class="progress-item">
+              <div class="progress-label">行政區</div>
+              <div class="progress-value">{{ recallData["行政區"] }}</div>
+            </div>
+            <div class="progress-item">
+              <div class="progress-label">狀態</div>
+              <div class="progress-value status">{{ recallData["狀態"] }}</div>
+            </div>
+            <div class="social-links" *ngIf="recallData['社群連結']">
+              <span>社群連結：</span>
+              <a *ngFor="let key of objectKeys(recallData['社群連結'])" [href]="recallData['社群連結'][key]" target="_blank">{{ key }}</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右側圖表區 -->
+    <div class="main-container">
+      <div class="charts-row">
+        <!-- 正負面留言比例 -->
+        <div cCard class="chart-card">
+          <div cCardHeader>
+            <i class="cil-chart-pie"></i>
+            <span>正負面留言比例</span>
+          </div>
+          <div cCardBody>
+            <div class="chart-container" style="width:100%; height:250px;">
+              <c-chart [data]="sentimentChartData" type="doughnut" [options]="{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}}"></c-chart>
+            </div>
+          </div>
+        </div>
+
+        <!-- 情緒雷達圖 -->
+        <div cCard class="chart-card">
+          <div cCardHeader>
+            <i class="cil-graph"></i>
+            <span>情緒雷達圖</span>
+          </div>
+          <div cCardBody>
+            <div class="chart-container" style="width:100%; height:250px;">
+              <c-chart [data]="radarChartData" type="radar" [options]="{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}"></c-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 文字詞雲 - 單獨一行 -->
+      <div class="charts-row">
+        <div cCard class="chart-card full-width">
+          <div cCardHeader>
+            <i class="cil-text-size"></i>
+            <span>折線圖</span>
+          </div>
+          <div cCardBody>
+            <div class="chart-container" style="height:250px;">
+              <c-chart [data]="lineChartData" type="line" [options]="lineChartOptions"></c-chart>
+            </div>
+          </div>
+        </div>
+
+      <!-- 相關新聞 - 單獨一行 -->
+      <div class="charts-row">
+        <div cCard class="chart-card full-width">
+          <div cCardHeader>
+            <i class="cil-newspaper"></i>
+            <span>文字詞雲</span>
+          </div>
+          <div cCardBody>
+            <div class="wordcloud-container">
+              <span *ngFor="let w of wordCloudData" [style.fontSize]="(w.weight*1.2+14)+'px'" [style.color]="getColor(w.text)">{{w.text}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #loading>
+  <div class="loading-container">
+    <div cSpinner color="primary" size="lg"></div>
+    <p>資料載入中...</p>
+  </div>
+</ng-template>

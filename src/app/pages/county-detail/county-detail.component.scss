@@ -1,0 +1,68 @@
+.county-detail-container {
+  max-width: 480px;
+  margin: 2rem auto;
+  background: #fff;
+  border-radius: 1.2rem;
+  box-shadow: 0 2px 16px 0 rgba(0,0,0,0.07);
+  padding: 2rem 2.5rem;
+}
+.district-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.district-list button {
+  background: #e3eaff;
+  border: none;
+  border-radius: 2rem;
+  padding: 0.5rem 1.2rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.district-list button.selected, .district-list button:hover {
+  background: #4f8cff;
+  color: #fff;
+  box-shadow: 0 2px 8px #4f8cff44;
+}
+.stats {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1.2rem;
+}
+.stat-item {
+  background: #f8f8ff;
+  border-radius: 0.7rem;
+  padding: 0.7rem 1.2rem;
+  box-shadow: 0 1px 4px #b3c6ff33;
+  text-align: center;
+}
+.stat-key {
+  display: block;
+  font-size: 0.95rem;
+  color: #4f8cff;
+}
+.stat-value {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #222;
+}
+.politician-list {
+  list-style: none;
+  padding: 0;
+}
+.politician-list li {
+  margin-bottom: 0.7rem;
+}
+.politician-list a {
+  color: #4f8cff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+  cursor: pointer;
+}
+.politician-list a:hover {
+  color: #ff41f8;
+  text-decoration: underline;
+}

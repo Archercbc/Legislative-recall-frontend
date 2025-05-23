@@ -1,0 +1,22 @@
+<div class="county-detail-container">
+  <h2>請選擇區域</h2>
+  <div class="district-list">
+    <button *ngFor="let d of districts" (click)="selectDistrict(d)" [class.selected]="selectedDistrict === d">{{ d }}</button>
+  </div>
+
+  <div *ngIf="selectedDistrict">
+    <h3>{{ selectedDistrict }} 資訊</h3>
+    <div class="stats">
+      <div *ngFor="let s of stats" class="stat-item">
+        <span class="stat-key">{{ s.keyword }}</span>
+        <span class="stat-value">{{ s.value }}</span>
+      </div>
+    </div>
+    <h3>政治人物</h3>
+    <ul class="politician-list">
+      <li *ngFor="let p of politicians">
+        <a (click)="goToPolitician(p.id)">{{ p.name }}</a>
+      </li>
+    </ul>
+  </div>
+</div>
