@@ -101,6 +101,5 @@
   },
   "cli": {
     "analytics": false
-  },
-  "defaultProject": "legislative-recall"
+  }
 }
