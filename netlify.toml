@@ -1,9 +1,3 @@
-# netlify.toml
 [build]
   command = "ng build --configuration production"
   publish = "dist/legislative-recall"
-
-[[plugins]]
-package = "@netlify/angular-runtime"
-  [plugins.inputs]
-  skip = true
