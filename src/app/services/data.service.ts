@@ -6,7 +6,7 @@ import { environment } from '../../environments/environment';
   providedIn: 'root'
 })
 export class DataService {
-  private readonly apiUrl = environment.apiUrl;
+  private readonly apiUrl = environment.apiUrl + '/api/legislators';
 
   constructor(private http: HttpClient) { }
 
