@@ -155,8 +155,6 @@ export class PoliticianDetailComponent {
 
   // 處理圖表資料（根據您提供的資料結構）
   private processChartData(data: any) {
-    console.log('收到的完整資料:', data);
-
     // 處理情感分析（圓餅圖）- 修正標籤對應
     if (data.情感分析) {
       const sentiment = data.情感分析;
@@ -171,10 +169,6 @@ export class PoliticianDetailComponent {
           backgroundColor: ['#4f8cff', '#f87171']  // 藍色=反對，紅色=支持
         }]
       };
-
-      console.log('圓餅圖資料已更新:', this.sentimentChartData);
-      console.log('反對人數(POSITIVE):', this.positiveCount);
-      console.log('支持人數(NEGATIVE):', this.negativeCount);
     }
 
     // 處理情緒分析（雷達圖）
@@ -192,8 +186,6 @@ export class PoliticianDetailComponent {
           borderColor: '#4f8cff'
         }]
       };
-
-      console.log('雷達圖資料已更新:', this.radarChartData);
     }
 
     // 處理詞雲資料（如果有 top_words）
@@ -211,10 +203,6 @@ export class PoliticianDetailComponent {
         }));
       }
     }
-
-    console.log('詞雲資料:', this.wordCloudData);
-    console.log('用戶數:', data.用戶數);
-    console.log('留言數:', data.留言數);
   }
 
   // Demo 折線圖資料
@@ -363,24 +351,6 @@ export class PoliticianDetailComponent {
     return emotionArray;
   }
 
-  // 圖表引用處理方法（按照 CoreUI 範例格式）
-  handleSentimentChartRef($chartRef: any) {
-    if ($chartRef) {
-      console.log('handleSentimentChartRef', $chartRef);
-    }
-  }
-
-  handleRadarChartRef($chartRef: any) {
-    if ($chartRef) {
-      console.log('handleRadarChartRef', $chartRef);
-    }
-  }
-
-  handleLineChartRef($chartRef: any) {
-    if ($chartRef) {
-      console.log('handleLineChartRef', $chartRef);
-    }
-  }
 
   // 處理中文屬性訪問的方法
   getUserCount(): string {

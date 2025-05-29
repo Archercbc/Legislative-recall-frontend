@@ -43,10 +43,8 @@ export class CountyDetailComponent implements OnInit {
       next: (data) => {
         this.politicians = data;
         this.loading = false;
-        console.log('載入立委資料:', data);
       },
       error: (err) => {
-        console.error('載入立委列表失敗:', err);
         this.loading = false;
       }
     });

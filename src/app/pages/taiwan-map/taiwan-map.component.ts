@@ -207,7 +207,6 @@ export class TaiwanMapComponent implements OnInit {
         constituency: r.constituency,
         party: r.party
       }));
-      console.log('立委資料:', this.politicians);
       return;
     }
 
@@ -223,7 +222,6 @@ export class TaiwanMapComponent implements OnInit {
     this.dataService.getLegislators(countyName).subscribe({
       next: (data) => {
         this.politicians = data;
-        console.log('載入立委資料:', data);
       },
       error: (err) => {
         console.error('載入立委列表失敗:', err);
