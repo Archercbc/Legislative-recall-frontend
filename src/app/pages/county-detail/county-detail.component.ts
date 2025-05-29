@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';  // ✅ 匯入 CommonModule
 import { HttpClientModule } from '@angular/common/http';
+import { DataService } from '../../services/data.service';
 
 @Component({
     selector: 'app-county-detail',
@@ -9,17 +10,45 @@ import { HttpClientModule } from '@angular/common/http';
     templateUrl: './county-detail.component.html',
     styleUrl: './county-detail.component.scss'
 })
-export class CountyDetailComponent {
+export class CountyDetailComponent implements OnInit {
   countyId = '';
   districts: string[] = [];
   selectedDistrict = '';
-  politicians: { name: string, id: string }[] = [];
+  politicians: any[] = [];
   stats: { keyword: string, value: number }[] = [];
+  loading = false;
 
-  constructor(private route: ActivatedRoute, private router: Router) {
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private dataService: DataService
+  ) {
     this.route.paramMap.subscribe(params => {
       this.countyId = params.get('countyId') || '';
-     
+      if (this.countyId) {
+        this.loadCountyLegislators();
+      }
+    });
+  }
+
+  ngOnInit() {
+    // 初始化邏輯
+  }
+
+  private loadCountyLegislators() {
+    this.loading = true;
+
+    // 使用簡潔格式載入立委列表
+    this.dataService.getLegislators(this.countyId).subscribe({
+      next: (data) => {
+        this.politicians = data;
+        this.loading = false;
+        console.log('載入立委資料:', data);
+      },
+      error: (err) => {
+        console.error('載入立委列表失敗:', err);
+        this.loading = false;
+      }
     });
   }
 
@@ -27,7 +56,13 @@ export class CountyDetailComponent {
     this.selectedDistrict = d;
   }
 
-  goToPolitician(id: string) {
-    this.router.navigate(['/politician', id]);
+  goToPolitician(politician: any) {
+    // 使用立委姓名導航到個人頁面
+    this.router.navigate(['/politician', politician.name || politician.id]);
+  }
+
+  onImageError(event: any) {
+    // 設置預設頭像
+    event.target.src = 'assets/images/default-avatar.png';
   }
 }

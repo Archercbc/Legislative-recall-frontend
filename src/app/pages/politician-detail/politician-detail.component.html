@@ -21,7 +21,7 @@
     <!-- 左側基本資料 -->
     <div class="sidebar-container">
       <div cCard class="info-card">
-    
+
 
       <!-- 罷免進度 -->
       <div *ngIf="recallData" cCard class="info-card recall-card">
@@ -67,11 +67,25 @@
         <div cCard class="chart-card">
           <div cCardHeader>
             <i class="cil-chart-pie"></i>
-            <span>正負面留言比例</span>
+            <span>正負面用戶比例 - 總人數: {{ positiveCount + negativeCount }}</span>
           </div>
-          <div cCardBody>
-            <div class="chart-container" style="width:100%; height:250px;">
-              <c-chart [data]="sentimentChartData" type="doughnut" [options]="{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}}"></c-chart>
+          <div cCardBody style="overflow: visible; position: relative;">
+            <div style="display: flex; align-items: center; justify-content: center; height: 350px;">
+              <!-- 圓餅圖容器 -->
+              <div style="width: 300px; height: 300px; position: relative;">
+                <c-chart [data]="sentimentChartData" type="doughnut" [options]="doughnutOptions" style="height: 100%; width: 100%;"></c-chart>
+              </div>
+            </div>
+            <!-- 自定義百分比顯示 - 右下角 -->
+            <div class="custom-chart-stats">
+              <div class="stat-item">
+                <span class="color-dot oppose"></span>
+                <span class="stat-text">反對 {{ getOpposePercentage() }}%</span>
+              </div>
+              <div class="stat-item">
+                <span class="color-dot support"></span>
+                <span class="stat-text">支持 {{ getSupportPercentage() }}%</span>
+              </div>
             </div>
           </div>
         </div>
@@ -82,38 +96,43 @@
             <i class="cil-graph"></i>
             <span>情緒雷達圖</span>
           </div>
-          <div cCardBody>
-            <div class="chart-container" style="width:100%; height:250px;">
-              <c-chart [data]="radarChartData" type="radar" [options]="{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}"></c-chart>
+          <div cCardBody style="overflow: visible; position: relative;">
+            <div style="display: flex; align-items: center; justify-content: center; height: 350px;">
+              <!-- 雷達圖容器 - 放大 -->
+              <div style="width:350px; height: 350px; position: relative;">
+                <c-chart [data]="radarChartData" type="radar" [options]="radarOptions" style="height: 100%; width: 100%;"></c-chart>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 文字詞雲 - 單獨一行 -->
+      <!-- 折線圖和文字詞雲 - 各自一欄 -->
       <div class="charts-row">
-        <div cCard class="chart-card full-width">
+        <!-- 折線圖 -->
+        <div cCard class="chart-card">
           <div cCardHeader>
-            <i class="cil-text-size"></i>
-            <span>折線圖</span>
+            <i class="cil-chart-line"></i>
+            <span>罷免支持度趨勢</span>
           </div>
-          <div cCardBody>
-            <div class="chart-container" style="height:250px;">
-              <c-chart [data]="lineChartData" type="line" [options]="lineChartOptions"></c-chart>
+          <div cCardBody style="overflow: visible;">
+            <div style="display: flex; align-items: center; justify-content: center; height: 250px;">
+              <div style="width: 100%; height: 200px; position: relative;">
+                <c-chart [data]="demoLineChartData" type="line" [options]="lineChartOptions" style="height: 100%; width: 100%;"></c-chart>
+              </div>
             </div>
           </div>
         </div>
 
-      <!-- 相關新聞 - 單獨一行 -->
-      <div class="charts-row">
-        <div cCard class="chart-card full-width">
+        <!-- 文字詞雲 -->
+        <div cCard class="chart-card">
           <div cCardHeader>
-            <i class="cil-newspaper"></i>
-            <span>文字詞雲</span>
+            <i class="cil-text-size"></i>
+            <span>熱門關鍵字</span>
           </div>
-          <div cCardBody>
+          <div cCardBody style="max-height: 300px; overflow-y: auto;">
             <div class="wordcloud-container">
-              <span *ngFor="let w of wordCloudData" [style.fontSize]="(w.weight*1.2+14)+'px'" [style.color]="getColor(w.text)">{{w.text}}</span>
+              <span *ngFor="let w of demoWordCloudData" [style.color]="getColor(w.text)" class="word-item">{{w.text}}</span>
             </div>
           </div>
         </div>

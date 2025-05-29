@@ -27,7 +27,4 @@ export class DataService {
     return this.http.get<any[]>(`${this.apiUrl}/recall`);
   }
 
-  getSentimentData(name: string) {
-    return this.http.get<any[]>(`${this.apiUrl}/sentiment/${encodeURIComponent(name)}`);
-  }
 }

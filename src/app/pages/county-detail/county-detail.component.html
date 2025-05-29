@@ -1,22 +1,40 @@
 <div class="county-detail-container">
-  <h2>請選擇區域</h2>
-  <div class="district-list">
-    <button *ngFor="let d of districts" (click)="selectDistrict(d)" [class.selected]="selectedDistrict === d">{{ d }}</button>
+  <h2>{{ countyId }} 立法委員</h2>
+
+  <div class="loading" *ngIf="loading">
+    載入中...
   </div>
 
-  <div *ngIf="selectedDistrict">
-    <h3>{{ selectedDistrict }} 資訊</h3>
-    <div class="stats">
-      <div *ngFor="let s of stats" class="stat-item">
-        <span class="stat-key">{{ s.keyword }}</span>
-        <span class="stat-value">{{ s.value }}</span>
+  <div class="politicians-container" *ngIf="!loading">
+    <div class="politician-card" *ngFor="let politician of politicians" (click)="goToPolitician(politician)">
+      <!-- 立委照片 -->
+      <div class="politician-photo">
+        <img
+          [src]="politician.image_url"
+          [alt]="politician.name"
+          (error)="onImageError($event)"
+        />
+      </div>
+
+      <!-- 立委姓名 -->
+      <div class="politician-name">
+        {{ politician.name }}
+      </div>
+
+      <!-- 選區資訊 -->
+      <div class="politician-district">
+        {{ politician.district }}
+      </div>
+
+      <!-- 網路聲量調查 -->
+      <div class="survey-info">
+        網路聲量調查
       </div>
     </div>
-    <h3>政治人物</h3>
-    <ul class="politician-list">
-      <li *ngFor="let p of politicians">
-        <a (click)="goToPolitician(p.id)">{{ p.name }}</a>
-      </li>
-    </ul>
+  </div>
+
+  <!-- 如果沒有資料 -->
+  <div class="no-data" *ngIf="!loading && politicians.length === 0">
+    目前沒有 {{ countyId }} 的立委資料
   </div>
 </div>

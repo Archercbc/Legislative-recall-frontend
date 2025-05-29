@@ -13,6 +13,7 @@ interface Politician {
   party?: string;
   image_url?: string;
   constituency?: string;
+  district?: string; // 新增 district 屬性
 }
 export interface AreaCount {
   area: string;
@@ -37,7 +38,7 @@ export class TaiwanMapComponent implements OnInit {
   taiwanMap = taiwan;
   viewBox: string = "250 250 1000 1050";
   countyPopulation: Record<string, number> = {};
-  
+
   countyNames: Record<string, string> = {
     'taipei-city': '臺北市',
     'new-taipei-city': '新北市',
@@ -151,7 +152,7 @@ export class TaiwanMapComponent implements OnInit {
     this.initCountyPopulation();
   }
 
-  
+
 
   ngOnInit() {
     // 1. 載入所有立委主資料
@@ -166,7 +167,8 @@ export class TaiwanMapComponent implements OnInit {
               const match = this.allLegislators.find(l => l.name === r["姓名"]);
               return {
                 ...r,
-                id: match?.id || r["姓名"],
+                // 優先使用人名作為 ID，確保路由正常工作
+                id: r["姓名"],
                 image_url: match?.image_url || '',
                 party: match?.party || '',
                 constituency: match?.constituency || ''
@@ -191,32 +193,42 @@ export class TaiwanMapComponent implements OnInit {
   }
 
   onCountyClick(id: string, name: string) {
+    const countyName = this.getCountyName(id);
+
     if (this.filterRecallOnly) {
       // 顯示該縣市所有被罷免立委
-      const countyName = this.getCountyName(id);
       const recallList = this.recallPoliticians.filter(r => r["行政區"] === countyName);
       this.selectedCounty = id;
       this.selectedParty = null;
       this.politicians = recallList.map(r => ({
-        id: r.id,
+        id: r["姓名"], // 直接使用姓名作為 ID
         name: r["姓名"],
         image_url: r.image_url,
         constituency: r.constituency,
         party: r.party
       }));
+      console.log('立委資料:', this.politicians);
       return;
     }
+
+    // 在右邊顯示該縣市的立委列表（不導航到其他頁面）
     this.selectedCounty = id;
     this.selectedParty = null;
     this.politicians = [];
-    
+
     // 更新選中縣市的樣式
     this.updateCountyStyles(id);
-    
-    // 獲取立委資料
-    const countyName = this.getCountyName(id);
-    this.dataService.getLegislators(countyName).subscribe(data => {
-      this.politicians = data;
+
+    // 獲取立委資料並顯示在右邊
+    this.dataService.getLegislators(countyName).subscribe({
+      next: (data) => {
+        this.politicians = data;
+        console.log('載入立委資料:', data);
+      },
+      error: (err) => {
+        console.error('載入立委列表失敗:', err);
+        this.politicians = [];
+      }
     });
   }
 
@@ -226,7 +238,7 @@ export class TaiwanMapComponent implements OnInit {
       path.classList.remove('selected');
       path.setAttribute('fill', '#cccccc');
     });
-    
+
     // 為選中縣市添加樣式
     const selectedPath = document.getElementById(selectedId);
     if (selectedPath) {
@@ -250,7 +262,7 @@ export class TaiwanMapComponent implements OnInit {
     this.selectedParty = null;
     this.politicians = [];
     this.stats = [];
-    
+
     // 重置所有縣市樣式
     document.querySelectorAll('.taiwan-svg path').forEach(path => {
       path.classList.remove('selected');
@@ -258,7 +270,14 @@ export class TaiwanMapComponent implements OnInit {
     });
   }
 
-  goToPolitician(id: string) {
+  goToPolitician(id: string | undefined) {
+    // 安全檢查：確保 id 存在且不為空
+    if (!id || id.trim() === '') {
+      console.error('Invalid politician ID:', id);
+      return;
+    }
+
+    // 使用人名進行導航
     this.router.navigate(['/politician', id]);
   }
 
@@ -287,7 +306,7 @@ export class TaiwanMapComponent implements OnInit {
 
   countyHover(id: string, isHovering: boolean) {
     this.hoveredCounty = isHovering ? id : null;
-    
+
     const path = document.getElementById(id);
     if (path && id !== this.selectedCounty) {
       if (isHovering) {
@@ -304,11 +323,11 @@ export class TaiwanMapComponent implements OnInit {
   // 根據政黨返回對應的顏色類
   getPartyColorClass(party: string | undefined): string {
     if (!party) return '';
-    
+
     if (party.includes('國民黨')) return 'party-kmt';
     if (party.includes('進步黨')) return 'party-dpp';
     if (party.includes('民眾黨')) return 'party-tpp';
-    
+
     return '';
   }
 
