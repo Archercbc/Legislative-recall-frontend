@@ -62,12 +62,52 @@
 
     <!-- 右側圖表區 -->
     <div class="main-container">
+      <!-- 時間範圍選擇器 - 簡化版本 -->
+      <div cCard class="time-filter-card">
+        <div cCardHeader>
+          <i class="cil-calendar"></i>
+          <span>時間範圍篩選</span>
+          <span *ngIf="isLoadingTimeData" class="spinner-border spinner-border-sm ms-2"></span>
+        </div>
+        <div cCardBody>
+          <div class="time-filter-container">
+            <div class="date-inputs">
+              <div class="input-group">
+                <label>開始日期:</label>
+                <input type="date" [(ngModel)]="startDate" (change)="onDateRangeChange()"
+                       class="form-control" [disabled]="isLoadingTimeData"
+                       [min]="minDate" [max]="maxDate">
+              </div>
+              <div class="input-group">
+                <label>結束日期:</label>
+                <input type="date" [(ngModel)]="endDate" (change)="onDateRangeChange()"
+                       class="form-control" [disabled]="isLoadingTimeData"
+                       [min]="minDate" [max]="maxDate">
+              </div>
+            </div>
+            <div class="quick-filters">
+              <button cButton color="outline-primary" size="sm" (click)="setQuickFilter('week')" [disabled]="isLoadingTimeData">最近一週</button>
+              <button cButton color="outline-primary" size="sm" (click)="setQuickFilter('month')" [disabled]="isLoadingTimeData">最近一個月</button>
+              <button cButton color="outline-primary" size="sm" (click)="setQuickFilter('3months')" [disabled]="isLoadingTimeData">最近三個月</button>
+              <button cButton color="outline-primary" size="sm" (click)="setQuickFilter('all')" [disabled]="isLoadingTimeData">全部時間</button>
+            </div>
+            <div class="filter-info" *ngIf="startDate && endDate">
+              <small class="text-muted">
+                顯示期間: {{ startDate }} 至 {{ endDate }}
+                ({{ getDateRangeDays() }} 天)
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="charts-row">
         <!-- 正負面留言比例 -->
         <div cCard class="chart-card">
           <div cCardHeader>
             <i class="cil-chart-pie"></i>
             <span>正負面用戶比例 - 總人數: {{ positiveCount + negativeCount }}</span>
+            <span *ngIf="isLoadingTimeData" class="spinner-border spinner-border-sm ms-2"></span>
           </div>
           <div cCardBody style="overflow: visible; position: relative;">
             <div style="display: flex; align-items: center; justify-content: center; height: 350px;">
@@ -97,35 +137,41 @@
             <span>情緒雷達圖</span>
           </div>
           <div cCardBody style="overflow: visible; position: relative;">
-            <div style="display: flex; align-items: center; justify-content: center; height: 350px;">
-              <!-- 雷達圖容器 - 放大 -->
-              <div style="width:350px; height: 350px; position: relative;">
-                <c-chart [data]="radarChartData" type="radar" [options]="radarOptions" style="height: 100%; width: 100%;"></c-chart>
+            <div style="display: flex; align-items: center; justify-content: center; height: 450px;">
+              <!-- 雷達圖容器 - 增大尺寸 -->
+              <div style="width: 500px; height: 450px; position: relative;">
+                <c-chart [data]="radarChartData" type="radar" [options]="radarChartOptions" style="height: 100%; width: 100%;"></c-chart>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 折線圖和文字詞雲 - 各自一欄 -->
-      <div class="charts-row">
-        <!-- 折線圖 -->
-        <div cCard class="chart-card">
+    </div>
+
+    <!-- 罷免支持度趨勢 - 獨立一列 -->
+    <div cRow>
+      <div cCol xs="12">
+        <div cCard class="mb-4">
           <div cCardHeader>
             <i class="cil-chart-line"></i>
             <span>罷免支持度趨勢</span>
           </div>
-          <div cCardBody style="overflow: visible;">
-            <div style="display: flex; align-items: center; justify-content: center; height: 250px;">
-              <div style="width: 100%; height: 200px; position: relative;">
+          <div cCardBody style="overflow-x: auto; overflow-y: visible;">
+            <div style="display: flex; align-items: center; justify-content: center; height: 280px;">
+              <div style="min-width: 600px; width: 100%; height: 250px; position: relative;">
                 <c-chart [data]="demoLineChartData" type="line" [options]="lineChartOptions" style="height: 100%; width: 100%;"></c-chart>
               </div>
             </div>
           </div>
         </div>
+      </div>
+    </div>
 
-        <!-- 文字詞雲 -->
-        <div cCard class="chart-card">
+    <!-- 熱門關鍵字 - 獨立一列 -->
+    <div cRow>
+      <div cCol xs="12">
+        <div cCard class="mb-4">
           <div cCardHeader>
             <i class="cil-text-size"></i>
             <span>熱門關鍵字</span>

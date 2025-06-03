@@ -27,4 +27,23 @@ export class DataService {
     return this.http.get<any[]>(`${this.apiUrl}/recall`);
   }
 
+  // 獲取立委在特定時間範圍內的數據
+  getLegislatorTimeRangeData(name: string, startDate: string, endDate: string): Observable<any> {
+    const params = new URLSearchParams({
+      start_date: startDate,
+      end_date: endDate
+    });
+    return this.http.get(`${this.apiUrl}/${name}/time-range?${params.toString()}`);
+  }
+
+  // 獲取立委的完整時間序列數據（詞雲 + 時間變化）
+  getLegislatorTimeSeriesData(name: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/${name}/time-series`);
+  }
+
+  // 獲取立委的數據時間範圍
+  getLegislatorDateRange(name: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/${name}/date-range`);
+  }
+
 }
