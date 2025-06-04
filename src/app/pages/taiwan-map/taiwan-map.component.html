@@ -1,12 +1,12 @@
 <div class="map-page-container">
   <!-- 左側篩選區塊 -->
   <div class="filter-panel">
-
-
+  
+    
     <!-- 可擴充其他篩選條件 -->
 
     <div class="area-count-list">
-      <h1>-正在被罷免的議員區域-</h1>
+      <h1>正在被罷免的議員區域</h1>
       <h4>各區立委席次</h4>
       <ul>
         <li *ngFor="let area of areaCounts"
@@ -38,7 +38,7 @@
         <title>{{ getCountyName(location.id) }}</title>
       </g>
     </svg>
-
+    
     <!-- 未選中縣市時顯示提示訊息 -->
     <div *ngIf="!selectedCounty && !selectedParty" class="map-tip">
       點擊縣市可查看詳情
@@ -49,8 +49,18 @@
   <div *ngIf="selectedCounty" class="county-info-panel">
     <button class="back-btn" (click)="resetFocus()">返回全部縣市</button>
     <h2>{{ getCountyName(selectedCounty) }}</h2>
-
-    <div class="legislators-container">
+    
+    <!-- 添加載入指示器 -->
+    <div *ngIf="isLoading" class="spinner-container">
+      <!-- 使用c-spinner但添加備用CSS實現 -->
+      <c-spinner variant="grow">
+        <span class="visually-hidden">Loading status...</span>
+      </c-spinner>
+      <!-- 備用CSS spinner實現 -->
+ 
+    </div>
+    
+    <div class="legislators-container" *ngIf="!isLoading">
       <div *ngFor="let politician of politicians" class="legislator-card" (click)="goToPolitician(politician.id)">
         <div class="legislator-image" *ngIf="politician.image_url">
           <img [src]="politician.image_url" [alt]="politician.name" onerror="this.src='assets/images/default-avatar.png';">
@@ -60,16 +70,15 @@
         </div>
         <div class="legislator-info">
           <h3>{{ politician.name }}</h3>
-          <p class="constituency" *ngIf="politician.district || politician.constituency">
-            {{ politician.district || politician.constituency }}
-          </p>
-          <p class="party" style="background:#e74c3c;color:#fff;">
+          <p class="constituency" *ngIf="politician.constituency">{{ politician.constituency }}</p>
+          <p class="party" *ngIf="politician.party"
+             style="background:#e74c3c;color:#fff;">
             網路聲量調查
           </p>
           <div *ngIf="filterRecallOnly" class="recall-tip">此議員目前有罷免案進行中</div>
         </div>
       </div>
-
+      
       <div *ngIf="politicians.length === 0" class="no-data">
         暫無資料
       </div>
@@ -79,8 +88,15 @@
   <div *ngIf="selectedParty" class="county-info-panel">
     <button class="back-btn" (click)="resetFocus()">返回地圖</button>
     <h2>{{ selectedParty }} 不分區立委</h2>
-
-    <div class="legislators-container">
+    
+    <!-- 添加載入指示器 -->
+    <div *ngIf="isLoading" class="spinner-container">
+      <c-spinner>
+        <span class="visually-hidden">載入中...</span>
+      </c-spinner>
+    </div>
+    
+    <div class="legislators-container" *ngIf="!isLoading">
       <div *ngFor="let politician of politicians" class="legislator-card" (click)="goToPolitician(politician.id)">
         <div class="legislator-image" *ngIf="politician.image_url">
           <img [src]="politician.image_url" [alt]="politician.name" onerror="this.src='assets/images/default-avatar.png';">
@@ -90,15 +106,14 @@
         </div>
         <div class="legislator-info">
           <h3>{{ politician.name }}</h3>
-          <p class="constituency" *ngIf="politician.district || politician.constituency">
-            {{ politician.district || politician.constituency }}
-          </p>
-          <p class="party" style="background:#e74c3c;color:#fff;">
+          <p class="constituency" *ngIf="politician.constituency">{{ politician.constituency }}</p>
+          <p class="party" *ngIf="politician.party"
+             style="background:#e74c3c;color:#fff;">
             網路聲量調查
           </p>
         </div>
       </div>
-
+      
       <div *ngIf="politicians.length === 0" class="no-data">
         暫無資料
       </div>
