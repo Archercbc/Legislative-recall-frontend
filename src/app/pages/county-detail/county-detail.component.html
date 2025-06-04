@@ -1,10 +1,8 @@
 <div class="county-detail-container">
   <h2>{{ countyId }} 立法委員</h2>
 
-  <div class="spinner-container" *ngIf="loading">
-    <c-spinner variant="grow">
-      <span class="visually-hidden">載入中...</span>
-    </c-spinner>
+  <div class="loading" *ngIf="loading">
+    載入中...
   </div>
 
   <div class="politicians-container" *ngIf="!loading">

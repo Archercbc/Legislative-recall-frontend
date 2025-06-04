@@ -50,17 +50,7 @@
     <button class="back-btn" (click)="resetFocus()">返回全部縣市</button>
     <h2>{{ getCountyName(selectedCounty) }}</h2>
     
-    <!-- 添加載入指示器 -->
-    <div *ngIf="isLoading" class="spinner-container">
-      <!-- 使用c-spinner但添加備用CSS實現 -->
-      <c-spinner variant="grow">
-        <span class="visually-hidden">Loading status...</span>
-      </c-spinner>
-      <!-- 備用CSS spinner實現 -->
- 
-    </div>
-    
-    <div class="legislators-container" *ngIf="!isLoading">
+    <div class="legislators-container">
       <div *ngFor="let politician of politicians" class="legislator-card" (click)="goToPolitician(politician.id)">
         <div class="legislator-image" *ngIf="politician.image_url">
           <img [src]="politician.image_url" [alt]="politician.name" onerror="this.src='assets/images/default-avatar.png';">
@@ -89,14 +79,7 @@
     <button class="back-btn" (click)="resetFocus()">返回地圖</button>
     <h2>{{ selectedParty }} 不分區立委</h2>
     
-    <!-- 添加載入指示器 -->
-    <div *ngIf="isLoading" class="spinner-container">
-      <c-spinner>
-        <span class="visually-hidden">載入中...</span>
-      </c-spinner>
-    </div>
-    
-    <div class="legislators-container" *ngIf="!isLoading">
+    <div class="legislators-container">
       <div *ngFor="let politician of politicians" class="legislator-card" (click)="goToPolitician(politician.id)">
         <div class="legislator-image" *ngIf="politician.image_url">
           <img [src]="politician.image_url" [alt]="politician.name" onerror="this.src='assets/images/default-avatar.png';">

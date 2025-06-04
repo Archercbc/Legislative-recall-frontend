@@ -3,11 +3,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';  // ✅ 匯入 CommonModule
 import { HttpClientModule } from '@angular/common/http';
 import { DataService } from '../../services/data.service';
-import { SpinnerComponent } from '@coreui/angular';
 
 @Component({
     selector: 'app-county-detail',
-    imports: [CommonModule, HttpClientModule, SpinnerComponent],
+    imports: [CommonModule, HttpClientModule],
     templateUrl: './county-detail.component.html',
     styleUrl: './county-detail.component.scss'
 })

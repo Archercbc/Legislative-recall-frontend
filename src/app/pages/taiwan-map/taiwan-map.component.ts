@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import taiwan from '@svg-maps/taiwan';
 import { DataService } from '../../services/data.service';
 import { HttpClientModule, HttpClient } from '@angular/common/http';
-import { SpinnerComponent } from '@coreui/angular';
+import { FormsModule } from '@angular/forms';
 
 // 定義立委數據的介面
 interface Politician {
@@ -25,7 +25,7 @@ export interface AreaTargets {
 }
 @Component({
     selector: 'app-taiwan-map',
-    imports: [CommonModule, HttpClientModule, SpinnerComponent],
+    imports: [CommonModule, HttpClientModule, FormsModule],
     templateUrl: './taiwan-map.component.html',
     styleUrls: ['./taiwan-map.component.scss']
 })
@@ -38,7 +38,6 @@ export class TaiwanMapComponent implements OnInit {
   taiwanMap = taiwan;
   viewBox: string = "250 250 1000 1050";
   countyPopulation: Record<string, number> = {};
-  isLoading: boolean = false;
 
   countyNames: Record<string, string> = {
     'taipei-city': '臺北市',
@@ -153,10 +152,9 @@ export class TaiwanMapComponent implements OnInit {
     this.initCountyPopulation();
   }
 
+
+
   ngOnInit() {
-    // 設置載入狀態為true
-    this.isLoading = true;
-    
     // 1. 載入所有立委主資料
     this.dataService.getLegislators().subscribe({
       next: legislators => {
@@ -176,17 +174,14 @@ export class TaiwanMapComponent implements OnInit {
                 constituency: match?.constituency || ''
               };
             });
-            this.isLoading = false; // 所有數據載入完成
           },
           error: err => {
             this.recallPoliticians = [];
-            this.isLoading = false; // 載入失敗
           }
         });
       },
       error: err => {
         this.allLegislators = [];
-        this.isLoading = false; // 載入失敗
       }
     });
   }
@@ -223,19 +218,14 @@ export class TaiwanMapComponent implements OnInit {
     // 更新選中縣市的樣式
     this.updateCountyStyles(id);
 
-    // 設置載入狀態為true
-    this.isLoading = true;
-    
     // 獲取立委資料並顯示在右邊
     this.dataService.getLegislators(countyName).subscribe({
       next: (data) => {
         this.politicians = data;
-        this.isLoading = false; // 載入完成，設置狀態為false
       },
       error: (err) => {
         console.error('載入立委列表失敗:', err);
         this.politicians = [];
-        this.isLoading = false; // 載入失敗，仍需設置狀態為false
       }
     });
   }
@@ -260,20 +250,8 @@ export class TaiwanMapComponent implements OnInit {
     this.selectedParty = party;
     this.politicians = [];
     this.stats = [];
-    
-    // 設置載入狀態為true
-    this.isLoading = true;
-    
-    this.dataService.getLegislators(undefined, party).subscribe({
-      next: (data) => {
-        this.politicians = data;
-        this.isLoading = false; // 載入完成
-      },
-      error: (err) => {
-        console.error('載入立委列表失敗:', err);
-        this.politicians = [];
-        this.isLoading = false; // 載入失敗
-      }
+    this.dataService.getLegislators(undefined, party).subscribe(data => {
+      this.politicians = data;
     });
   }
 
