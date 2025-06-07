@@ -13,6 +13,76 @@
     font-size: 1.8rem;
   }
 }
+
+// 罷免狀態篩選器
+.recall-status-filter {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f0f0f0;
+
+  .filter-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+
+    .total-count {
+      margin-left: auto;
+      font-size: 0.9rem;
+      color: #666;
+      font-weight: normal;
+    }
+  }
+
+  .filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+
+    .status-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.2rem;
+      border: 2px solid #e9ecef;
+      border-radius: 2rem;
+      background: white;
+      color: #666;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      &.active {
+        border-color: #4f8cff;
+        background: #4f8cff;
+        color: white;
+      }
+
+      .count {
+        font-size: 0.8rem;
+        opacity: 0.8;
+      }
+
+      // 不同狀態的顏色
+      &.btn-petition-ongoing.active { background: #17a2b8; border-color: #17a2b8; }
+      &.btn-petition-failed.active { background: #6c757d; border-color: #6c757d; }
+      &.btn-recall-ongoing.active { background: #ffc107; border-color: #ffc107; color: #333; }
+      &.btn-recall-failed.active { background: #dc3545; border-color: #dc3545; }
+      &.btn-recall-success.active { background: #28a745; border-color: #28a745; }
+    }
+  }
+}
 .district-list {
   display: flex;
   flex-wrap: wrap;
@@ -144,6 +214,59 @@
     border-radius: 1rem;
     display: inline-block;
     font-weight: 500;
+  }
+
+  .recall-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border-radius: 1rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+
+    &.status-petition-ongoing {
+      background: rgba(23, 162, 184, 0.1);
+      color: #17a2b8;
+      border: 1px solid rgba(23, 162, 184, 0.3);
+    }
+
+    &.status-petition-failed {
+      background: rgba(108, 117, 125, 0.1);
+      color: #6c757d;
+      border: 1px solid rgba(108, 117, 125, 0.3);
+    }
+
+    &.status-recall-ongoing {
+      background: rgba(255, 193, 7, 0.1);
+      color: #e0a800;
+      border: 1px solid rgba(255, 193, 7, 0.3);
+    }
+
+    &.status-recall-failed {
+      background: rgba(220, 53, 69, 0.1);
+      color: #dc3545;
+      border: 1px solid rgba(220, 53, 69, 0.3);
+    }
+
+    &.status-recall-success {
+      background: rgba(40, 167, 69, 0.1);
+      color: #28a745;
+      border: 1px solid rgba(40, 167, 69, 0.3);
+    }
+
+    &.status-survey {
+      background: rgba(108, 117, 125, 0.1);
+      color: #6c757d;
+      border: 1px solid rgba(108, 117, 125, 0.3);
+    }
+
+    &.status-petition-success {
+      background: rgba(40, 167, 69, 0.1);
+      color: #28a745;
+      border: 1px solid rgba(40, 167, 69, 0.3);
+    }
   }
 }
 

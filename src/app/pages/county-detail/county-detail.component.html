@@ -1,12 +1,17 @@
 <div class="county-detail-container">
   <h2>{{ countyId }} 立法委員</h2>
 
+  <!-- 罷免狀態篩選器 - 暫時隱藏 -->
+  <!-- <div class="recall-status-filter" *ngIf="!loading">
+    篩選功能待實現
+  </div> -->
+
   <div class="loading" *ngIf="loading">
     載入中...
   </div>
 
   <div class="politicians-container" *ngIf="!loading">
-    <div class="politician-card" *ngFor="let politician of politicians" (click)="goToPolitician(politician)">
+    <div class="politician-card" *ngFor="let politician of filteredPoliticians" (click)="goToPolitician(politician)">
       <!-- 立委照片 -->
       <div class="politician-photo">
         <img
@@ -26,9 +31,10 @@
         {{ politician.district }}
       </div>
 
-      <!-- 網路聲量調查 -->
-      <div class="survey-info">
-        網路聲量調查
+      <!-- 罷免狀態 - 從 status 欄位讀取 -->
+      <div class="recall-status" [class]="getRecallStatusClass(politician.status)">
+        <i [class]="getRecallStatusIcon(politician.status)"></i>
+        {{ getRecallStatusText(politician.status) }}
       </div>
     </div>
   </div>

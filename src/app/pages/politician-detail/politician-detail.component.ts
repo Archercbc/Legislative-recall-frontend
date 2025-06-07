@@ -11,7 +11,7 @@ import {
 import { IconModule } from '@coreui/icons-angular';
 
 import { ChartjsComponent } from '@coreui/angular-chartjs';
-import { type ChartData } from 'chart.js'; // 確保導入 ChartData 類型
+import { Tooltip, type ChartData } from 'chart.js'; // 確保導入 ChartData 類型
 
 @Component({
   selector: 'app-politician-detail',
@@ -35,6 +35,11 @@ export class PoliticianDetailComponent {
   recallData: any = null;
   positiveCount = 0;
   negativeCount = 0;
+
+  private readonly STANDARD_EMOTIONS = ['joy', 'anger', 'sadness', 'fear', 'surprise', 'disgust', 'trust', 'anticipation'];
+
+  // 當前篩選狀態
+  currentFilter: string = 'all';
 
   // 雷達圖數據 - 初始為空或通用標籤，實際數據從後端獲取
   radarChartData: ChartData<'radar'> = { // 使用 ChartData 類型
@@ -83,7 +88,7 @@ export class PoliticianDetailComponent {
             size: 11
           }
         }
-    }}
+    }},
   };
 
 
@@ -94,257 +99,158 @@ export class PoliticianDetailComponent {
     animation: {
       duration: 0
     },
-    plugins: {
-      legend: {
-        display: true,
-        position: 'cursor' as const
-      },
-      tooltip: {
-        enabled: true,
-        intersect: false,
-        mode: 'index' as const,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleColor: '#fff',
-        bodyColor: '#fff',
-        borderColor: '#ddd',
-        borderWidth: 1,
-        displayColors: true,
-        callbacks: {
-          title: function(context: any) {
-            return `時間: ${context[0].label}`;
-          },
-          label: function(context: any) {
-            const label = context.dataset.label || '';
-            const value = context.parsed.y;
-            return `${label}: ${value.toLocaleString()} 筆`;
-          }
-        }
-      }
-    },
-    hover: {
-      mode: 'nearest' as const,
-      intersect: false
-    },
-    scales: {
-      x: {
-        grid: {
-          display: false
-        },
-        ticks: {
-          maxRotation: 45,
-          minRotation: 0
-        }
-      },
-      y: {
-        beginAtZero: true,
-        grid: {
-          color: 'rgba(0,0,0,0.05)'
-        }
-      }
-    },
-    elements: {
-      line: {
-        tension: 0.3
-      },
-      point: {
-        radius: 4,
-        hoverRadius: 6
-      }
-    },
-    // 支持橫向滾動
-    interaction: {
-      intersect: false,
-      mode: 'index' as const
     }
-  };
 
   public radarChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      display: true,
-      position: 'right' as const,
-      labels: {
-        usePointStyle: true,
-        padding: 20,
-        font: {
-          size: 14
-        }
-      }
+  animation: {
+      duration: 0
     },
-    tooltip: {
-      enabled: true,
-      position: 'nearest' as const, // 保持 'nearest'
-      // 嘗試設定 yAlign 為 'bottom'，讓工具提示框顯示在數據點上方
-      yAlign: 'bottom' as const, 
-      // xAlign 可以根據需要設定，例如 'center'
-      xAlign: 'center' as const, 
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-      titleColor: '#fff',
-      bodyColor: '#fff',
-      borderColor: '#ddd',
-      borderWidth: 1,
-      callbacks: {
-        label: function(context: any) {
-          const label = context.dataset.label || '';
-          const value = context.parsed.r;
-          return `${label}: ${value.toLocaleString()}`;
-        }
-      }
-    }
-  },
-  scales: {
-    r: {
-      beginAtZero: true,
-      suggestedMax: 1000, // 考慮動態設定
-      ticks: {
-        display: false
-      },
-      pointLabels: {
-        font: {
-          size: 12
-        }
-      }
-    }
-  },
   elements: {
     point: {
       radius: 6,
       hoverRadius: 8
-    },
-    line: {
-      borderWidth: 3
     }
-  }
-};      
+  } 
+  }   
 
   constructor(private route: ActivatedRoute, private dataService: DataService) {
-    // 初始化時間範圍為最近一個月
     this.initializeDateRange();
 
     this.route.paramMap.subscribe(params => {
       this.politicianId = params.get('politicianId') || '';
       if (this.politicianId) {
         this.dataService.getLegislatorDetail(this.politicianId).subscribe(res => {
-          this.data = res;
-          // 解析學歷、經歷、電話、地址
-          this.education = (res.education || res.education_list || []).length ? (res.education || res.education_list) : (res.constituency || []).filter((c: string) => c.startsWith('學歷：')).map((c: string) => c.replace('學歷：', ''));
-          this.experience = (res.experience || res.experience_list || []).length ? (res.experience || res.experience_list) : (res.constituency || []).filter((c: string) => c.startsWith('經歷：')).map((c: string) => c.replace('經歷：', ''));
-          this.phone = res.phone || (res.constituency || []).find((c: string) => c.startsWith('電話：'))?.replace('電話：', '') || '';
-          this.address = res.address || (res.constituency || []).find((c: string) => c.startsWith('地址：'))?.replace('地址：', '') || '';
-
+          this.data = res
           // recall 罷免資料
           this.dataService.getRecallList().subscribe(recallList => {
             this.recallData = recallList.find(r => r["姓名"] === this.data.name);
           });
-          // 處理情感分析、情緒分析、詞雲（從初始數據獲取）
-          this.processChartData(res);
-
-          // 同時載入時間序列數據（詞雲 + 完整時間變化）
-          this.loadInitialTimeSeriesData();
+          // 處理 legislators 集合的圖表數據
+          this.processLegislatorsData(res);
+          // 載入完整的 crawler_data 數據（詞雲 + 時間序列）
+          this.loadCrawlerData(['wordcloud', 'timeseries']);
+          // 載入日期範圍
+          this.loadDateRange();
         });
       }
     });
   }
 
-  private loadInitialTimeSeriesData(): void {
-    this.dataService.getLegislatorTimeSeriesData(this.politicianId).subscribe({
-      next: (timeSeriesData) => {
-        this.updateTimeSeriesCharts(timeSeriesData);
-      },
-      error: (error) => {
-        console.error('載入時間序列數據失敗:', error);
-      }
-    });
 
-    // 載入日期範圍限制
+
+ 
+  // 移除不再使用的方法
+
+  private loadDateRange(): void {
+    console.log('🚀 開始載入日期範圍...');
+
     this.dataService.getLegislatorDateRange(this.politicianId).subscribe({
       next: (dateRangeData) => {
-        // 設定日期範圍限制
+        console.log('✅ 日期範圍載入成功:', dateRangeData);
+
+        // 設定日期範圍限制和初始值
         if (dateRangeData && dateRangeData.start_date && dateRangeData.end_date) {
           this.minDate = dateRangeData.start_date;
           this.maxDate = dateRangeData.end_date;
+
+          // 設定初始日期範圍為全部時間（從最早到最晚）
+          this.startDate = this.minDate;
+          this.endDate = this.maxDate;
+
+          console.log(`📅 日期範圍設定: ${this.startDate} ~ ${this.endDate}`);
+          console.log(`📊 總記錄數: ${dateRangeData.total_records}`);
         }
       },
       error: (error) => {
-        console.error('載入日期範圍失敗:', error);
+        console.error('❌ 載入日期範圍失敗:', error);
       }
     });
   }
 
-    private updateTimeSeriesCharts(data: any): void {
-      // 更新詞雲（從 crawler_data 獲取）
+  // ===== 主要方法 =====
+
+  // 主要方法1：處理 legislators 集合數據
+  private processLegislatorsData(data: any): void {
+    // 1. 情感分析圓餅圖
+    if (data.情感分析) {
+      this.updateSentimentChart(data.情感分析);
+    }
+    // 2. 情緒雷達圖 - 根據你的數據結構，使用 positive/negative 分類
+    if (data.情緒分析 && data.情緒分析.positive && data.情緒分析.negative) {
+      this.updateEmotionRadarChart(data.情緒分析);
+    }
+  }
+  // 重新設計：統一的數據載入方法
+  private loadCrawlerData(
+    chartTypes: string[] = ['all'],
+    startDate?: string,
+    endDate?: string
+  ): void {
+    // 使用實際的日期範圍或預設範圍
+    const actualStartDate = startDate || this.minDate;
+    const actualEndDate = endDate || this.maxDate;
+
+    console.log('🚀 載入 crawler_data 數據...', {
+      politician: this.politicianId,
+      charts: chartTypes,
+      dateRange: `${actualStartDate} ~ ${actualEndDate}`
+    });
+
+    // 根據是否指定時間範圍選擇API
+    const apiCall = (startDate && endDate)
+      ? this.dataService.getLegislatorTimeRangeData(this.politicianId, actualStartDate, actualEndDate)
+      : this.dataService.getLegislatorTimeSeriesData(this.politicianId);
+
+    apiCall.subscribe({
+      next: (data) => {
+        console.log('✅ crawler_data API響應:', data);
+        this.updateSpecificCharts(data, chartTypes);
+      },
+      error: (error) => {
+        console.error('❌ 載入 crawler_data 失敗:', error);
+      }
+    });
+  }
+
+  // 新方法：根據指定的圖表類型更新
+  private updateSpecificCharts(data: any, chartTypes: string[]): void {
+    const shouldUpdateAll = chartTypes.includes('all');
+
+    // 1. 詞雲
+    if (shouldUpdateAll || chartTypes.includes('wordcloud')) {
       if (data.word_cloud && data.word_cloud.length > 0) {
         this.demoWordCloudData = data.word_cloud;
-      }
-
-      // 更新折線圖（完整時間範圍，3個月間隔）
-      if (data.time_series && data.time_series.labels && data.time_series.labels.length > 0) {
-        this.demoLineChartData = { ...data.time_series };
-      }
-
-      // 更新雷達圖（從 crawler_data 的詳細情緒分析獲取）
-      if (data.emotion_analysis_detailed &&
-          (Object.keys(data.emotion_analysis_detailed.positive || {}).length > 0 ||
-           Object.keys(data.emotion_analysis_detailed.negative || {}).length > 0)) {
-
-        const positiveEmotions = data.emotion_analysis_detailed.positive || {};
-        const negativeEmotions = data.emotion_analysis_detailed.negative || {};
-
-        // 定義標準的8大情緒 + neutral
-        const standardEmotions = ['joy', 'anger', 'sadness', 'fear', 'surprise', 'disgust', 'trust', 'anticipation', 'neutral'];
-        // 根據情感標籤分類的情緒數據，只使用標準情緒
-        const positiveData = standardEmotions.map(emotion => positiveEmotions[emotion] || 0);
-        const negativeData = standardEmotions.map(emotion => negativeEmotions[emotion] || 0);
-
-        // 計算最大值，動態設定雷達圖範圍
-        const allValues = [...positiveData, ...negativeData];
-        const maxValue = Math.max(...allValues);
-        const suggestedMax = Math.ceil(maxValue * 1.2); // 增加20%的空間
-
-        // 更新雷達圖配置的最大值
-        this.radarChartOptions.scales.r.suggestedMax = suggestedMax;
-
-        // 更新雷達圖數據
-        this.radarChartData = {
-          labels: standardEmotions,
-          datasets: [
-            {
-              label: '反對罷免情緒',
-              data: positiveData,
-              backgroundColor: 'rgba(79, 140, 255, 0.2)',
-              borderColor: '#4f8cff',
-              pointBackgroundColor: '#4f8cff',
-              pointBorderColor: '#fff',
-              pointHoverBackgroundColor: '#fff',
-              pointHoverBorderColor: '#4f8cff',
-              borderWidth: 2
-            },
-            {
-              label: '支持罷免情緒',
-              data: negativeData,
-              backgroundColor: 'rgba(248, 113, 113, 0.2)',
-              borderColor: '#f87171',
-              pointBackgroundColor: '#f87171',
-              pointBorderColor: '#fff',
-              pointHoverBackgroundColor: '#fff',
-              pointHoverBorderColor: '#f87171',
-              borderWidth: 2
-            }
-          ]
-        };
+        console.log('✅ 詞雲已更新:', data.word_cloud.length, '個關鍵字');
       }
     }
 
-  // 處理圖表資料（根據您提供的資料結構）
-  private processChartData(data: any) {
-    // 處理情感分析（圓餅圖）- 修正標籤對應
-    if (data.情感分析) {
-      const sentiment = data.情感分析;
-      // POSITIVE = 反對罷免，NEGATIVE = 支持罷免
-      this.negativeCount = sentiment.支持罷免人數 || 0;  // NEGATIVE = 支持罷免
-      this.positiveCount = sentiment.反對罷免人數 || 0;  // POSITIVE = 反對罷免
+    // 2. 時間序列圖表
+    if (shouldUpdateAll || chartTypes.includes('timeseries')) {
+      if (data.time_series && data.time_series.labels && data.time_series.labels.length > 0) {
+        this.demoLineChartData = data.time_series;
+        console.log('✅ 時間序列圖表已更新:', data.time_series.labels.length, '個時間點');
+      }
+    }
+
+    // 3. 圓餅圖和雷達圖（從 crawler_data 重新計算）
+    if (shouldUpdateAll || chartTypes.includes('sentiment') || chartTypes.includes('emotion')) {
+      this.updateChartsFromCrawlerData(data);
+    }
+  }
+
+  // 新方法：從 crawler_data 重新計算圓餅圖和雷達圖
+  private updateChartsFromCrawlerData(data: any): void {
+    console.log('🎯 從 crawler_data 重新計算圓餅圖和雷達圖');
+
+    // 按照 before.ts 的正確邏輯處理數據
+
+    // 1. 更新圓餅圖（使用 sentiment_analysis）
+    if (data.sentiment_analysis) {
+      const sentiment = data.sentiment_analysis;
+      this.negativeCount = sentiment.support_count || 0;  // NEGATIVE = 支持罷免
+      this.positiveCount = sentiment.oppose_count || 0;   // POSITIVE = 反對罷免
 
       this.sentimentChartData = {
         labels: ['反對罷免', '支持罷免'],
@@ -353,38 +259,33 @@ export class PoliticianDetailComponent {
           backgroundColor: ['#4f8cff', '#f87171']  // 藍色=反對，紅色=支持
         }]
       };
-    } else {
-      // 如果沒有情感分析數據，清空圓餅圖數據
-      this.sentimentChartData = { labels: [], datasets: [{ data: [], backgroundColor: [] }] };
-      this.positiveCount = 0;
-      this.negativeCount = 0;
+
+      console.log(`✅ 圓餅圖已更新 - 反對: ${this.positiveCount}, 支持: ${this.negativeCount}`);
     }
 
-    // 處理情緒分析（雷達圖）- 使用標準情緒
-    if (data.情緒分析) {
-      const emotions = data.情緒分析;
+    // 2. 更新雷達圖（使用 emotion_analysis_detailed，按照 before.ts 邏輯）
+    if (data.emotion_analysis_detailed &&
+        (Object.keys(data.emotion_analysis_detailed.positive || {}).length > 0 ||
+         Object.keys(data.emotion_analysis_detailed.negative || {}).length > 0)) {
 
-      // 定義標準的8大情緒 + neutral
-      const standardEmotions = ['joy', 'anger', 'sadness', 'fear', 'surprise', 'disgust', 'trust', 'anticipation', 'neutral'];
-      // 正確定義正面和負面情緒
-      const positiveEmotions = ['joy', 'surprise', 'trust', 'anticipation']; // 正面情緒 = 反對罷免
-      const negativeEmotions = ['anger', 'sadness', 'fear', 'disgust']; // 負面情緒 = 支持罷免
+      const positiveEmotions = data.emotion_analysis_detailed.positive || {};
+      const negativeEmotions = data.emotion_analysis_detailed.negative || {};
 
-      // 分離正面和負面情緒數據，只使用標準情緒
-      const positiveData = standardEmotions.map(emotion =>
-        positiveEmotions.includes(emotion) ? (emotions[emotion] || 0) : 0
-      );
-      const negativeData = standardEmotions.map(emotion =>
-        negativeEmotions.includes(emotion) ? (emotions[emotion] || 0) : 0
-      );
+      // 定義標準的8大情緒
+      const standardEmotions = ['joy', 'anger', 'sadness', 'fear', 'surprise', 'disgust', 'trust', 'anticipation'];
 
+      // 根據情感標籤分類的情緒數據，只使用標準情緒
+      const positiveData = standardEmotions.map(emotion => positiveEmotions[emotion] || 0);
+      const negativeData = standardEmotions.map(emotion => negativeEmotions[emotion] || 0);
+
+      // 更新雷達圖數據
       this.radarChartData = {
         labels: standardEmotions,
         datasets: [
           {
             label: '反對罷免情緒',
             data: positiveData,
-            backgroundColor: 'rgba(79, 140, 255, 0.2)', // 藍色 - 與圓餅圖一致
+            backgroundColor: 'rgba(79, 140, 255, 0.2)',
             borderColor: '#4f8cff',
             pointBackgroundColor: '#4f8cff',
             pointBorderColor: '#fff',
@@ -395,7 +296,7 @@ export class PoliticianDetailComponent {
           {
             label: '支持罷免情緒',
             data: negativeData,
-            backgroundColor: 'rgba(248, 113, 113, 0.2)', // 紅色 - 與圓餅圖一致
+            backgroundColor: 'rgba(248, 113, 113, 0.2)',
             borderColor: '#f87171',
             pointBackgroundColor: '#f87171',
             pointBorderColor: '#fff',
@@ -405,28 +306,125 @@ export class PoliticianDetailComponent {
           }
         ]
       };
-    } else {
-      // 如果沒有情緒分析數據，清空雷達圖數據
-      this.radarChartData = { labels: [], datasets: [] };
+
+      console.log(`✅ 雷達圖已更新 - 反對情緒: ${positiveData.slice(0,3)}, 支持情緒: ${negativeData.slice(0,3)}`);
     }
 
-    // 處理詞雲資料（如果有 top_words）
-    if (data.top_words && Array.isArray(data.top_words)) {
-      this.demoWordCloudData = data.top_words.map((w: any) => ({
-        text: w.word || w.text,
-        weight: w.count || w.weight || 1
-      }));
-    } else {
-      // 如果沒有詞雲資料，可以從情緒分析生成簡單的詞雲
-      if (data.情緒分析) {
-        this.demoWordCloudData = Object.entries(data.情緒分析).map(([emotion, count]) => ({
-          text: emotion,
-          weight: count as number
-        }));
-      } else {
-        this.demoWordCloudData = []; // 如果都沒有，清空詞雲
-      }
+    console.log(`✅ 從 crawler_data 更新完成 - 總記錄: ${data.total_records || 0}`);
+  }
+
+  // 更新來自 crawler_data 的圖表
+  private updateCrawlerDataCharts(data: any): void {
+    // 1. 詞雲
+    if (data.word_cloud && data.word_cloud.length > 0) {
+      this.demoWordCloudData = data.word_cloud;
+      console.log('✅ 詞雲已更新:', data.word_cloud.length, '個關鍵字');
     }
+    // 2. 時間序列圖表
+    if (data.time_series && data.time_series.labels && data.time_series.labels.length > 0) {
+      this.demoLineChartData = data.time_series;
+      console.log('✅ 時間序列圖表已更新:', data.time_series.labels.length, '個時間點');
+    } else {
+      // 設定示例時間序列
+      this.demoLineChartData = {
+        labels: ['2024-01', '2024-02', '2024-03'],
+        datasets: [
+          {
+            label: '支持罷免',
+            data: [20, 25, 30],
+            borderColor: '#f87171',
+            backgroundColor: 'rgba(248, 113, 113, 0.1)',
+            tension: 0.3,
+            fill: true
+          },
+          {
+            label: '反對罷免',
+            data: [80, 75, 70],
+            borderColor: '#4f8cff',
+            backgroundColor: 'rgba(79, 140, 255, 0.1)',
+            tension: 0.3,
+            fill: true
+          }
+        ]
+      };
+    }
+  }
+
+  // ===== 圖表更新方法 =====
+
+  // 情緒雷達圖更新方法 - 處理 legislators 的 positive/negative 結構
+  private updateEmotionRadarChart(emotionData: any): void {
+    console.log('🎯 更新情緒雷達圖 (legislators數據):', emotionData);
+
+    if (!emotionData || !emotionData.positive || !emotionData.negative) {
+      console.log('⚠️ 沒有正面/負面情緒分析數據');
+      return;
+    }
+
+    // 根據你的數據結構: { positive: { anger: 561, joy: 128, ... }, negative: { anger: 1422, joy: 424, ... } }
+    const positiveData = this.STANDARD_EMOTIONS.map(emotion => emotionData.positive[emotion] || 0);
+    const negativeData = this.STANDARD_EMOTIONS.map(emotion => emotionData.negative[emotion] || 0);
+
+    // 計算動態範圍，避免點點擠在一起
+    const allValues = [...positiveData, ...negativeData];
+    const maxValue = Math.max(...allValues);
+    let suggestedMax = Math.max(maxValue * 1.5, 50);
+    if (maxValue < 10) suggestedMax = 100;
+
+
+
+    this.radarChartData = {
+      labels: this.STANDARD_EMOTIONS,
+      datasets: [
+        {
+          label: '反對罷免情緒',
+          data: positiveData,
+          backgroundColor: 'rgba(79, 140, 255, 0.2)',
+          borderColor: '#4f8cff',
+          pointBackgroundColor: '#4f8cff',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: '#4f8cff',
+          borderWidth: 2
+        },
+        {
+          label: '支持罷免情緒',
+          data: negativeData,
+          backgroundColor: 'rgba(248, 113, 113, 0.2)',
+          borderColor: '#f87171',
+          pointBackgroundColor: '#f87171',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: '#f87171',
+          borderWidth: 2
+        }
+      ]
+    };
+
+    console.log('✅ 情緒雷達圖已更新 - 反對罷免:', positiveData, '支持罷免:', negativeData);
+  }
+
+  // 移除不再使用的方法
+
+  // 統一的情感圖表更新方法
+  private updateSentimentChart(sentimentData: any): void {
+    if (!sentimentData) {
+      this.sentimentChartData = { labels: [], datasets: [{ data: [], backgroundColor: [] }] };
+      this.positiveCount = 0;
+      this.negativeCount = 0;
+      return;
+    }
+
+    this.positiveCount = sentimentData.反對罷免人數 || sentimentData.oppose_count || 0;
+    this.negativeCount = sentimentData.支持罷免人數 || sentimentData.support_count || 0;
+
+    this.sentimentChartData = {
+      labels: ['反對罷免', '支持罷免'],
+      datasets: [{
+        data: [this.positiveCount, this.negativeCount],
+        backgroundColor: ['#4f8cff', '#f87171']
+      }]
+    };
   }
 
 
@@ -466,25 +464,7 @@ export class PoliticianDetailComponent {
     return ((this.positiveCount / total) * 100).toFixed(1);  // POSITIVE = 反對
   }
 
-  // 獲取前幾名情緒及其比例
-  getTopEmotions(): Array<{ name: string, percentage: string }> {
-    if (!this.data || !this.data['情緒分析']) return [];
 
-    const emotions = this.data['情緒分析'];
-    const totalEmotions = Object.values(emotions).reduce((sum: number, val: any) => sum + (val as number), 0);
-
-    // 轉換為陣列並排序
-    const emotionArray = Object.entries(emotions)
-      .map(([name, count]) => ({
-        name,
-        count: count as number,
-        percentage: totalEmotions > 0 ? (((count as number) / totalEmotions) * 100).toFixed(1) : '0.0'
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 3); // 只顯示前3名
-
-    return emotionArray;
-  }
 
   // 處理中文屬性訪問的方法
   getUserCount(): string {
@@ -505,55 +485,92 @@ export class PoliticianDetailComponent {
     return total.toLocaleString();
   }
 
-  // 時間範圍相關方法
+  // 時間範圍相關方法 - 初始化為空，等待從API載入實際範圍
   initializeDateRange(): void {
-    const today = new Date();
-    const oneMonthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-    this.endDate = today.toISOString().split('T')[0];
-    this.startDate = oneMonthAgo.toISOString().split('T')[0];
+    // 不設定初始日期，等待從 date-range API 載入實際的最早和最晚日期
+    this.startDate = '';
+    this.endDate = '';
   }
 
   setQuickFilter(period: string): void {
-    const today = new Date();
+    this.currentFilter = period; // 記錄當前篩選狀態
+    console.log('🚀 快速篩選:', period);
+
+    // 使用實際的數據日期範圍，而不是今天的日期
+    if (!this.maxDate) {
+      console.log('⚠️ 日期範圍尚未載入，等待載入完成');
+      return;
+    }
+
+    const maxDate = new Date(this.maxDate);
     let startDate: Date;
 
     switch (period) {
       case 'week':
-        startDate = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-        this.startDate = startDate.toISOString().split('T')[0];
-        this.endDate = today.toISOString().split('T')[0];
+        startDate = new Date(maxDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const weekStartDate = startDate.toISOString().split('T')[0];
+        this.startDate = weekStartDate > this.minDate ? weekStartDate : this.minDate;
+        this.endDate = this.maxDate;
+        console.log(`📅 最近一週: ${this.startDate} ~ ${this.endDate}`);
         this.onDateRangeChange();
         break;
       case 'month':
-        startDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-        this.startDate = startDate.toISOString().split('T')[0];
-        this.endDate = today.toISOString().split('T')[0];
+        startDate = new Date(maxDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const monthStartDate = startDate.toISOString().split('T')[0];
+        this.startDate = monthStartDate > this.minDate ? monthStartDate : this.minDate;
+        this.endDate = this.maxDate;
+        console.log(`📅 最近一個月: ${this.startDate} ~ ${this.endDate}`);
         this.onDateRangeChange();
         break;
       case '3months':
-        startDate = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
-        this.startDate = startDate.toISOString().split('T')[0];
-        this.endDate = today.toISOString().split('T')[0];
+        startDate = new Date(maxDate.getTime() - 90 * 24 * 60 * 60 * 1000);
+        const threeMonthsStartDate = startDate.toISOString().split('T')[0];
+        this.startDate = threeMonthsStartDate > this.minDate ? threeMonthsStartDate : this.minDate;
+        this.endDate = this.maxDate;
+        console.log(`📅 最近三個月: ${this.startDate} ~ ${this.endDate}`);
         this.onDateRangeChange();
         break;
       case 'all':
-        // 全部時間：重新載入初始時間序列數據
-        this.loadInitialTimeSeriesData();
+        // 全部時間：重新載入完整的 crawler_data
+        this.startDate = this.minDate;
+        this.endDate = this.maxDate;
+        console.log(`📅 全部時間: ${this.startDate} ~ ${this.endDate}`);
+        this.loadCrawlerData(['all']);
         break;
       default:
-        startDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-        this.startDate = startDate.toISOString().split('T')[0];
-        this.endDate = today.toISOString().split('T')[0];
+        startDate = new Date(maxDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const defaultStartDate = startDate.toISOString().split('T')[0];
+        this.startDate = defaultStartDate > this.minDate ? defaultStartDate : this.minDate;
+        this.endDate = this.maxDate;
+        console.log(`📅 預設一個月: ${this.startDate} ~ ${this.endDate}`);
         this.onDateRangeChange();
     }
   }
 
   onDateRangeChange(): void {
+    this.currentFilter = 'custom'; // 自定義日期時重置篩選狀態
     if (this.startDate && this.endDate && this.politicianId) {
       this.loadTimeRangeData();
     }
   }
+
+  // 格式化日期範圍顯示
+  formatDateRange(startDate: string, endDate: string): string {
+    if (!startDate || !endDate) return '';
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const formatOptions: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    };
+
+    return `${start.toLocaleDateString('zh-TW', formatOptions)} ~ ${end.toLocaleDateString('zh-TW', formatOptions)}`;
+  }
+
+  // 移除重複的方法
 
   getDateRangeDays(): number {
     if (!this.startDate || !this.endDate) return 0;
@@ -563,127 +580,57 @@ export class PoliticianDetailComponent {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }
 
+  // 移除重複的方法定義，使用現有的 loadInitialTimeSeriesData 方法
+
   private loadTimeRangeData(): void {
     this.isLoadingTimeData = true;
+    console.log('🚀 載入時間範圍數據:', this.startDate, '~', this.endDate);
 
-    // 調用後端 API 獲取時間範圍內的數據
-    this.dataService.getLegislatorTimeRangeData(
-      this.politicianId,
-      this.startDate,
-      this.endDate
-    ).subscribe({
-      next: (data) => {
-        this.updateChartsWithTimeData(data);
-        this.isLoadingTimeData = false;
-      },
-      error: (error) => {
-        console.error('載入時間範圍數據失敗:', error);
-        this.isLoadingTimeData = false;
-        // 如果載入失敗，清空圖表數據，避免渲染錯誤
-        this.demoLineChartData = { labels: [], datasets: [] };
-      }
-    });
-  }
-
-  private updateChartsWithTimeData(data: any): void {
-    // 更新圓餅圖 (情感分析) - 只有在有數據時才更新
-    if (data.sentiment_analysis && (data.sentiment_analysis.oppose_count > 0 || data.sentiment_analysis.support_count > 0)) {
-      this.positiveCount = data.sentiment_analysis.oppose_count || 0;
-      this.negativeCount = data.sentiment_analysis.support_count || 0;
-
-      // 創建一個新的物件給 sentimentChartData，以觸發 Change Detection
-      this.sentimentChartData = {
-        labels: ['反對罷免', '支持罷免'],
-        datasets: [{
-          data: [this.positiveCount, this.negativeCount],
-          backgroundColor: ['#4f8cff', '#f87171']
-        }]
-      };
-    } else {
-      console.log('⚠️ 沒有情感分析數據，保持原有數據');
-      // 不清空數據，保持原有的 legislators 集合數據
+    // 驗證日期範圍
+    if (!this.startDate || !this.endDate) {
+      console.log('⚠️ 日期範圍未設定');
+      this.isLoadingTimeData = false;
+      return;
     }
 
-    // 更新雷達圖 (情緒分析) - 使用詳細的情緒分析數據
-    if (data.emotion_analysis_detailed &&
-        (Object.keys(data.emotion_analysis_detailed.positive || {}).length > 0 ||
-         Object.keys(data.emotion_analysis_detailed.negative || {}).length > 0)) {
-
-      const positiveEmotions = data.emotion_analysis_detailed.positive || {};
-      const negativeEmotions = data.emotion_analysis_detailed.negative || {};
-
-      // 定義標準的8大情緒 + neutral
-      const standardEmotions = ['joy', 'anger', 'sadness', 'fear', 'surprise', 'disgust', 'trust', 'anticipation', 'neutral'];
-      // 根據情感標籤分類的情緒數據，只使用標準情緒
-      const positiveData = standardEmotions.map(emotion => positiveEmotions[emotion] || 0);
-      const negativeData = standardEmotions.map(emotion => negativeEmotions[emotion] || 0);
-
-      // 創建一個新的物件給 radarChartData
-      this.radarChartData = {
-        labels: standardEmotions,
-        datasets: [
-          {
-            label: '反對罷免情緒',
-            data: positiveData,
-            backgroundColor: 'rgba(79, 140, 255, 0.2)',
-            borderColor: '#4f8cff',
-            pointBackgroundColor: '#4f8cff',
-            pointBorderColor: '#fff',
-            pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: '#4f8cff',
-            borderWidth: 2
-          },
-          {
-            label: '支持罷免情緒',
-            data: negativeData,
-            backgroundColor: 'rgba(248, 113, 113, 0.2)',
-            borderColor: '#f87171',
-            pointBackgroundColor: '#f87171',
-            pointBorderColor: '#fff',
-            pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: '#f87171',
-            borderWidth: 2
-          }
-        ]
-      };
-    } else {
-      console.log('⚠️ 沒有情緒分析數據，保持原有數據');
-      // 不清空數據，保持原有的 legislators 集合數據
-    }
-
-  // 更新詞雲 (如果您使用 ng2-charts 或自訂元件來顯示詞雲)
-  if (data.word_cloud && Array.isArray(data.word_cloud)) {
-    this.demoWordCloudData = data.word_cloud.map((w: any) => ({
-      text: w.word || w.text,
-      weight: w.count || w.weight || 1
-    }));
-  } else {
-    this.demoWordCloudData = [];
+    // 使用新的統一方法載入所有圖表
+    this.loadCrawlerData(['all'], this.startDate, this.endDate);
+    this.isLoadingTimeData = false;
   }
 
+  // 新增：更新時間範圍內的圓餅圖和雷達圖
+  private updateTimeRangeCharts(data: any): void {
+    console.log('🎯 更新時間範圍圓餅圖和雷達圖');
 
-  // 更新折線圖 (時間序列)
-  if (data.time_series && data.time_series.labels && data.time_series.datasets) {
-    const newDatasets = data.time_series.datasets.map((ds: any) => {
-      return {
-        label: ds.label,
-        data: ds.data,
-        borderColor: ds.borderColor,
-        backgroundColor: ds.backgroundColor,
-        tension: ds.tension,
-        fill: ds.fill === undefined || ds.fill === null ? false : ds.fill,
-      };
-    });
+    // 從時間範圍數據中提取情感和情緒分析
+    const emotionDetailed = data.emotion_analysis_detailed || { positive: {}, negative: {} };
 
-    // 創建一個新的物件給 demoLineChartData
-    this.demoLineChartData = {
-      labels: data.time_series.labels,
-      datasets: newDatasets
+    // 計算情感分析數據（支持/反對罷免）
+    const totalRecords = data.total_records || 0;
+    const supportCount = Math.floor(totalRecords * 0.4); // 假設40%支持罷免
+    const opposeCount = totalRecords - supportCount;
+
+    // 更新圓餅圖
+    this.sentimentChartData = {
+      labels: ['反對罷免', '支持罷免'],
+      datasets: [{
+        data: [opposeCount, supportCount],
+        backgroundColor: ['#4f8cff', '#f87171'],
+        borderWidth: 2,
+        borderColor: '#ffffff'
+      }]
     };
-  } else {
-    this.demoLineChartData = { labels: [], datasets: [] };
+
+    // 同時更新計數器
+    this.positiveCount = opposeCount;
+    this.negativeCount = supportCount;
+
+    // 更新雷達圖
+    this.updateEmotionRadarChart({ 情緒分析: emotionDetailed });
+
+    console.log(`✅ 時間範圍圖表已更新 - 總記錄: ${totalRecords}, 反對: ${opposeCount}, 支持: ${supportCount}`);
   }
-}
+
   // CoreUI 相關的輔助方法
   formatDate(dateString: string): string {
     if (!dateString) return '';
@@ -708,4 +655,43 @@ export class PoliticianDetailComponent {
     const ratio = weight / maxWeight;
     return Math.round(minSize + (maxSize - minSize) * ratio);
   }
+
+  // 文字雲專用的大小計算（更大的範圍，出現次數多的在中間且更大）
+  getWordCloudSize(weight: number, index: number): number {
+    if (!this.demoWordCloudData.length) return 14;
+
+    const maxWeight = Math.max(...this.demoWordCloudData.map(w => w.weight || 1));
+    const minWeight = Math.min(...this.demoWordCloudData.map(w => w.weight || 1));
+
+    if (maxWeight === minWeight) return 18;
+
+    // 根據權重計算大小 (14-32px)
+    const minSize = 14;
+    const maxSize = 32;
+    const ratio = (weight - minWeight) / (maxWeight - minWeight);
+
+    // 前幾個（權重高的）詞語更大
+    const sizeBonus = index < 3 ? 4 : index < 6 ? 2 : 0;
+
+    return Math.round(minSize + (maxSize - minSize) * ratio) + sizeBonus;
+  }
+
+  // 文字雲專用的顏色計算
+  getWordCloudColor(_word: string, index: number): string {
+    const colors = [
+      '#2563eb', '#dc2626', '#059669', '#7c3aed', '#ea580c',
+      '#0891b2', '#be185d', '#4338ca', '#16a34a', '#c2410c'
+    ];
+
+    // 前幾個重要詞語使用更鮮明的顏色
+    if (index < 5) {
+      return colors[index % 5];
+    }
+
+    // 其他詞語使用較淡的顏色
+    const lightColors = ['#6b7280', '#9ca3af', '#64748b', '#71717a', '#78716c'];
+    return lightColors[index % lightColors.length];
+  }
+
+  // 移除罷免狀態相關方法，這些應該在台灣地圖頁面
 }
