@@ -3,8 +3,10 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import taiwan from '@svg-maps/taiwan';
 import { DataService } from '../../services/data.service';
-import { HttpClientModule, HttpClient } from '@angular/common/http';
+import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+
+// 移除未使用的 CoreUI 組件
 
 // 定義立委數據的介面
 interface Politician {
@@ -14,6 +16,7 @@ interface Politician {
   image_url?: string;
   constituency?: string;
   district?: string; // 新增 district 屬性
+  recallStatus?: string; // 新增 recallStatus 屬性
 }
 export interface AreaCount {
   area: string;
@@ -25,7 +28,11 @@ export interface AreaTargets {
 }
 @Component({
     selector: 'app-taiwan-map',
-    imports: [CommonModule, HttpClientModule, FormsModule],
+    imports: [
+      CommonModule,
+      HttpClientModule,
+      FormsModule
+    ],
     templateUrl: './taiwan-map.component.html',
     styleUrls: ['./taiwan-map.component.scss']
 })
@@ -64,41 +71,9 @@ export class TaiwanMapComponent implements OnInit {
     'lienchiang-county': '連江縣',
   };
 
-    areaCounts: AreaCount[] = [
-    { area: '台北市', count: 6 },
-    { area: '新北市', count: 6 },
-    { area: '桃園市', count: 6 },
-    { area: '新竹縣市', count: 3 },
-    { area: '苗栗縣', count: 2 },
-    { area: '台中市', count: 6 },
-    { area: '南投縣', count: 2 },
-    { area: '雲林縣', count: 1 },
-    { area: '嘉義縣', count: 1 },
-    { area: '台南市', count: 2 },
-    { area: '高雄市', count: 2 },
-    { area: '宜蘭縣', count: 1 },
-    { area: '台東縣', count: 1 },
-    { area: '花蓮縣', count: 1 }
-   // { area: '原住民選區', count: 2 },
-  ];
-
-  areaTargets: AreaTargets[] = [
-    { area: '台北市', targets: ['王鴻薇', '李彥秀', '羅智強', '徐巧芯', '賴士葆', '吳思瑤', '吳沛憶'] },
-    { area: '新北市', targets: ['葉元之', '張智倫', '林德福', '羅明才', '廖先翔', '李坤城', '蘇巧慧', '張宏陸', '吳琪銘'] },
-    { area: '桃園市', targets: ['牛煦庭', '涂權吉', '魯明哲', '萬美玲', '呂玉玲', '邱若華'] },
-    { area: '新竹縣市', targets: ['鄭正鈐', '徐欣瑩', '林思銘'] },
-    { area: '苗栗縣', targets: ['邱鎮軍', '陳超明'] },
-    { area: '台中市', targets: ['顏寬恒', '楊瓊瓔', '廖偉翔', '黃健豪', '羅廷瑋', '江啟臣', '蔡其昌', '何欣純'] },
-    { area: '南投縣', targets: ['馬文君', '游顥'] },
-    { area: '雲林縣', targets: ['丁學忠'] },
-    { area: '嘉義縣', targets: ['陳冠廷'] },
-    { area: '台南市', targets: ['林俊憲', '王定宇'] },
-    { area: '高雄市', targets: ['黃捷', '許智傑'] },
-    { area: '宜蘭縣', targets: ['陳俊宇'] },
-    { area: '台東縣', targets: ['黃建賓'] },
-    { area: '花蓮縣', targets: ['傅崐萁'] },
-    { area: '原住民選區', targets: ['陳瑩', '伍麗華'] },
-  ];
+    areaCounts: AreaCount[] = []; // 動態計算有被罷免立委的縣市
+  filteredAreaCounts: AreaCount[] = []; // 篩選後的縣市列表
+  areaTargets: AreaTargets[] = []; // 動態從後端計算
   colorMap: Record<string, string> = {
     'taipei-city': '#f39c12',
     'new-taipei-city': '#16a085',
@@ -125,30 +100,53 @@ export class TaiwanMapComponent implements OnInit {
   };
 
   filterRecallOnly: boolean = false;
+  selectedStatuses: string[] = []; // 改為多選陣列
+  showStatusFilter: boolean = false; // 控制篩選器展開/收起
 
   recallPoliticians: any[] = [];
   allLegislators: any[] = [];
 
+  // 罷免狀態定義（簡化圖標）
+  recallStatuses = [
+    { key: '二階連署進行中', label: '二階連署進行中' },
+    { key: '二階失敗', label: '二階失敗' },
+    { key: '三階投票進行中', label: '三階投票進行中' },
+    { key: '三階罷免成功', label: '三階罷免成功' },
+    { key: '三階罷免失敗', label: '三階罷免失敗' },
+  ];
+
   // 區域名稱對應地圖 id
   areaNameToCountyId: Record<string, string> = {
+    '臺北市': 'taipei-city',
     '台北市': 'taipei-city',
     '新北市': 'new-taipei-city',
     '桃園市': 'taoyuan-city',
-    '新竹縣市': 'hsinchu-county', // 只對應新竹縣，如需同時高亮縣市可擴充
-    '苗栗縣': 'miaoli-county',
+    '臺中市': 'taichung-city',
     '台中市': 'taichung-city',
-    '南投縣': 'nantou-county',
-    '雲林縣': 'yunlin-county',
-    '嘉義縣': 'chiayi-county',
+    '臺南市': 'tainan-city',
     '台南市': 'tainan-city',
     '高雄市': 'kaohsiung-city',
+    '基隆市': 'keelung-city',
+    '新竹市': 'hsinchu-city',
+    '新竹縣': 'hsinchu-county',
+    '苗栗縣': 'miaoli-county',
+    '彰化縣': 'changhua-county',
+    '南投縣': 'nantou-county',
+    '雲林縣': 'yunlin-county',
+    '嘉義市': 'chiayi-city',
+    '嘉義縣': 'chiayi-county',
+    '屏東縣': 'pingtung-county',
     '宜蘭縣': 'yilan-county',
-    '台東縣': 'taitung-county',
     '花蓮縣': 'hualien-county',
+    '臺東縣': 'taitung-county',
+    '台東縣': 'taitung-county',
+    '澎湖縣': 'penghu-county',
+    '金門縣': 'kinmen-county',
+    '連江縣': 'lienchiang-county',
     // 原住民選區不對應地圖
   };
 
-  constructor(private router: Router, private dataService: DataService, private http: HttpClient) {
+  constructor(private router: Router, private dataService: DataService) {
     this.initCountyPopulation();
   }
 
@@ -174,6 +172,9 @@ export class TaiwanMapComponent implements OnInit {
                 constituency: match?.constituency || ''
               };
             });
+
+            // 動態計算有被罷免立委的縣市
+            this.calculateAreaCounts();
           },
           error: err => {
             this.recallPoliticians = [];
@@ -190,6 +191,52 @@ export class TaiwanMapComponent implements OnInit {
     for (const county in this.countyNames) {
       this.countyPopulation[county] = Math.floor(Math.random() * 100) + 1;
     }
+  }
+
+  // 動態計算有被罷免立委的縣市
+  calculateAreaCounts() {
+    const areaCounts: { [key: string]: number } = {};
+
+    // 統計每個縣市的被罷免立委數量
+    this.recallPoliticians.forEach(r => {
+      const area = r["行政區"] || r.recall_data?.行政區;
+      if (area) {
+        areaCounts[area] = (areaCounts[area] || 0) + 1;
+      }
+    });
+
+    // 轉換為 AreaCount 陣列，只包含有被罷免立委的縣市
+    this.areaCounts = Object.entries(areaCounts).map(([area, count]) => ({
+      area,
+      count
+    })).sort((a, b) => b.count - a.count); // 按數量降序排列
+
+    // 初始化篩選列表為全部縣市
+    this.filteredAreaCounts = [...this.areaCounts];
+
+    // 動態計算 areaTargets
+    this.calculateAreaTargets();
+  }
+
+  // 動態計算每個縣市的被罷免立委名單
+  calculateAreaTargets() {
+    const areaTargetsMap: { [key: string]: string[] } = {};
+
+    this.recallPoliticians.forEach(r => {
+      const area = r["行政區"] || r.recall_data?.行政區;
+      const name = r["姓名"];
+      if (area && name) {
+        if (!areaTargetsMap[area]) {
+          areaTargetsMap[area] = [];
+        }
+        areaTargetsMap[area].push(name);
+      }
+    });
+
+    this.areaTargets = Object.entries(areaTargetsMap).map(([area, targets]) => ({
+      area,
+      targets
+    }));
   }
 
   onCountyClick(id: string, name: string) {
@@ -218,31 +265,40 @@ export class TaiwanMapComponent implements OnInit {
     // 更新選中縣市的樣式
     this.updateCountyStyles(id);
 
-    // 獲取立委資料並顯示在右邊
-    this.dataService.getLegislators(countyName).subscribe({
-      next: (data) => {
-        this.politicians = data;
-      },
-      error: (err) => {
-        console.error('載入立委列表失敗:', err);
-        this.politicians = [];
-      }
-    });
+    // 檢查該縣市是否有被罷免立委
+    const hasRecallPoliticians = this.recallPoliticians.some(r =>
+      (r["行政區"] || r.recall_data?.行政區) === countyName
+    );
+
+    if (hasRecallPoliticians) {
+      // 顯示該縣市的被罷免立委
+      const recallList = this.recallPoliticians.filter(r =>
+        (r["行政區"] || r.recall_data?.行政區) === countyName
+      );
+      this.politicians = recallList.map(r => ({
+        id: r["姓名"],
+        name: r["姓名"],
+        image_url: r.image_url,
+        constituency: r.constituency,
+        party: r.party,
+        recallStatus: r.status || r.recall_data?.狀態 || '網路聲量調查'
+      }));
+    } else {
+      // 該縣市沒有被罷免立委，設置特殊標記
+      this.politicians = [{
+        id: 'no-recall',
+        name: '該縣市沒有被提案罷免之立委',
+        image_url: '',
+        constituency: '',
+        party: '',
+        recallStatus: ''
+      }];
+    }
   }
 
-  updateCountyStyles(selectedId: string) {
-    // 移除所有選中樣式
-    document.querySelectorAll('.taiwan-svg path').forEach(path => {
-      path.classList.remove('selected');
-      path.setAttribute('fill', '#cccccc');
-    });
-
-    // 為選中縣市添加樣式
-    const selectedPath = document.getElementById(selectedId);
-    if (selectedPath) {
-      selectedPath.classList.add('selected');
-      selectedPath.setAttribute('fill', this.colorMap[selectedId] || '#222222');
-    }
+  updateCountyStyles(_selectedId: string) {
+    // 完全移除高亮功能，保持地圖簡潔
+    // 不再更改任何縣市的顏色
   }
 
   onPartyClick(party: string) {
@@ -348,5 +404,125 @@ export class TaiwanMapComponent implements OnInit {
     if (countyId) {
       this.onCountyClick(countyId, areaName);
     }
+  }
+
+  // 展開/收起篩選器
+  toggleStatusFilter() {
+    this.showStatusFilter = !this.showStatusFilter;
+  }
+
+  // 狀態選擇變更
+  onStatusChange(status: string, event: any) {
+    if (event.target.checked) {
+      if (!this.selectedStatuses.includes(status)) {
+        this.selectedStatuses.push(status);
+      }
+    } else {
+      this.selectedStatuses = this.selectedStatuses.filter(s => s !== status);
+    }
+  }
+
+  // 套用篩選
+  applyStatusFilters() {
+    this.selectedCounty = null;
+    this.selectedParty = null;
+    this.politicians = [];
+
+    if (this.selectedStatuses.length === 0) {
+      // 沒有選擇任何狀態，顯示所有縣市
+      this.filteredAreaCounts = [...this.areaCounts];
+    } else {
+      // 篩選選中狀態的立委，並更新縣市列表
+      const filteredPoliticians = this.recallPoliticians.filter(r =>
+        this.selectedStatuses.includes(r.status || r.recall_data?.狀態)
+      );
+
+      // 重新計算篩選後的縣市數量
+      const filteredAreaCounts: { [key: string]: number } = {};
+      filteredPoliticians.forEach(r => {
+        const area = r["行政區"] || r.recall_data?.行政區;
+        if (area) {
+          filteredAreaCounts[area] = (filteredAreaCounts[area] || 0) + 1;
+        }
+      });
+
+      // 更新篩選後的縣市列表，只顯示有相關狀態立委的縣市
+      this.filteredAreaCounts = Object.entries(filteredAreaCounts).map(([area, count]) => ({
+        area,
+        count
+      })).sort((a, b) => b.count - a.count);
+    }
+
+    // 不再更新地圖高亮，取消高亮功能
+    this.resetMapHighlight();
+  }
+
+  // 重置地圖高亮
+  resetMapHighlight() {
+    document.querySelectorAll('.taiwan-svg path').forEach(path => {
+      path.classList.remove('selected');
+      path.setAttribute('fill', '#cccccc');
+    });
+  }
+
+  // 清除所有篩選
+  clearAllFilters() {
+    this.selectedStatuses = [];
+    this.filteredAreaCounts = [...this.areaCounts]; // 重置為全部縣市
+    this.resetMapHighlight();
+  }
+
+  // 移除地圖高亮功能（已取消）
+
+  // 根據縣市名稱獲取地圖ID
+  getCountyIdByName(countyName: string): string | null {
+    for (const [id, name] of Object.entries(this.countyNames)) {
+      if (name === countyName) {
+        return id;
+      }
+    }
+    return null;
+  }
+
+  // 獲取狀態對應的顏色
+  getStatusColor(status: string): string {
+    const colorMap: { [key: string]: string } = {
+      '二階連署進行中': '#f39c12',
+      '二階連署進行中 (已達門檻)': '#27ae60',
+      '二階失敗': '#95a5a6',
+      '三階投票進行中': '#e74c3c',
+      '三階罷免成功': '#27ae60',
+      '三階罷免失敗': '#7f8c8d',
+      '罷免中止': '#95a5a6'
+    };
+    return colorMap[status] || '#3498db';
+  }
+
+  // 獲取特定狀態的立委數量
+  getStatusCount(status: string): number {
+    return this.recallPoliticians.filter(r =>
+      (r.status || r.recall_data?.狀態) === status
+    ).length;
+  }
+
+  // 罷免狀態圖標（簡化版）
+  getRecallStatusIcon(_status: string): string {
+    // 使用簡單的 SVG 圖標
+    return 'status-icon';
+  }
+
+  // 罷免狀態樣式類別
+  getRecallStatusClass(status: string): string {
+    const classMap: { [key: string]: string } = {
+      '連署進行中': 'status-petition-ongoing',
+      '連署未通過': 'status-petition-failed',
+      '罷免進行中': 'status-recall-ongoing',
+      '罷免未通過': 'status-recall-failed',
+      '罷免成功': 'status-recall-success',
+      '三階投票進行中': 'status-recall-ongoing',
+      '一階進行中': 'status-petition-ongoing',
+      '二階進行中': 'status-recall-ongoing'
+    };
+    return classMap[status] || 'status-survey';
   }
 }

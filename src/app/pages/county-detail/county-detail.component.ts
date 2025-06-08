@@ -1,12 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CommonModule } from '@angular/common';  // ✅ 匯入 CommonModule
-import { HttpClientModule } from '@angular/common/http';
+import { CommonModule } from '@angular/common';
 import { DataService } from '../../services/data.service';
+
+// 移除未使用的 CoreUI 組件
 
 @Component({
     selector: 'app-county-detail',
-    imports: [CommonModule, HttpClientModule],
+    imports: [
+      CommonModule
+    ],
     templateUrl: './county-detail.component.html',
     styleUrl: './county-detail.component.scss'
 })
@@ -21,14 +24,17 @@ export class CountyDetailComponent implements OnInit {
   loading = false;
   selectedStatus = 'all';
 
-  // 罷免狀態定義
+  // 罷免狀態定義（使用 CoreUI 4.0 圖標）
   recallStatuses = [
-    { key: 'all', label: '全部狀態', icon: 'cil-list' },
-    { key: '連署進行中', label: '連署進行中', icon: 'cil-clock' },
-    { key: '連署未通過', label: '連署未通過', icon: 'cil-x-circle' },
-    { key: '罷免進行中', label: '罷免進行中', icon: 'cil-warning' },
-    { key: '罷免未通過', label: '罷免未通過', icon: 'cil-ban' },
-    { key: '罷免成功', label: '罷免成功', icon: 'cil-check-circle' }
+    { key: 'all', label: '全部狀態', icon: 'cilList' },
+    { key: '連署進行中', label: '連署進行中', icon: 'cilClock' },
+    { key: '連署未通過', label: '連署未通過', icon: 'cilXCircle' },
+    { key: '罷免進行中', label: '罷免進行中', icon: 'cilWarning' },
+    { key: '罷免未通過', label: '罷免未通過', icon: 'cilBan' },
+    { key: '罷免成功', label: '罷免成功', icon: 'cilCheckCircle' },
+    { key: '三階投票進行中', label: '三階投票進行中', icon: 'cilWarning' },
+    { key: '一階進行中', label: '一階進行中', icon: 'cilClock' },
+    { key: '二階進行中', label: '二階進行中', icon: 'cilWarning' }
   ];
 
   constructor(
@@ -87,7 +93,7 @@ export class CountyDetailComponent implements OnInit {
       this.filteredPoliticians = [...this.allPoliticians];
     } else {
       this.filteredPoliticians = this.allPoliticians.filter(politician =>
-        this.getRecallStatusText(politician.recallStatus) === status
+        this.getRecallStatusText(politician.recall_data?.狀態) === status
       );
     }
   }
@@ -98,7 +104,7 @@ export class CountyDetailComponent implements OnInit {
       return this.allPoliticians.length;
     }
     return this.allPoliticians.filter(politician =>
-      this.getRecallStatusText(politician.recallStatus) === status
+      this.getRecallStatusText(politician.recall_data?.狀態) === status
     ).length;
   }
 
@@ -146,18 +152,19 @@ export class CountyDetailComponent implements OnInit {
   getRecallStatusIcon(status: string): string {
     const statusText = this.getRecallStatusText(status);
     const iconMap: { [key: string]: string } = {
-      '網路聲量調查': 'cil-chart-line',
-      '連署進行中': 'cil-clock',
-      '連署未通過': 'cil-x-circle',
-      '罷免進行中': 'cil-warning',
-      '罷免未通過': 'cil-ban',
-      '罷免成功': 'cil-check-circle',
-      '一階進行中': 'cil-clock',
-      '一階成功': 'cil-check',
-      '一階失敗': 'cil-x-circle',
-      '二階進行中': 'cil-warning'
+      '網路聲量調查': 'cilChartLine',
+      '連署進行中': 'cilClock',
+      '連署未通過': 'cilXCircle',
+      '罷免進行中': 'cilWarning',
+      '罷免未通過': 'cilBan',
+      '罷免成功': 'cilCheckCircle',
+      '三階投票進行中': 'cilWarning',
+      '一階進行中': 'cilClock',
+      '一階成功': 'cilCheck',
+      '一階失敗': 'cilXCircle',
+      '二階進行中': 'cilWarning'
     };
-    return iconMap[statusText] || 'cil-chart-line';
+    return iconMap[statusText] || 'cilChartLine';
   }
 
   // 狀態按鈕樣式

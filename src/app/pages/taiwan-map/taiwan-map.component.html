@@ -1,105 +1,150 @@
 <div class="map-page-container">
-  <!-- 左側篩選區塊 -->
-  <div class="filter-panel">
-  
-    
-    <!-- 可擴充其他篩選條件 -->
+    <div class="filter-panel">
+        <div class="filter-layout">
+            <div class="area-count-section">
+                <div class="area-header">
+                    <div>
+                        <h1>正在被罷免的議員區域</h1>
+                        <h4>各區立委席次</h4>
+                    </div>
+                </div>
+                <div class="area-scroll-container">
+                    <ul>
+                        <li *ngFor="let area of filteredAreaCounts"
+                            class="area-count-item"
+                            (click)="onAreaListClick(area.area)"
+                            tabindex="0"
+                            [class.active]="selectedCounty === getCountyIdByAreaName(area.area)">
+                            <span class="area-name">{{ area.area }}</span>
+                            <span class="area-count">{{ area.count }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
 
-    <div class="area-count-list">
-      <h1>正在被罷免的議員區域</h1>
-      <h4>各區立委席次</h4>
-      <ul>
-        <li *ngFor="let area of areaCounts"
-            class="area-count-item"
-            (click)="onAreaListClick(area.area)"
-            tabindex="0"
-            [class.active]="selectedCounty === getCountyIdByAreaName(area.area)">
-          <span class="area-name">{{ area.area }}</span>
-          <span class="area-count">{{ area.count }}</span>
-        </li>
-      </ul>
-    </div>
-  </div>
-  <div class="map-container" style="flex:1;">
-    <svg [attr.viewBox]="viewBox" class="taiwan-svg" preserveAspectRatio="xMidYMid meet">
-      <!-- 縣市路徑 -->
-      <g *ngFor="let location of taiwanMap.locations">
-        <path
-          [attr.d]="location.path"
-          [attr.id]="location.id"
-          [attr.fill]="getCountyColor(location.id)"
-          [attr.data-color]="colorMap[location.id]"
-          [ngClass]="{selected: selectedCounty === location.id}"
-          (click)="onCountyClick(location.id, getCountyName(location.id))"
-          (mouseenter)="countyHover(location.id, true)"
-          (mouseleave)="countyHover(location.id, false)"
-          [attr.title]="getCountyName(location.id)"
-        />
-        <title>{{ getCountyName(location.id) }}</title>
-      </g>
-    </svg>
-    
-    <!-- 未選中縣市時顯示提示訊息 -->
-    <div *ngIf="!selectedCounty && !selectedParty" class="map-tip">
-      點擊縣市可查看詳情
-    </div>
-  </div>
+            <div class="status-filter-wrapper">
+                <div class="filter-header" (click)="toggleStatusFilter()">
+                    <h4>
+                        <svg width="16" height="16" fill="currentColor" class="me-2 arrow-icon" [class.rotated]="showStatusFilter">
+                            <path d="M6 3l3 3-3 3z"/>
+                        </svg>
+                        罷免狀態篩選
+                    </h4>
+                    <span class="filter-summary" *ngIf="!showStatusFilter && selectedStatuses.length > 0">
+                        已選 {{ selectedStatuses.length }} 項
+                    </span>
+                </div>
 
-  <!-- 右側信息面板 -->
-  <div *ngIf="selectedCounty" class="county-info-panel">
-    <button class="back-btn" (click)="resetFocus()">返回全部縣市</button>
-    <h2>{{ getCountyName(selectedCounty) }}</h2>
-    
-    <div class="legislators-container">
-      <div *ngFor="let politician of politicians" class="legislator-card" (click)="goToPolitician(politician.id)">
-        <div class="legislator-image" *ngIf="politician.image_url">
-          <img [src]="politician.image_url" [alt]="politician.name" onerror="this.src='assets/images/default-avatar.png';">
-        </div>
-        <div class="legislator-image" *ngIf="!politician.image_url">
-          <div class="default-avatar">{{ politician.name.charAt(0) || 'N' }}</div>
-        </div>
-        <div class="legislator-info">
-          <h3>{{ politician.name }}</h3>
-          <p class="constituency" *ngIf="politician.constituency">{{ politician.constituency }}</p>
-          <p class="party" *ngIf="politician.party"
-             style="background:#e74c3c;color:#fff;">
-            網路聲量調查
-          </p>
-          <div *ngIf="filterRecallOnly" class="recall-tip">此議員目前有罷免案進行中</div>
-        </div>
-      </div>
-      
-      <div *ngIf="politicians.length === 0" class="no-data">
-        暫無資料
-      </div>
-    </div>
-  </div>
+                <div class="filter-content" *ngIf="showStatusFilter">
+                    <div class="status-options">
+                        <label class="status-option" *ngFor="let status of recallStatuses">
+                            <input
+                                type="checkbox"
+                                [value]="status.key"
+                                [checked]="selectedStatuses.includes(status.key)"
+                                (change)="onStatusChange(status.key, $event)">
+                            <span class="status-label-content">
+                                <svg width="14" height="14" fill="currentColor" class="status-icon">
+                                    <circle cx="7" cy="7" r="3" [attr.fill]="getStatusColor(status.key)"/>
+                                </svg>
+                                {{ status.label }}
+                                <span class="status-count">({{ getStatusCount(status.key) }})</span>
+                            </span>
+                        </label>
+                    </div>
 
-  <div *ngIf="selectedParty" class="county-info-panel">
-    <button class="back-btn" (click)="resetFocus()">返回地圖</button>
-    <h2>{{ selectedParty }} 不分區立委</h2>
-    
-    <div class="legislators-container">
-      <div *ngFor="let politician of politicians" class="legislator-card" (click)="goToPolitician(politician.id)">
-        <div class="legislator-image" *ngIf="politician.image_url">
-          <img [src]="politician.image_url" [alt]="politician.name" onerror="this.src='assets/images/default-avatar.png';">
+                    <div class="filter-actions">
+                        <button type="button" class="btn-clear" (click)="clearAllFilters()">清除全部</button>
+                        <button type="button" class="btn-apply" (click)="applyStatusFilters()">套用篩選</button>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="legislator-image" *ngIf="!politician.image_url">
-          <div class="default-avatar">{{ politician.name.charAt(0) || 'N' }}</div>
-        </div>
-        <div class="legislator-info">
-          <h3>{{ politician.name }}</h3>
-          <p class="constituency" *ngIf="politician.constituency">{{ politician.constituency }}</p>
-          <p class="party" *ngIf="politician.party"
-             style="background:#e74c3c;color:#fff;">
-            網路聲量調查
-          </p>
-        </div>
-      </div>
-      
-      <div *ngIf="politicians.length === 0" class="no-data">
-        暫無資料
-      </div>
     </div>
-  </div>
+
+    <div class="map-container" style="flex:1;">
+        <svg [attr.viewBox]="viewBox" class="taiwan-svg" preserveAspectRatio="xMidYMid meet">
+            <g *ngFor="let location of taiwanMap.locations">
+                <path
+                    [attr.d]="location.path"
+                    [attr.id]="location.id"
+                    [attr.fill]="getCountyColor(location.id)"
+                    [attr.data-color]="colorMap[location.id]"
+                    [ngClass]="{selected: selectedCounty === location.id}"
+                    (click)="onCountyClick(location.id, getCountyName(location.id))"
+                    (mouseenter)="countyHover(location.id, true)"
+                    (mouseleave)="countyHover(location.id, false)"
+                    [attr.title]="getCountyName(location.id)"
+                />
+                <title>{{ getCountyName(location.id) }}</title>
+            </g>
+        </svg>
+        <div *ngIf="!selectedCounty && !selectedParty" class="map-tip">
+            點擊縣市可查看詳情
+        </div>
+    </div>
+
+    <div *ngIf="selectedCounty" class="county-info-panel">
+        <div class="panel-header">
+            <button class="back-btn" (click)="resetFocus()">返回全部縣市</button>
+            <h2>{{ getCountyName(selectedCounty) }}</h2>
+        </div>
+        <div class="legislators-scroll-container">
+            <div *ngFor="let politician of politicians" class="legislator-card"
+                [class.no-click]="politician.id === 'no-recall'"
+                (click)="politician.id !== 'no-recall' && goToPolitician(politician.id)">
+                <div class="legislator-image" *ngIf="politician.image_url && politician.id !== 'no-recall'">
+                    <img [src]="politician.image_url" [alt]="politician.name" onerror="this.src='assets/images/default-avatar.png';">
+                </div>
+                <div class="legislator-image" *ngIf="!politician.image_url && politician.id !== 'no-recall'">
+                    <div class="default-avatar">{{ politician.name.charAt(0) || 'N' }}</div>
+                </div>
+                <div class="legislator-info" [class.no-recall-info]="politician.id === 'no-recall'">
+                    <h3 [class.no-recall-title]="politician.id === 'no-recall'">{{ politician.name }}</h3>
+                    <p class="constituency" *ngIf="politician.constituency && politician.id !== 'no-recall'">{{ politician.constituency }}</p>
+                    <p class="party" *ngIf="politician.party && politician.id !== 'no-recall'" [ngClass]="getPartyColorClass(politician.party)">
+                        {{ politician.party }}
+                    </p>
+                    <div class="recall-status" *ngIf="politician.recallStatus && politician.id !== 'no-recall'">
+                        <svg width="12" height="12" fill="currentColor" class="me-1">
+                            <circle cx="6" cy="6" r="4" [attr.fill]="getStatusColor(politician.recallStatus)"/>
+                        </svg>
+                        <span [class]="getRecallStatusClass(politician.recallStatus)">
+                            {{ politician.recallStatus }}
+                        </span>
+                    </div>
+                    <div *ngIf="filterRecallOnly && politician.id !== 'no-recall'" class="recall-tip">此議員目前有罷免案進行中</div>
+                </div>
+            </div>
+            <div *ngIf="politicians.length === 0" class="no-data">
+                暫無資料
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="selectedParty" class="county-info-panel">
+        <button class="back-btn" (click)="resetFocus()">返回地圖</button>
+        <h2>{{ selectedParty }} 不分區立委</h2>
+        <div class="legislators-container">
+            <div *ngFor="let politician of politicians" class="legislator-card" (click)="goToPolitician(politician.id)">
+                <div class="legislator-image" *ngIf="politician.image_url">
+                    <img [src]="politician.image_url" [alt]="politician.name" onerror="this.src='assets/images/default-avatar.png';">
+                </div>
+                <div class="legislator-image" *ngIf="!politician.image_url">
+                    <div class="default-avatar">{{ politician.name.charAt(0) || 'N' }}</div>
+                </div>
+                <div class="legislator-info">
+                    <h3>{{ politician.name }}</h3>
+                    <p class="constituency" *ngIf="politician.constituency">{{ politician.constituency }}</p>
+                    <p class="party" *ngIf="politician.party"
+                        style="background:#e74c3c;color:#fff;">
+                        網路聲量調查
+                    </p>
+                </div>
+            </div>
+            <div *ngIf="politicians.length === 0" class="no-data">
+                暫無資料
+            </div>
+        </div>
+    </div>
 </div>
