@@ -144,12 +144,8 @@ export class PoliticianDetailComponent {
   // 移除不再使用的方法
 
   private loadDateRange(): void {
-    console.log('🚀 開始載入日期範圍...');
-
     this.dataService.getLegislatorDateRange(this.politicianId).subscribe({
       next: (dateRangeData) => {
-        console.log('✅ 日期範圍載入成功:', dateRangeData);
-
         // 設定日期範圍限制和初始值
         if (dateRangeData && dateRangeData.start_date && dateRangeData.end_date) {
           this.minDate = dateRangeData.start_date;
@@ -158,9 +154,6 @@ export class PoliticianDetailComponent {
           // 設定初始日期範圍為全部時間（從最早到最晚）
           this.startDate = this.minDate;
           this.endDate = this.maxDate;
-
-          console.log(`📅 日期範圍設定: ${this.startDate} ~ ${this.endDate}`);
-          console.log(`📊 總記錄數: ${dateRangeData.total_records}`);
         }
       },
       error: (error) => {
@@ -192,11 +185,6 @@ export class PoliticianDetailComponent {
     const actualStartDate = startDate || this.minDate;
     const actualEndDate = endDate || this.maxDate;
 
-    console.log('🚀 載入 crawler_data 數據...', {
-      politician: this.politicianId,
-      charts: chartTypes,
-      dateRange: `${actualStartDate} ~ ${actualEndDate}`
-    });
 
     // 根據是否指定時間範圍選擇API
     const apiCall = (startDate && endDate)
@@ -205,7 +193,6 @@ export class PoliticianDetailComponent {
 
     apiCall.subscribe({
       next: (data) => {
-        console.log('✅ crawler_data API響應:', data);
         this.updateSpecificCharts(data, chartTypes);
       },
       error: (error) => {
@@ -222,7 +209,6 @@ export class PoliticianDetailComponent {
     if (shouldUpdateAll || chartTypes.includes('wordcloud')) {
       if (data.word_cloud && data.word_cloud.length > 0) {
         this.demoWordCloudData = data.word_cloud;
-        console.log('✅ 詞雲已更新:', data.word_cloud.length, '個關鍵字');
       }
     }
 
@@ -230,7 +216,6 @@ export class PoliticianDetailComponent {
     if (shouldUpdateAll || chartTypes.includes('timeseries')) {
       if (data.time_series && data.time_series.labels && data.time_series.labels.length > 0) {
         this.demoLineChartData = data.time_series;
-        console.log('✅ 時間序列圖表已更新:', data.time_series.labels.length, '個時間點');
       }
     }
 
@@ -242,7 +227,6 @@ export class PoliticianDetailComponent {
 
   // 新方法：從 crawler_data 重新計算圓餅圖和雷達圖
   private updateChartsFromCrawlerData(data: any): void {
-    console.log('🎯 從 crawler_data 重新計算圓餅圖和雷達圖');
 
     // 按照 before.ts 的正確邏輯處理數據
 
@@ -260,7 +244,6 @@ export class PoliticianDetailComponent {
         }]
       };
 
-      console.log(`✅ 圓餅圖已更新 - 反對: ${this.positiveCount}, 支持: ${this.negativeCount}`);
     }
 
     // 2. 更新雷達圖（使用 emotion_analysis_detailed，按照 before.ts 邏輯）
@@ -306,11 +289,7 @@ export class PoliticianDetailComponent {
           }
         ]
       };
-
-      console.log(`✅ 雷達圖已更新 - 反對情緒: ${positiveData.slice(0,3)}, 支持情緒: ${negativeData.slice(0,3)}`);
     }
-
-    console.log(`✅ 從 crawler_data 更新完成 - 總記錄: ${data.total_records || 0}`);
   }
 
   // 更新來自 crawler_data 的圖表
@@ -318,12 +297,10 @@ export class PoliticianDetailComponent {
     // 1. 詞雲
     if (data.word_cloud && data.word_cloud.length > 0) {
       this.demoWordCloudData = data.word_cloud;
-      console.log('✅ 詞雲已更新:', data.word_cloud.length, '個關鍵字');
     }
     // 2. 時間序列圖表
     if (data.time_series && data.time_series.labels && data.time_series.labels.length > 0) {
       this.demoLineChartData = data.time_series;
-      console.log('✅ 時間序列圖表已更新:', data.time_series.labels.length, '個時間點');
     } else {
       // 設定示例時間序列
       this.demoLineChartData = {
@@ -354,10 +331,7 @@ export class PoliticianDetailComponent {
 
   // 情緒雷達圖更新方法 - 處理 legislators 的 positive/negative 結構
   private updateEmotionRadarChart(emotionData: any): void {
-    console.log('🎯 更新情緒雷達圖 (legislators數據):', emotionData);
-
     if (!emotionData || !emotionData.positive || !emotionData.negative) {
-      console.log('⚠️ 沒有正面/負面情緒分析數據');
       return;
     }
 
@@ -401,7 +375,6 @@ export class PoliticianDetailComponent {
       ]
     };
 
-    console.log('✅ 情緒雷達圖已更新 - 反對罷免:', positiveData, '支持罷免:', negativeData);
   }
 
   // 移除不再使用的方法
@@ -494,11 +467,8 @@ export class PoliticianDetailComponent {
 
   setQuickFilter(period: string): void {
     this.currentFilter = period; // 記錄當前篩選狀態
-    console.log('🚀 快速篩選:', period);
-
     // 使用實際的數據日期範圍，而不是今天的日期
     if (!this.maxDate) {
-      console.log('⚠️ 日期範圍尚未載入，等待載入完成');
       return;
     }
 
@@ -511,7 +481,6 @@ export class PoliticianDetailComponent {
         const weekStartDate = startDate.toISOString().split('T')[0];
         this.startDate = weekStartDate > this.minDate ? weekStartDate : this.minDate;
         this.endDate = this.maxDate;
-        console.log(`📅 最近一週: ${this.startDate} ~ ${this.endDate}`);
         this.onDateRangeChange();
         break;
       case 'month':
@@ -519,7 +488,6 @@ export class PoliticianDetailComponent {
         const monthStartDate = startDate.toISOString().split('T')[0];
         this.startDate = monthStartDate > this.minDate ? monthStartDate : this.minDate;
         this.endDate = this.maxDate;
-        console.log(`📅 最近一個月: ${this.startDate} ~ ${this.endDate}`);
         this.onDateRangeChange();
         break;
       case '3months':
@@ -527,14 +495,12 @@ export class PoliticianDetailComponent {
         const threeMonthsStartDate = startDate.toISOString().split('T')[0];
         this.startDate = threeMonthsStartDate > this.minDate ? threeMonthsStartDate : this.minDate;
         this.endDate = this.maxDate;
-        console.log(`📅 最近三個月: ${this.startDate} ~ ${this.endDate}`);
         this.onDateRangeChange();
         break;
       case 'all':
         // 全部時間：重新載入完整的 crawler_data
         this.startDate = this.minDate;
         this.endDate = this.maxDate;
-        console.log(`📅 全部時間: ${this.startDate} ~ ${this.endDate}`);
         this.loadCrawlerData(['all']);
         break;
       default:
@@ -542,7 +508,6 @@ export class PoliticianDetailComponent {
         const defaultStartDate = startDate.toISOString().split('T')[0];
         this.startDate = defaultStartDate > this.minDate ? defaultStartDate : this.minDate;
         this.endDate = this.maxDate;
-        console.log(`📅 預設一個月: ${this.startDate} ~ ${this.endDate}`);
         this.onDateRangeChange();
     }
   }
@@ -584,11 +549,9 @@ export class PoliticianDetailComponent {
 
   private loadTimeRangeData(): void {
     this.isLoadingTimeData = true;
-    console.log('🚀 載入時間範圍數據:', this.startDate, '~', this.endDate);
 
     // 驗證日期範圍
     if (!this.startDate || !this.endDate) {
-      console.log('⚠️ 日期範圍未設定');
       this.isLoadingTimeData = false;
       return;
     }
@@ -600,8 +563,6 @@ export class PoliticianDetailComponent {
 
   // 新增：更新時間範圍內的圓餅圖和雷達圖
   private updateTimeRangeCharts(data: any): void {
-    console.log('🎯 更新時間範圍圓餅圖和雷達圖');
-
     // 從時間範圍數據中提取情感和情緒分析
     const emotionDetailed = data.emotion_analysis_detailed || { positive: {}, negative: {} };
 
@@ -627,8 +588,6 @@ export class PoliticianDetailComponent {
 
     // 更新雷達圖
     this.updateEmotionRadarChart({ 情緒分析: emotionDetailed });
-
-    console.log(`✅ 時間範圍圖表已更新 - 總記錄: ${totalRecords}, 反對: ${opposeCount}, 支持: ${supportCount}`);
   }
 
   // CoreUI 相關的輔助方法
