@@ -45,6 +45,9 @@ export class TaiwanMapComponent implements OnInit {
   taiwanMap = taiwan;
   viewBox: string = "250 250 1000 1050";
   countyPopulation: Record<string, number> = {};
+  
+  // 新增載入狀態
+  isLoading: boolean = true;
 
   countyNames: Record<string, string> = {
     'taipei-city': '臺北市',
@@ -150,9 +153,10 @@ export class TaiwanMapComponent implements OnInit {
     this.initCountyPopulation();
   }
 
-
-
   ngOnInit() {
+    // 開始載入，設定載入狀態
+    this.isLoading = true;
+    
     // 1. 載入所有立委主資料
     this.dataService.getLegislators().subscribe({
       next: legislators => {
@@ -175,14 +179,21 @@ export class TaiwanMapComponent implements OnInit {
 
             // 動態計算有被罷免立委的縣市
             this.calculateAreaCounts();
+            
+            // 所有資料載入完成，關閉載入狀態
+            this.isLoading = false;
           },
           error: err => {
             this.recallPoliticians = [];
+            // 即使錯誤也要關閉載入狀態
+            this.isLoading = false;
           }
         });
       },
       error: err => {
         this.allLegislators = [];
+        // 載入錯誤時也要關閉載入狀態
+        this.isLoading = false;
       }
     });
   }
