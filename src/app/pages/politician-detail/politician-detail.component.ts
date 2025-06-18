@@ -133,7 +133,7 @@ export class PoliticianDetailComponent {
           this.loadDateRange();
           
           // 檢查 legislators 集合中的預計算數據
-          const hasWordCloud = res.文字雲 && res.文字雲.length > 0;
+          const hasWordCloud = res.word_cloud && res.word_cloud.length > 0;
           const hasMonthlyStats = res.月份情感統計 && Object.keys(res.月份情感統計).length > 0;
           
           // 只有當缺少任何一項預計算數據時，才從 crawler_data 載入補充數據
@@ -183,9 +183,9 @@ export class PoliticianDetailComponent {
       this.updateEmotionRadarChart(data.情緒分析);
     }
     // 3. 文字雲 - 從 legislators 集合直接獲取
-    if (data.文字雲 && data.文字雲.length > 0) {
+    if (data.word_cloud && data.word_cloud.length > 0) {
       // 確保數據格式正確 - text 和 weight 欄位
-      this.demoWordCloudData = data.文字雲.map((item: any) => ({
+      this.demoWordCloudData = data.word_cloud.map((item: any) => ({
         text: item.text || item.word || '',
         weight: item.weight || item.count || 0
       })).filter((item: any) => item.text && item.weight > 0);
