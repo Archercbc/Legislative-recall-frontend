@@ -1,0 +1,56 @@
+.footer {
+    width: 100%;
+    background: #f9f9f9;
+    padding: 6px 0;             
+    font-size: 18px;             
+    color: #888;
+    text-align: center;
+   
+  }
+  
+  .footer-content {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0 12px;            
+  }
+  
+
+  .header {
+    width: 100%;
+    background: #f9f9f9;
+    padding: 10px 0;
+    border-bottom: 1px solid #e0e0e0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  }
+  
+  .header-content {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 16px;
+    text-align: center;
+  }
+  
+  .header h1 {
+    font-size: 20px;
+    font-weight: 500;
+    color: #444;
+    margin: 0;
+  }
+  
+  
+  /* 讓整頁占滿視窗高度 */
+html, body {
+    height: 100%;
+    margin: 0;
+  }
+  
+  /* 讓整個 Angular 應用使用 flex 排版 */
+  app-root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  
+  
+  
