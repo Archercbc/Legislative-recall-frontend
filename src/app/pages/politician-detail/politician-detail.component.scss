@@ -1309,3 +1309,60 @@ c-badge {
     font-size: 0.9rem;
   }
 }
+
+/* Chart tooltip 修正 - 確保不被裁切 */
+::ng-deep .c-chart-tooltip, 
+::ng-deep .chartjs-tooltip, 
+::ng-deep .chartjs-tooltip-container {
+  z-index: 2000 !important;
+  pointer-events: none;
+}
+
+/* 確保所有 CoreUI 組件容器不會裁切 tooltip */
+::ng-deep [cCard], 
+::ng-deep [cCardBody], 
+::ng-deep [cRow], 
+::ng-deep [cCol] {
+  overflow: visible !important;
+}
+
+/* Chart.js 特定的 tooltip 樣式 */
+::ng-deep .chartjs-tooltip {
+  opacity: 1 !important;
+  position: absolute !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  color: white !important;
+  border-radius: 6px !important;
+  padding: 12px 16px !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  z-index: 2000 !important;
+  pointer-events: none !important;
+  transform: translate(-50%, -100%) !important;
+  white-space: nowrap !important;
+  transition: opacity 0.2s ease, visibility 0.2s ease !important;
+}
+
+/* 強制隱藏 tooltip 的樣式 */
+::ng-deep .chartjs-tooltip[style*="opacity: 0"] {
+  visibility: hidden !important;
+  display: none !important;
+}
+
+/* Chart 容器滑鼠離開時的處理 */
+::ng-deep .c-chart:not(:hover) .chartjs-tooltip {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transition: opacity 0.1s ease !important;
+}
+
+/* Chart 容器確保 tooltip 顯示正常 */
+::ng-deep .c-chart {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+::ng-deep canvas {
+  position: relative !important;
+}
