@@ -121,7 +121,92 @@ export class PoliticianDetailComponent {
     animation: {
       duration: 0
     },
+    interaction: {
+      mode: 'nearest' as const,
+      intersect: false,
+    },
+    plugins: {
+      tooltip: {
+        enabled: true,
+        mode: 'nearest' as const,
+        intersect: false,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: '#fff',
+        borderWidth: 1,
+        cornerRadius: 6,
+        displayColors: true,
+        padding: 12,
+        titleFont: {
+          size: 14,
+          weight: 'bold' as const
+        },
+        bodyFont: {
+          size: 14
+        },
+        callbacks: {
+          title: function(context: any) {
+            return context[0].label || '';
+          },
+          label: function(context: any) {
+            const label = context.dataset.label || '';
+            const value = context.parsed.y;
+            return `${label}: ${value}`;
+          }
+        },
+        external: function(context: any) {
+          // 當沒有活動元素時，強制隱藏 tooltip
+          if (!context.tooltip.dataPoints || context.tooltip.dataPoints.length === 0) {
+            const tooltipEl = document.getElementById('chartjs-tooltip');
+            if (tooltipEl) {
+              tooltipEl.style.opacity = '0';
+              tooltipEl.style.visibility = 'hidden';
+            }
+          }
+        }
+      },
+      legend: {
+        display: true,
+        position: 'top' as const
+      }
+    },
+    scales: {
+      x: {
+        display: true,
+        title: {
+          display: true,
+          text: '時間'
+        }
+      },
+      y: {
+        display: true,
+        title: {
+          display: true,
+          text: '數量'
+        }
+      }
+    },
+    onHover: (event: any, activeElements: any, chart: any) => {
+      // 當沒有活動元素時（滑鼠離開），強制清除 tooltip
+      if (activeElements.length === 0) {
+        // 方法1: 使用 Chart.js API
+        if (chart && chart.tooltip) {
+          chart.tooltip.setActiveElements([], {x: 0, y: 0});
+          chart.update('none');
+        }
+        
+        // 方法2: 直接操作 DOM 元素
+        setTimeout(() => {
+          const tooltipElements = document.querySelectorAll('.chartjs-tooltip');
+          tooltipElements.forEach(el => {
+            (el as HTMLElement).style.opacity = '0';
+            (el as HTMLElement).style.visibility = 'hidden';
+          });
+        }, 0);
+      }
     }
+  }
 
   public radarChartOptions = {
   responsive: true,

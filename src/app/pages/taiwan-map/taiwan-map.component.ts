@@ -149,11 +149,17 @@ export class TaiwanMapComponent implements OnInit {
     // 原住民選區不對應地圖
   };
 
+  showUsageModal: boolean = true; // 預設一進來就顯示
+
   constructor(private router: Router, private dataService: DataService) {
     this.initCountyPopulation();
   }
 
   ngOnInit() {
+    // 檢查 localStorage
+    const usageSeen = localStorage.getItem('taiwanMapUsageSeen');
+    this.showUsageModal = !usageSeen;
+
     // 開始載入，設定載入狀態
     this.isLoading = true;
     
@@ -535,5 +541,10 @@ export class TaiwanMapComponent implements OnInit {
       '二階進行中': 'status-recall-ongoing'
     };
     return classMap[status] || 'status-survey';
+  }
+
+  closeUsageModal() {
+    this.showUsageModal = false;
+    localStorage.setItem('taiwanMapUsageSeen', '1');
   }
 }

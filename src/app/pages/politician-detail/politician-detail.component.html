@@ -274,9 +274,9 @@
               <small class="text-muted">載入中...</small>
             </div>
           </div>
-          <div cCardBody style="overflow-x: auto; overflow-y: visible;">
+          <div cCardBody style="overflow: visible;">
             <div *ngIf="!isLoadingTimeData" style="display: flex; align-items: center; justify-content: center; height: 280px;">
-              <div style="min-width: 600px; width: 100%; height: 250px; position: relative;">
+              <div style="width: 100%; height: 250px; position: relative;">
                 <c-chart [data]="demoLineChartData" type="line" [options]="lineChartOptions" style="height: 100%; width: 100%;"></c-chart>
               </div>
             </div>

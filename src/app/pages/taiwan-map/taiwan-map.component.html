@@ -5,6 +5,22 @@
   </div>
 </div>
 
+<!-- 使用說明 Modal -->
+<div class="usage-modal-backdrop" *ngIf="showUsageModal">
+  <div class="usage-modal">
+    <h2>使用說明與介紹</h2>
+    <ul>
+      <li>點擊地圖上的縣市可查看該地區立委資訊。</li>
+      <li>可依罷免狀態、政黨等條件篩選。</li>
+      <li>點擊立委姓名可進一步查看詳細資料。</li>
+      <li>如需重設篩選，請點擊「清除所有篩選」。</li>
+      <li>本研究是依照社群平台中發言人數進行網路聲量調查</li>
+      <li>僅供學術參考使用，請勿用於商業用途</li>
+    </ul>
+    <button (click)="closeUsageModal()">我知道了</button>
+  </div>
+</div>
+
 <div *ngIf="!isLoading" class="map-page-container">
     <div class="filter-panel">
         <div class="filter-layout">
@@ -154,4 +170,7 @@
             </div>
         </div>
     </div>
+
+    <!-- 右上角問號按鈕 -->
+    <button class="usage-help-btn" (click)="showUsageModal = true" title="顯示使用說明">？</button>
 </div>
