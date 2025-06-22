@@ -686,7 +686,6 @@ export class PoliticianDetailComponent {
     this.startDate = '';
     this.endDate = '';
   }
-
   setQuickFilter(period: string): void {
     this.currentFilter = period; // 記錄當前篩選狀態
     // 使用實際的數據日期範圍，而不是今天的日期
@@ -697,80 +696,79 @@ export class PoliticianDetailComponent {
     const maxDate = new Date(this.maxDate);
     let startDate: Date;
 
+    // 計算日期差異 (從最晚日期往前推的天數)
+    const calculateDaysBack = (days: number) => {
+      const newStartDate = new Date(maxDate.getTime() - days * 24 * 60 * 60 * 1000);
+      const newStartDateStr = newStartDate.toISOString().split('T')[0];
+      // 不早於 minDate
+      return newStartDateStr > this.minDate ? newStartDateStr : this.minDate;
+    };
+
+    // 顯示加載狀態
+    this.isLoadingTimeData = true;
+
     switch (period) {
       case 'week':
-        startDate = new Date(maxDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const weekStartDate = startDate.toISOString().split('T')[0];
-        this.startDate = weekStartDate > this.minDate ? weekStartDate : this.minDate;
+        this.startDate = calculateDaysBack(7); // 7天
         this.endDate = this.maxDate;
-        // 顯示加載狀態
-        this.isLoadingTimeData = true;
-        // 直接從 crawler_data 載入數據
-        this.loadCrawlerData(['all'], this.startDate, this.endDate);
         break;
       case 'month':
-        startDate = new Date(maxDate.getTime() - 30 * 24 * 60 * 60 * 1000);
-        const monthStartDate = startDate.toISOString().split('T')[0];
-        this.startDate = monthStartDate > this.minDate ? monthStartDate : this.minDate;
+        this.startDate = calculateDaysBack(30); // 30天
         this.endDate = this.maxDate;
-        // 顯示加載狀態
-        this.isLoadingTimeData = true;
-        // 直接從 crawler_data 載入數據
-        this.loadCrawlerData(['all'], this.startDate, this.endDate);
         break;
       case '3months':
-        startDate = new Date(maxDate.getTime() - 90 * 24 * 60 * 60 * 1000);
-        const threeMonthsStartDate = startDate.toISOString().split('T')[0];
-        this.startDate = threeMonthsStartDate > this.minDate ? threeMonthsStartDate : this.minDate;
+        this.startDate = calculateDaysBack(90); // 90天
         this.endDate = this.maxDate;
-        // 顯示加載狀態
-        this.isLoadingTimeData = true;
-        // 直接從 crawler_data 載入數據
-        this.loadCrawlerData(['all'], this.startDate, this.endDate);
+        break;
+      case '6months':
+        this.startDate = calculateDaysBack(180); // 180天
+        this.endDate = this.maxDate;
+        break;
+      case '1year':
+        this.startDate = calculateDaysBack(365); // 365天
+        this.endDate = this.maxDate;
         break;
       case 'all':
         // 全部時間：設定為完整時間範圍
         this.startDate = this.minDate;
         this.endDate = this.maxDate;
-        
-        // 顯示加載狀態
-        this.isLoadingTimeData = true;
-        
-        // 檢查是否有預計算數據
-        if (this.data && this.data.月份情感統計 && Object.keys(this.data.月份情感統計).length > 0) {
-          console.log('使用 legislators 集合中的預計算數據');
-          // 使用完整的月份情感統計數據
-          this.updateTimeSeriesFromMonthlyStats(this.data.月份情感統計);
-          
-          // 更新圓餅圖
-          if (this.data.情感分析) {
-            this.updateSentimentChart(this.data.情感分析);
-          }
-          
-          // 更新雷達圖
-          if (this.data.情緒分析 && 
-              (this.data.情緒分析.positive || this.data.情緒分析.negative)) {
-            this.updateEmotionRadarChart(this.data.情緒分析);
-          }
-          
-          // 完成後關閉加載狀態
-          this.isLoadingTimeData = false;
-        } else {
-          // 如果沒有預計算數據，則從 crawler_data 載入
-          this.loadCrawlerData(['all']);
-        }
         break;
       default:
-        startDate = new Date(maxDate.getTime() - 30 * 24 * 60 * 60 * 1000);
-        const defaultStartDate = startDate.toISOString().split('T')[0];
-        this.startDate = defaultStartDate > this.minDate ? defaultStartDate : this.minDate;
+        this.startDate = calculateDaysBack(30); // 預設30天
         this.endDate = this.maxDate;
-        // 顯示加載狀態
-        this.isLoadingTimeData = true;
-        // 直接從 crawler_data 載入數據
-        this.loadCrawlerData(['all'], this.startDate, this.endDate);
+    }
+    
+    console.log(`設置時間範圍: ${this.startDate} 到 ${this.endDate} (${period})`);
+    
+    // 檢查是否是「全部時間」範圍 (startDate == minDate 且 endDate == maxDate)
+    const isAllTimeRange = this.startDate === this.minDate && this.endDate === this.maxDate;
+    
+    if (isAllTimeRange && this.data && this.data.月份情感統計 && Object.keys(this.data.月份情感統計).length > 0) {
+      console.log('使用 legislators 集合中的預計算數據');
+      // 使用完整的月份情感統計數據
+      this.updateTimeSeriesFromMonthlyStats(this.data.月份情感統計);
+      
+      // 更新圓餅圖
+      if (this.data.情感分析) {
+        this.updateSentimentChart(this.data.情感分析);
+      }
+      
+      // 更新文字雲
+      if (this.data.word_cloud && this.data.word_cloud.length > 0) {
+        this.demoWordCloudData = this.data.word_cloud.map((item: any) => ({
+          text: item.text || item.word || '',
+          weight: item.weight || item.count || 0
+        })).filter((item: any) => item.text && item.weight > 0);
+      }
+      
+      // 完成後關閉加載狀態
+      this.isLoadingTimeData = false;
+    } else {
+      // 從 crawler_data 載入時間範圍數據
+      this.loadCrawlerData(['all'], this.startDate, this.endDate);
     }
   }
+  
 
   onDateRangeChange(): void {
     this.currentFilter = 'custom'; // 自定義日期時重置篩選狀態
@@ -906,6 +904,18 @@ export class PoliticianDetailComponent {
     });
   }
 
+  // 只格式化日期部分 (不含時間)
+  formatDateOnly(dateStr: string): string {
+    if (!dateStr) return '';
+    
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('zh-TW', {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric'
+    });
+  }
+
   getWordBadgeColor(index: number): string {
     const colors = ['primary', 'success', 'info', 'warning', 'danger', 'secondary'];
     return colors[index % colors.length];
@@ -932,7 +942,7 @@ export class PoliticianDetailComponent {
 
     // 根據權重計算大小 (14-32px)
     const minSize = 14;
-    const maxSize = 32;
+    const maxSize = 36;
     const ratio = (weight - minWeight) / (maxWeight - minWeight);
 
     // 前幾個（權重高的）詞語更大
@@ -941,6 +951,11 @@ export class PoliticianDetailComponent {
     return Math.round(minSize + (maxSize - minSize) * ratio) + sizeBonus;
   }
 
+  // 計算文字雲的最大權重
+  get maxWordWeight(): number {
+    if (!this.demoWordCloudData.length) return 1;
+    return Math.max(...this.demoWordCloudData.map(w => w.weight || 1));
+  }
   // 文字雲專用的顏色計算
   getWordCloudColor(_word: string, index: number): string {
     const colors = [
@@ -956,5 +971,39 @@ export class PoliticianDetailComponent {
     // 其他詞語使用較淡的顏色
     const lightColors = ['#6b7280', '#9ca3af', '#64748b', '#71717a', '#78716c'];
     return lightColors[index % lightColors.length];
+  }
+
+  // 獲取隨機角度（-30到30度之間）
+  getRandomAngle(index: number): number {
+    // 使用索引作為種子，確保每次都相同，但不同詞語有不同角度
+    const seed = index * 137.5 + 42;
+    // 生成-30到30度之間的隨機角度
+    return ((seed % 60) - 30);
+  }
+
+  // 獲取詞語位置（環繞排列）
+  getWordPosition(index: number, type: 'top' | 'left'): number {
+    const totalWords = this.demoWordCloudData.length;
+    if (totalWords <= 0) return 50;
+
+    // 前幾個高頻詞放在中間位置
+    if (index < 3) {
+      // 前3個詞位於中心區域 (40%-60%)
+      const centerOffset = ((index % 3) * 10) - 10; // -10, 0, 10
+      return type === 'top' ? 50 + centerOffset : 50 + centerOffset;
+    }
+
+    // 其餘詞語環繞排列
+    // 用索引生成角度 (0-360度)
+    const angle = (index * (360 / (totalWords - 3))) % 360;
+    // 距離中心的半徑 (20-40之間，索引越大半徑越大)
+    const radius = 20 + (index / totalWords) * 20;
+    
+    // 將極坐標轉換為直角坐標 (中心點為50,50)
+    if (type === 'top') {
+      return 50 + radius * Math.sin(angle * Math.PI / 180);
+    } else { // left
+      return 50 + radius * Math.cos(angle * Math.PI / 180);
+    }
   }
 }

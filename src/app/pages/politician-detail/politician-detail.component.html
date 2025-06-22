@@ -107,8 +107,7 @@
             </div>
           </div>
         </div>
-        <div cCardBody class="modern-body">
-          <!-- 快速篩選按鈕 - 移到最上方 -->
+        <div cCardBody class="modern-body">          <!-- 快速篩選按鈕 - 移到最上方 -->
           <div class="quick-filters-modern">
             <div class="filter-label">
               <i class="cil-clock me-1"></i>
@@ -147,6 +146,26 @@
               </button>
               <button
                 cButton
+                [color]="currentFilter === '6months' ? 'primary' : 'outline-primary'"
+                size="sm"
+                (click)="setQuickFilter('6months')"
+                [disabled]="isLoadingTimeData"
+                class="filter-btn">
+                <i class="cil-calendar-range me-1"></i>
+                最近六個月
+              </button>
+              <button
+                cButton
+                [color]="currentFilter === '1year' ? 'primary' : 'outline-primary'"
+                size="sm"
+                (click)="setQuickFilter('1year')"
+                [disabled]="isLoadingTimeData"
+                class="filter-btn">
+                <i class="cil-calendar-range me-1"></i>
+                最近一年
+              </button>
+              <button
+                cButton
                 [color]="currentFilter === 'all' ? 'primary' : 'outline-primary'"
                 size="sm"
                 (click)="setQuickFilter('all')"
@@ -156,10 +175,7 @@
                 全部時間
               </button>
             </div>
-          </div>
-
-          <!-- 自定義日期選擇 -->
-          <div class="custom-date-section">
+          </div>          <div class="custom-date-section">
             <div class="section-divider">
               <span class="divider-text">或自定義日期範圍</span>
             </div>
@@ -196,6 +212,10 @@
                   [max]="maxDate">
               </div>
             </div>
+            <small class="date-range-info">
+              <i class="cil-info-circle me-1"></i>
+              日期範圍從立委上任第一天 ({{ formatDateOnly(minDate) }}) 至最新資料日期 ({{ formatDateOnly(maxDate) }})
+            </small>
           </div>
 
           <!-- 篩選資訊 -->
@@ -208,6 +228,12 @@
               </span>
             </div>
           </div>
+
+          <!-- 日期範圍提示資訊 -->
+          <small class="date-range-info">
+            <i class="cil-info-circle me-1"></i>
+            日期範圍從立委上任第一天 ({{ formatDateOnly(minDate) }}) 至最新資料日期 ({{ formatDateOnly(maxDate) }})
+          </small>
         </div>
       </div>
 
@@ -241,19 +267,32 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- 情緒雷達圖 -->
+        </div>        <!-- 文字雲 (替換原來的情緒雷達圖) -->
         <div cCard class="chart-card">
           <div cCardHeader>
-            <i class="cil-graph"></i>
-            <span>情緒雷達圖</span>
+            <i class="cil-text-size"></i>
+            <span>關鍵詞文字雲</span>
+            <span *ngIf="isLoadingTimeData" class="spinner-border spinner-border-sm ms-2"></span>
           </div>
           <div cCardBody style="overflow: visible; position: relative;">
-            <div style="display: flex; align-items: center; justify-content: center; height: 450px;">
-              <!-- 雷達圖容器 - 增大尺寸 -->
-              <div style="width: 500px; height: 450px; position: relative;">
-                <c-chart [data]="radarChartData" type="radar" [options]="radarChartOptions" style="height: 100%; width: 100%;"></c-chart>
+            <div style="display: flex; align-items: center; justify-content: center; height: 450px; overflow: hidden;">
+              <!-- 文字雲容器 -->
+              <div style="width: 500px; height: 450px; position: relative;" class="word-cloud-container">
+                <div *ngIf="!demoWordCloudData?.length" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #666;">
+                  載入關鍵詞數據中...
+                </div>
+                <div 
+                  *ngFor="let word of demoWordCloudData; let i = index" 
+                  class="word-cloud-word" 
+                  [style.font-size.px]="getWordCloudSize(word.weight, i)" 
+                  [style.color]="getWordCloudColor(word.text, i)"
+                  [style.opacity]="0.7 + (word.weight / 100) * 0.3"
+                  [style.transform]="'rotate(' + getRandomAngle(i) + 'deg)'"
+                  [style.top.%]="getWordPosition(i, 'top')"
+                  [style.left.%]="getWordPosition(i, 'left')"
+                  [attr.title]="word.text + ' (出現 ' + word.weight + ' 次)'">
+                  {{word.text}}
+                </div>
               </div>
             </div>
           </div>
@@ -283,39 +322,6 @@
             <div *ngIf="isLoadingTimeData" class="loading-placeholder">
               <div class="spinner-border text-primary"></div>
               <p class="mt-3 text-muted">正在載入趨勢數據...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 熱門關鍵字 - 獨立一列 -->
-    <div cRow>
-      <div cCol xs="12">
-        <div cCard class="mb-4">
-          <div cCardHeader>
-            <i class="cil-text-size"></i>
-            <span>熱門關鍵字</span>
-            <div class="loading-indicator" *ngIf="isLoadingTimeData">
-              <div class="spinner-border spinner-border-sm text-primary ms-2"></div>
-              <small class="text-muted">載入中...</small>
-            </div>
-          </div>
-          <div cCardBody style="max-height: 300px; overflow-y: auto;">
-            <div *ngIf="!isLoadingTimeData" class="wordcloud-container-modern">
-              <div
-                *ngFor="let w of demoWordCloudData; let i = index"
-                class="word-cloud-item"
-                [style.font-size.px]="getWordCloudSize(w.weight, i)"
-                [style.color]="getWordCloudColor(w.text, i)"
-                [style.animation-delay.s]="i * 0.1"
-                [attr.title]="w.text + ' (出現 ' + w.weight + ' 次)'">
-                {{w.text}}
-              </div>
-            </div>
-            <div *ngIf="isLoadingTimeData" class="loading-placeholder">
-              <div class="spinner-border text-primary"></div>
-              <p class="mt-3 text-muted">正在載入關鍵字數據...</p>
             </div>
           </div>
         </div>
