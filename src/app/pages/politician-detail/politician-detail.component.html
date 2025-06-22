@@ -223,6 +223,9 @@
             <div style="display: flex; align-items: center; justify-content: center; height: 350px;">
               <!-- 圓餅圖容器 -->
               <div style="width: 300px; height: 300px; position: relative;">
+                <div *ngIf="!radarChartData?.datasets?.length" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #666;">
+                  載入情感數據中...
+                </div>
                 <c-chart [data]="sentimentChartData" type="doughnut" [options]="doughnutOptions" style="height: 100%; width: 100%;"></c-chart>
               </div>
             </div>

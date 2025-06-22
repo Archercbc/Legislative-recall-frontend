@@ -36,7 +36,29 @@ export class PoliticianDetailComponent {
   positiveCount = 0;
   negativeCount = 0;
 
+  // 標準英文情緒標籤
   private readonly STANDARD_EMOTIONS = ['joy', 'anger', 'sadness', 'fear', 'surprise', 'disgust', 'trust', 'anticipation'];
+  
+  // 中文情緒標籤到英文標籤的映射
+  private readonly EMOTION_MAPPING: {[key: string]: string} = {
+    '快樂': 'joy',
+    '生氣': 'anger',
+    '悲傷': 'sadness',
+    '恐懼': 'fear',
+    '驚訝': 'surprise',
+    '厭惡': 'disgust',
+    '信任': 'trust',
+    '期待': 'anticipation'
+  };
+
+  // 正面情緒標籤
+  private readonly POSITIVE_EMOTIONS = ['joy', 'trust', 'anticipation'];
+  
+  // 負面情緒標籤
+  private readonly NEGATIVE_EMOTIONS = ['anger', 'sadness', 'fear', 'disgust'];
+  
+  // 中性情緒標籤 (可能正面或負面取決於上下文)
+  private readonly NEUTRAL_EMOTIONS = ['surprise'];
 
   // 當前篩選狀態
   currentFilter: string = 'all';
