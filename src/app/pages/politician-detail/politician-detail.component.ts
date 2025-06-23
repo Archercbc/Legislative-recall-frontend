@@ -1006,4 +1006,26 @@ export class PoliticianDetailComponent {
       return 50 + radius * Math.cos(angle * Math.PI / 180);
     }
   }
+
+  // 取得罷免案狀態的樣式類別
+  getRecallStatusClass(): string {
+    if (!this.recallData || !this.recallData['罷免狀態']) {
+      return '';
+    }
+
+    const status = this.recallData['罷免狀態'];
+    
+    // 根據狀態返回不同的樣式類別
+    if (status.includes('成功')) {
+      return 'status-success';
+    } else if (status.includes('失敗')) {
+      return 'status-failed';
+    } else if (status.includes('進行中')) {
+      return 'status-ongoing';
+    } else if (status.includes('需補件')) {
+      return 'status-supplement';
+    } else {
+      return 'status-default';
+    }
+  }
 }
