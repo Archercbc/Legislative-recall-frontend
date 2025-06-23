@@ -108,6 +108,7 @@ export class TaiwanMapComponent implements OnInit {
 
   recallPoliticians: any[] = [];
   allLegislators: any[] = [];
+  displayPoliticians: any[] = []; // 新增：用於顯示在地圖上的立委（會被篩選）
 
   // 罷免狀態定義（簡化圖標）
   recallStatuses = [
@@ -188,6 +189,8 @@ export class TaiwanMapComponent implements OnInit {
               };
             });
 
+            this.displayPoliticians = [...this.recallPoliticians]; // 初始化顯示列表
+
             // 動態計算有被罷免立委的縣市
             this.calculateAreaCounts();
             
@@ -198,6 +201,7 @@ export class TaiwanMapComponent implements OnInit {
           },
           error: err => {
             this.recallPoliticians = [];
+            this.displayPoliticians = []; // 同時清空顯示列表
             // 即使錯誤也要關閉載入狀態
             this.isLoading = false;
             // 延遲執行，確保 View 更新後再計算座標
@@ -207,6 +211,7 @@ export class TaiwanMapComponent implements OnInit {
       },
       error: err => {
         this.allLegislators = [];
+        this.displayPoliticians = []; // 同時清空顯示列表
         // 載入錯誤時也要關閉載入狀態
         this.isLoading = false;
         // 延遲執行，確保 View 更新後再計算座標
@@ -533,11 +538,13 @@ export class TaiwanMapComponent implements OnInit {
     if (this.selectedStatuses.length === 0) {
       // 沒有選擇任何狀態，顯示所有縣市
       this.filteredAreaCounts = [...this.areaCounts];
+      this.displayPoliticians = [...this.recallPoliticians]; // 重置顯示列表
     } else {
       // 篩選選中狀態的立委，並更新縣市列表
       const filteredPoliticians = this.recallPoliticians.filter(r =>
         this.selectedStatuses.includes(r.status || r.recall_data?.狀態)
       );
+      this.displayPoliticians = filteredPoliticians; // 更新顯示列表
 
       // 重新計算篩選後的縣市數量
       const filteredAreaCounts: { [key: string]: number } = {};
@@ -571,6 +578,7 @@ export class TaiwanMapComponent implements OnInit {
   clearAllFilters() {
     this.selectedStatuses = [];
     this.filteredAreaCounts = [...this.areaCounts]; // 重置為全部縣市
+    this.displayPoliticians = [...this.recallPoliticians]; // 重置顯示列表
     this.resetMapHighlight();
   }
 
@@ -636,7 +644,7 @@ export class TaiwanMapComponent implements OnInit {
   // 獲取指定縣市的被罷免立委數量
   getRecallCountByCountyId(countyId: string): number {
     const countyName = this.getCountyName(countyId);
-    const count = this.recallPoliticians.filter(r => 
+    const count = this.displayPoliticians.filter(r => // 改為使用 displayPoliticians
       (r["行政區"] || r.recall_data?.行政區) === countyName
     ).length;
     return count;
