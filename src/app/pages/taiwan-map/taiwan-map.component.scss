@@ -337,6 +337,29 @@
   z-index: 10;
 }
 
+/* 地圖上的被罷免立委數量顯示 */
+.county-recall-count {
+  font-size: 28px; /* 加大字體 */
+  font-weight: 900; /* 使用最粗的字重以增加可讀性 */
+  fill: #2c3e50; /* 深藍灰色文字，對比度高 */
+  stroke: #ffffff; /* 添加白色外框 */
+  stroke-width: 1.5px; /* 外框寬度 */
+  paint-order: stroke; /* 確保外框在文字下方，使文字輪廓更清晰 */
+  pointer-events: none;
+  font-family: "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+  user-select: none;
+  animation: fadeIn 0.5s ease-in-out; /* 添加淡入動畫 */
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .map-tip {
   position: absolute;
   bottom: 20px;
