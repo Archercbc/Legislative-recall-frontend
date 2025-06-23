@@ -131,21 +131,21 @@
         </div>
         <div class="legislators-scroll-container">
             <div *ngFor="let politician of politicians" class="legislator-card"
-                [class.no-click]="politician.id === 'no-recall'"
-                (click)="politician.id !== 'no-recall' && goToPolitician(politician.id)">
-                <div class="legislator-image" *ngIf="politician.image_url && politician.id !== 'no-recall'">
+                [class.no-click]="politician.id.startsWith('no-recall')"
+                (click)="!politician.id.startsWith('no-recall') && goToPolitician(politician.id)">
+                <div class="legislator-image" *ngIf="politician.image_url && !politician.id.startsWith('no-recall')">
                     <img [src]="politician.image_url" [alt]="politician.name" onerror="this.src='assets/images/default-avatar.png';">
                 </div>
-                <div class="legislator-image" *ngIf="!politician.image_url && politician.id !== 'no-recall'">
+                <div class="legislator-image" *ngIf="!politician.image_url && !politician.id.startsWith('no-recall')">
                     <div class="default-avatar">{{ politician.name.charAt(0) || 'N' }}</div>
                 </div>
-                <div class="legislator-info" [class.no-recall-info]="politician.id === 'no-recall'">
-                    <h3 [class.no-recall-title]="politician.id === 'no-recall'">{{ politician.name }}</h3>
-                    <p class="constituency" *ngIf="politician.constituency && politician.id !== 'no-recall'">{{ politician.constituency }}</p>
-                    <p class="party" *ngIf="politician.party && politician.id !== 'no-recall'" [ngClass]="getPartyColorClass(politician.party)">
+                <div class="legislator-info" [class.no-recall-info]="politician.id.startsWith('no-recall')">
+                    <h3 [class.no-recall-title]="politician.id.startsWith('no-recall')">{{ politician.name }}</h3>
+                    <p class="constituency" *ngIf="politician.constituency && !politician.id.startsWith('no-recall')">{{ politician.constituency }}</p>
+                    <p class="party" *ngIf="politician.party && !politician.id.startsWith('no-recall')" [ngClass]="getPartyColorClass(politician.party)">
                         {{ politician.party }}
                     </p>
-                    <div class="recall-status" *ngIf="politician.recallStatus && politician.id !== 'no-recall'">
+                    <div class="recall-status" *ngIf="politician.recallStatus && !politician.id.startsWith('no-recall')">
                         <svg width="12" height="12" fill="currentColor" class="me-1">
                             <circle cx="6" cy="6" r="4" [attr.fill]="getStatusColor(politician.recallStatus)"/>
                         </svg>
@@ -153,7 +153,7 @@
                             {{ politician.recallStatus }}
                         </span>
                     </div>
-                    <div *ngIf="filterRecallOnly && politician.id !== 'no-recall'" class="recall-tip">此議員目前有罷免案進行中</div>
+                    <div *ngIf="filterRecallOnly && !politician.id.startsWith('no-recall')" class="recall-tip">此議員目前有罷免案進行中</div>
                 </div>
             </div>
             <div *ngIf="politicians.length === 0" class="no-data">

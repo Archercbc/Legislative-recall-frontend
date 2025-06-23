@@ -372,17 +372,14 @@ export class TaiwanMapComponent implements OnInit {
     // 更新選中縣市的樣式
     this.updateCountyStyles(id);
 
-    // 檢查該縣市是否有被罷免立委
-    const hasRecallPoliticians = this.recallPoliticians.some(r =>
+    // 使用 displayPoliticians 來檢查及獲取立委，它已經是篩選後的列表
+    const recallListInCounty = this.displayPoliticians.filter(r =>
       (r["行政區"] || r.recall_data?.行政區) === countyName
     );
 
-    if (hasRecallPoliticians) {
-      // 顯示該縣市的被罷免立委
-      const recallList = this.recallPoliticians.filter(r =>
-        (r["行政區"] || r.recall_data?.行政區) === countyName
-      );
-      this.politicians = recallList.map(r => ({
+    if (recallListInCounty.length > 0) {
+      // 如果篩選後該縣市還有立委，則顯示他們
+      this.politicians = recallListInCounty.map(r => ({
         id: r["姓名"],
         name: r["姓名"],
         image_url: r.image_url,
@@ -391,15 +388,32 @@ export class TaiwanMapComponent implements OnInit {
         recallStatus: r.status || r.recall_data?.狀態 || '網路聲量調查'
       }));
     } else {
-      // 該縣市沒有被罷免立委，設置特殊標記
-      this.politicians = [{
-        id: 'no-recall',
-        name: '該縣市沒有被提案罷免之立委',
-        image_url: '',
-        constituency: '',
-        party: '',
-        recallStatus: ''
-      }];
+      // 該縣市在目前的篩選條件下沒有符合的立委，或者該縣市本來就沒有罷免案
+      const hasAnyRecallInCounty = this.recallPoliticians.some(r =>
+        (r["行政區"] || r.recall_data?.行政區) === countyName
+      );
+
+      if (hasAnyRecallInCounty) {
+          // 本來有，但被篩選掉了
+          this.politicians = [{
+            id: 'no-recall-in-filter',
+            name: '該縣市在此篩選條件下無符合之立委',
+            image_url: '',
+            constituency: '',
+            party: '',
+            recallStatus: ''
+          }];
+      } else {
+          // 本來就沒有
+          this.politicians = [{
+            id: 'no-recall',
+            name: '該縣市沒有被提案罷免之立委',
+            image_url: '',
+            constituency: '',
+            party: '',
+            recallStatus: ''
+          }];
+      }
     }
   }
 
