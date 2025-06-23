@@ -273,7 +273,7 @@
         <div cCard class="chart-card">
           <div cCardHeader>
             <i class="cil-chart-pie"></i>
-            <span>Public Opinion Index (POI) - 總人數: {{ positiveCount + negativeCount }}</span>
+            <span>支持/反對圓餅圖- 總人數: {{ positiveCount + negativeCount }}</span>
             <span *ngIf="isLoadingTimeData" class="spinner-border spinner-border-sm ms-2"></span>
           </div>
           <div cCardBody style="overflow: visible; position: relative;">
@@ -337,7 +337,7 @@
       <div cCol xs="12">
         <div cCard class="mb-4">          <div cCardHeader>
             <i class="cil-chart-line"></i>
-            <span>Public Opinion Index (POI) 累計趨勢</span>
+            <span>支持/反對 累計趨勢</span>
             <div class="loading-indicator" *ngIf="isLoadingTimeData">
               <div class="spinner-border spinner-border-sm text-primary ms-2"></div>
               <small class="text-muted">載入中...</small>
