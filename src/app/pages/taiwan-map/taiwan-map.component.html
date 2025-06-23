@@ -89,6 +89,7 @@
         <svg [attr.viewBox]="viewBox" class="taiwan-svg" preserveAspectRatio="xMidYMid meet">
             <g *ngFor="let location of taiwanMap.locations">
                 <path
+                    #countyPath
                     [attr.d]="location.path"
                     [attr.id]="location.id"
                     [attr.fill]="getCountyColor(location.id)"
@@ -97,9 +98,19 @@
                     (click)="onCountyClick(location.id, getCountyName(location.id))"
                     (mouseenter)="countyHover(location.id, true)"
                     (mouseleave)="countyHover(location.id, false)"
-                    [attr.title]="getCountyName(location.id)"
+                    [attr.title]="getCountyName(location.id) + (shouldShowRecallCount(location.id) ? ' (' + getRecallCountByCountyId(location.id) + '位立委被罷免)' : '')"
                 />
-                <title>{{ getCountyName(location.id) }}</title>
+                <!-- 在地圖上顯示被罷免立委數量 -->
+                <text *ngIf="shouldShowRecallCount(location.id) && countyLabelPositions[location.id]" 
+                    class="county-recall-count"
+                    [attr.x]="getCountyLabelPosition(location.id).x"
+                    [attr.y]="getCountyLabelPosition(location.id).y"
+                    text-anchor="middle"
+                    dominant-baseline="central">
+                    {{ getRecallCountByCountyId(location.id) }}
+                </text>
+                
+                <title>{{ getCountyName(location.id) }}{{ shouldShowRecallCount(location.id) ? ' (' + getRecallCountByCountyId(location.id) + '位立委被罷免)' : '' }}</title>
             </g>
         </svg>
         <div *ngIf="!selectedCounty && !selectedParty" class="map-tip">

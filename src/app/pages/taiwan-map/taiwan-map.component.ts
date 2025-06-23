@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChildren, QueryList, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import taiwan from '@svg-maps/taiwan';
@@ -151,9 +151,13 @@ export class TaiwanMapComponent implements OnInit {
 
   showUsageModal: boolean = true; // 預設一進來就顯示
 
-  constructor(private router: Router, private dataService: DataService) {
-    this.initCountyPopulation();
-  }
+  // 讓 ViewChildren 可以查詢到 SVG 中的 path 元素
+  @ViewChildren('countyPath') countyPaths!: QueryList<ElementRef<SVGPathElement>>;
+
+  // 移除手動設定的座標，改為初始化一個空物件
+  countyLabelPositions: Record<string, { x: number, y: number }> = {};
+
+  constructor(private router: Router, private dataService: DataService) {}
 
   ngOnInit() {
     // 檢查 localStorage
@@ -188,11 +192,15 @@ export class TaiwanMapComponent implements OnInit {
             
             // 所有資料載入完成，關閉載入狀態
             this.isLoading = false;
+            // 延遲執行，確保 View 更新後再計算座標
+            setTimeout(() => this.calculateAllCountyLabelPositions(), 0);
           },
           error: err => {
             this.recallPoliticians = [];
             // 即使錯誤也要關閉載入狀態
             this.isLoading = false;
+            // 延遲執行，確保 View 更新後再計算座標
+            setTimeout(() => this.calculateAllCountyLabelPositions(), 0);
           }
         });
       },
@@ -200,6 +208,82 @@ export class TaiwanMapComponent implements OnInit {
         this.allLegislators = [];
         // 載入錯誤時也要關閉載入狀態
         this.isLoading = false;
+        // 延遲執行，確保 View 更新後再計算座標
+        setTimeout(() => this.calculateAllCountyLabelPositions(), 0);
+      }
+    });
+  }
+
+  calculateAllCountyLabelPositions() {
+    // 確保 countyPaths 已經被初始化
+    if (!this.countyPaths) {
+      return;
+    }
+    
+    this.countyPaths.forEach(pathRef => {
+      const pathElement = pathRef.nativeElement;
+      const countyId = pathElement.id;
+      if (countyId) {
+        try {
+          const bbox = pathElement.getBBox();
+          let centerX = bbox.x + bbox.width / 2;
+          let centerY = bbox.y + bbox.height / 2;
+          
+          // 針對特定縣市進行手動微調，以修正BBox中心點的視覺偏差
+          switch(countyId) {
+            case 'new-taipei-city': // 新北市，BBox中心點在台北市內，需大幅調整
+              centerX = bbox.x + bbox.width * 0.25; 
+              centerY = bbox.y + bbox.height * 0.6;
+              break;
+            case 'taipei-city': // 台北市
+              centerY += 5; // 稍微下移，避免與新北市重疊
+              break;
+            case 'keelung-city': // 基隆市
+              centerY -= 8;
+              centerX += 5;
+              break;
+            case 'changhua-county': // 彰化縣
+              centerX -= 10;
+              break;
+            case 'nantou-county': // 南投縣，往右移，更靠近縣市視覺中心
+              centerX += 15;
+              break;
+            case 'yunlin-county': // 雲林縣
+              centerY -= 5;
+              break;
+            case 'chiayi-city': // 嘉義市，形狀小，需特別調整
+              centerX -= 8;
+              break;
+            case 'chiayi-county': // 嘉義縣，環繞嘉義市
+              centerY += 15;
+              centerX -= 10;
+              break;
+            case 'hualien-county': // 花蓮縣，修正方向，需大幅右移
+              centerX += 10; 
+              centerY -= 20;
+              break;
+            case 'taitung-county': // 台東縣，修正方向，需大幅右移
+              centerX -= 45;
+              centerY -= 30;
+              break;
+            case 'penghu-county': // 澎湖縣
+              centerX -= 20;
+              break;
+            case 'kaohsiung-city': // 高雄市，微調
+              centerY -= 10;
+              break;
+            case 'tainan-city': // 台南市
+              centerY -= 5;
+              break;
+          }
+
+          this.countyLabelPositions[countyId] = { x: centerX, y: centerY };
+        } catch (e) {
+          // 如果 getBBox 在隱藏的元素上調用，可能會拋出錯誤
+          console.error(`Could not get BBox for ${countyId}:`, e);
+          // 提供一個預設值以避免崩潰
+          this.countyLabelPositions[countyId] = { x: 0, y: 0 };
+        }
       }
     });
   }
@@ -546,5 +630,24 @@ export class TaiwanMapComponent implements OnInit {
   closeUsageModal() {
     this.showUsageModal = false;
     localStorage.setItem('taiwanMapUsageSeen', '1');
+  }
+
+  // 獲取指定縣市的被罷免立委數量
+  getRecallCountByCountyId(countyId: string): number {
+    const countyName = this.getCountyName(countyId);
+    const count = this.recallPoliticians.filter(r => 
+      (r["行政區"] || r.recall_data?.行政區) === countyName
+    ).length;
+    return count;
+  }
+
+  // 檢查是否應該顯示數字（只有當數量大於0時才顯示）
+  shouldShowRecallCount(countyId: string): boolean {
+    return this.getRecallCountByCountyId(countyId) > 0;
+  }
+
+  // 獲取縣市標籤位置
+  getCountyLabelPosition(countyId: string): { x: number, y: number } {
+    return this.countyLabelPositions[countyId] || { x: 0, y: 0 };
   }
 }
