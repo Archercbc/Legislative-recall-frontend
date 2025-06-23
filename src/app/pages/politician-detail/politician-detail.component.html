@@ -39,10 +39,31 @@
               <div class="progress-label">罷免門檻</div>
               <div class="progress-value">{{ recallData["罷免門檻"] }}</div>
             </div>
+            
+            <!-- 三階投票數據 (如果有) -->
+            <div class="progress-item" *ngIf="recallData['三階投票有效同意數']">
+              <div class="progress-label">三階投票有效同意數</div>
+              <div class="progress-value">{{ recallData["三階投票有效同意數"] }}</div>
+            </div>
+            <div class="progress-item" *ngIf="recallData['三階投票有效不同意數']">
+              <div class="progress-label">三階投票有效不同意數</div>
+              <div class="progress-value">{{ recallData["三階投票有效不同意數"] }}</div>
+            </div>
+            <div class="progress-item" *ngIf="recallData['三階投票無效票數']">
+              <div class="progress-label">三階投票無效票數</div>
+              <div class="progress-value">{{ recallData["三階投票無效票數"] }}</div>
+            </div>
+            
+            <!-- 累積人數 (如果有) -->
+            <div class="progress-item" *ngIf="recallData['累積連署人數']">
+              <div class="progress-label">累積連署人數</div>
+              <div class="progress-value">{{ recallData["累積連署人數"] }}</div>
+            </div>
+            
             <!-- 正負面聲量比值顯示 - 黑白雙色長條圖 -->
             <div class="sentiment-ratio-container">
               <div class="sentiment-ratio-header">
-                <span class="ratio-label">網路聲量比值</span>
+                <span class="ratio-label">Public Opinion Index (POI)</span>
                 <span class="ratio-total">{{ getTotalUsers() }} 總聲量</span>
               </div>
 
@@ -73,15 +94,25 @@
               </div>
 
               
-            </div>
-            <div class="progress-item">
+            </div>            <div class="progress-item">
               <div class="progress-label">行政區</div>
               <div class="progress-value">{{ recallData["行政區"] }}</div>
             </div>
             <div class="progress-item">
-              <div class="progress-label">罷免狀態</div>
+              <div class="progress-label">原始狀態</div>
               <div class="progress-value status">
                 {{ recallData["狀態"] || '網路聲量調查' }}
+              </div>
+            </div>
+            <div class="progress-item" *ngIf="recallData['罷免狀態']">
+              <div class="progress-label">罷免案階段</div>
+              <div class="progress-value status" [ngClass]="getRecallStatusClass()">
+                {{ recallData["罷免狀態"] }}
+              </div>
+            </div>
+            <div class="progress-item description" *ngIf="recallData['罷免狀態描述']">
+              <div class="progress-description">
+                {{ recallData["罷免狀態描述"] }}
               </div>
             </div>
             <div class="social-links" *ngIf="recallData['社群連結']">
@@ -242,7 +273,7 @@
         <div cCard class="chart-card">
           <div cCardHeader>
             <i class="cil-chart-pie"></i>
-            <span>支持/反對罷免用戶 - 總人數: {{ positiveCount + negativeCount }}</span>
+            <span>支持/反對圓餅圖- 總人數: {{ positiveCount + negativeCount }}</span>
             <span *ngIf="isLoadingTimeData" class="spinner-border spinner-border-sm ms-2"></span>
           </div>
           <div cCardBody style="overflow: visible; position: relative;">
@@ -301,13 +332,12 @@
 
     </div>
 
-    <!-- 罷免支持度趨勢 - 獨立一列 -->
+    <!-- Public Opinion Index (POI) 趨勢 - 獨立一列 -->
     <div cRow>
       <div cCol xs="12">
-        <div cCard class="mb-4">
-          <div cCardHeader>
+        <div cCard class="mb-4">          <div cCardHeader>
             <i class="cil-chart-line"></i>
-            <span>罷免支持度趨勢</span>
+            <span>支持/反對 累計趨勢</span>
             <div class="loading-indicator" *ngIf="isLoadingTimeData">
               <div class="spinner-border spinner-border-sm text-primary ms-2"></div>
               <small class="text-muted">載入中...</small>

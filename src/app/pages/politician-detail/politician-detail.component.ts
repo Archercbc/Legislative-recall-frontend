@@ -148,11 +148,10 @@ export class PoliticianDetailComponent {
         callbacks: {
           title: function(context: any) {
             return context[0].label || '';
-          },
-          label: function(context: any) {
+          },          label: function(context: any) {
             const label = context.dataset.label || '';
             const value = context.parsed.y;
-            return `${label}: ${value}`;
+            return `${label}累計: ${value} 人`;
           }
         },
         external: function(context: any) {
@@ -178,12 +177,11 @@ export class PoliticianDetailComponent {
           display: true,
           text: '時間'
         }
-      },
-      y: {
+      },      y: {
         display: true,
         title: {
           display: true,
-          text: '數量'
+          text: '累計人數'
         }
       }
     },
@@ -518,11 +516,14 @@ export class PoliticianDetailComponent {
 
     // 按日期排序月份
     const sortedMonths = Object.keys(monthlyStats).sort();
-    
-    // 準備時間序列數據
+      // 準備時間序列數據
     const labels: string[] = [];
     const supportData: number[] = [];
     const opposeData: number[] = [];
+    
+    // 用於累加計算
+    let cumulativeSupport = 0;
+    let cumulativeOppose = 0;
     
     // 處理每個月份的數據
     sortedMonths.forEach(month => {
@@ -546,9 +547,13 @@ export class PoliticianDetailComponent {
           const [year, monthNum] = month.split('-');
           labels.push(`${year}/${monthNum}`);
           
-          // 添加支持和反對數據
-          supportData.push(supportCount);
-          opposeData.push(opposeCount);
+          // 計算累加值
+          cumulativeSupport += supportCount;
+          cumulativeOppose += opposeCount;
+          
+          // 添加累加後的支持和反對數據
+          supportData.push(cumulativeSupport);
+          opposeData.push(cumulativeOppose);
         }
       }
     });
@@ -1004,6 +1009,28 @@ export class PoliticianDetailComponent {
       return 50 + radius * Math.sin(angle * Math.PI / 180);
     } else { // left
       return 50 + radius * Math.cos(angle * Math.PI / 180);
+    }
+  }
+
+  // 取得罷免案狀態的樣式類別
+  getRecallStatusClass(): string {
+    if (!this.recallData || !this.recallData['罷免狀態']) {
+      return '';
+    }
+
+    const status = this.recallData['罷免狀態'];
+    
+    // 根據狀態返回不同的樣式類別
+    if (status.includes('成功')) {
+      return 'status-success';
+    } else if (status.includes('失敗')) {
+      return 'status-failed';
+    } else if (status.includes('進行中')) {
+      return 'status-ongoing';
+    } else if (status.includes('需補件')) {
+      return 'status-supplement';
+    } else {
+      return 'status-default';
     }
   }
 }

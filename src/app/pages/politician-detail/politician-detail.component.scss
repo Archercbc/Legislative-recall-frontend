@@ -193,6 +193,53 @@ $spacing-lg: 24px;
     .progress-value {
       font-weight: 600;
       color: #333;
+
+      &.status {
+        &.status-success {
+          color: #10b981; /* 綠色 */
+        }
+        
+        &.status-failed {
+          color: #ef4444; /* 紅色 */
+        }
+        
+        &.status-ongoing {
+          color: #3b82f6; /* 藍色 */
+        }
+        
+        &.status-supplement {
+          color: #f59e0b; /* 黃色 */
+        }
+        
+        &.status-default {
+          color: #6b7280; /* 灰色 */
+        }
+      }
+    }
+
+    // 罷免狀態樣式
+    .status {
+      font-weight: 600;
+      
+      &.status-success {
+        color: #10b981; /* 綠色 */
+      }
+      
+      &.status-failed {
+        color: #ef4444; /* 紅色 */
+      }
+      
+      &.status-ongoing {
+        color: #3b82f6; /* 藍色 */
+      }
+      
+      &.status-supplement {
+        color: #f59e0b; /* 黃色 */
+      }
+      
+      &.status-default {
+        color: #6b7280; /* 灰色 */
+      }
     }
   }
 

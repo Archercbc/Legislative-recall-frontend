@@ -116,6 +116,7 @@ export class TaiwanMapComponent implements OnInit {
     { key: '三階投票進行中', label: '三階投票進行中' },
     { key: '三階罷免成功', label: '三階罷免成功' },
     { key: '三階罷免失敗', label: '三階罷免失敗' },
+    { key: '二階補件中', label: '二階補件中'}
   ];
 
   // 區域名稱對應地圖 id
