@@ -68,6 +68,26 @@
   font-family: "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
 }
 
+/* --- 右上角投票日期顯示 --- */
+.vote-date-display {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  background-color: #c0392b; /* 使用較深的紅色以示重要 */
+  color: white;
+  padding: 0.8rem 1.2rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  z-index: 1001; /* 確保在最上層 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease;
+}
+
+.vote-date-display:hover {
+  transform: scale(1.05);
+}
+
 /* --- 左側篩選區塊容器 (現在只做佈局，不帶卡片樣式) --- */
 .filter-panel {
   width: 760px; /* 根據兩個卡片的總寬度調整 */
