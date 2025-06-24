@@ -357,7 +357,22 @@ export class PoliticianDetailComponent {
     // 2. 時間序列圖表
     if (shouldUpdateAll || chartTypes.includes('timeseries')) {
       if (data.time_series && data.time_series.labels && data.time_series.labels.length > 0) {
-        this.demoLineChartData = data.time_series;
+        
+        // 確保數據是累積的
+        const cumulativeDatasets = data.time_series.datasets.map((dataset: any) => {
+          let cumulativeSum = 0;
+          const cumulativeData = dataset.data.map((value: number) => {
+            cumulativeSum += value;
+            return cumulativeSum;
+          });
+          return { ...dataset, data: cumulativeData };
+        });
+
+        this.demoLineChartData = {
+          ...data.time_series,
+          datasets: cumulativeDatasets
+        };
+        
       } else {
         console.log('crawler_data 中沒有時間序列數據');
       }
