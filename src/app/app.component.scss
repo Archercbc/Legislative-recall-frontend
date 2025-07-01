@@ -51,6 +51,29 @@ html, body {
     min-height: 100vh;
   }
 
-  
-  
-  
+  .visitor-stats {
+    font-size: 0.85rem;
+    color: #fff;
+    margin-top: 0.5rem;
+    display: flex;
+    gap: 1rem;
+    
+    .stat-item {
+      display: inline-flex;
+      align-items: center;
+      
+      i {
+        margin-right: 4px;
+      }
+    }
+  }
+
+  .visitor-stats-footer {
+    font-size: 0.8rem;
+    color: #aaa;
+    margin-top: 0.5rem;
+    text-align: center;
+  }
+
+
+

@@ -7,6 +7,7 @@ import { environment } from '../../environments/environment';
 })
 export class DataService {
   private readonly apiUrl = environment.apiUrl + '/api/legislators';
+  private readonly baseUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) { }
 
@@ -46,4 +47,18 @@ export class DataService {
     return this.http.get(`${this.apiUrl}/${name}/date-range`);
   }
 
+  // 獲取網站訪問統計
+  getVisitorStats(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/api/visitor/stats`);
+  }
+
+  // 記錄網站訪問
+  recordVisit(page: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/api/visitor/record`, { page });
+  }
+
+  // 初始化訪問計數
+  initVisitorStats(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/api/visitor/init`);
+  }
 }

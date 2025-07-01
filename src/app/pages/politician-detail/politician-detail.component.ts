@@ -5,9 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { DataService } from '../../services/data.service';
 import { HttpClientModule } from '@angular/common/http';
 import { NgChartsModule } from 'ng2-charts';
-import {
-  ButtonDirective,
-} from '@coreui/angular';
+
 import { IconModule } from '@coreui/icons-angular';
 
 import { ChartjsComponent } from '@coreui/angular-chartjs';
@@ -23,7 +21,6 @@ import { Tooltip, type ChartData } from 'chart.js'; // 確保導入 ChartData �
     NgChartsModule,
     ChartjsComponent,
     // CoreUI Components - 確保都正確導入
-    ButtonDirective,
     IconModule
   ],
   templateUrl: './politician-detail.component.html',
@@ -94,6 +91,7 @@ export class PoliticianDetailComponent {
   // 數據時間範圍限制
   minDate: string = '';
   maxDate: string = '';
+  oneYearAgoDate: string = '';  // 新增一年前日期
 
   // 圓餅圖配置 - 美化 tooltip
   doughnutOptions = {
@@ -256,16 +254,20 @@ export class PoliticianDetailComponent {
 
   private loadDateRange(): void {
     this.dataService.getLegislatorDateRange(this.politicianId).subscribe({
-      next: (dateRangeData) => {
-        // 設定日期範圍限制和初始值
-        if (dateRangeData && dateRangeData.start_date && dateRangeData.end_date) {
-          this.minDate = dateRangeData.start_date;
-          this.maxDate = dateRangeData.end_date;
+      next: (dateRangeData) => {          // 設定日期範圍限制和初始值
+          if (dateRangeData && dateRangeData.start_date && dateRangeData.end_date) {
+            this.minDate = dateRangeData.start_date;
+            this.maxDate = dateRangeData.end_date;
 
-          // 設定初始日期範圍為全部時間（從最早到最晚）
-          this.startDate = this.minDate;
-          this.endDate = this.maxDate;
-        }
+            // 計算一年前的日期
+            const oneYearAgo = new Date();
+            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+            this.oneYearAgoDate = oneYearAgo.toISOString().split('T')[0];
+
+            // 設定初始日期範圍為最近一年
+            this.startDate = this.oneYearAgoDate;
+            this.endDate = this.maxDate;
+          }
       },
       error: (error) => {
         console.error('❌ 載入日期範圍失敗:', error);
@@ -297,9 +299,11 @@ export class PoliticianDetailComponent {
     }
     
     // 4. 月份情感統計 - 從 legislators 集合獲取並轉換為時間序列數據
-    if (data.月份情感統計 && Object.keys(data.月份情感統計).length > 0) {
-      this.updateTimeSeriesFromMonthlyStats(data.月份情感統計);
-    }
+    if (data.月份情感統計 && Object.keys(data.月份情感統計).length > 0) {    // 只顯示一年內的資料
+    const filteredMonthlyData = this.filterToLastYear(data.月份情感統計);
+    // 處理時間序列
+    this.updateTimeSeriesFromMonthlyStats(filteredMonthlyData);
+  }
   }
   // 重新設計：統一的數據載入方法
   private loadCrawlerData(
@@ -960,13 +964,13 @@ export class PoliticianDetailComponent {
 
     if (maxWeight === minWeight) return 18;
 
-    // 根據權重計算大小 (14-32px)
-    const minSize = 14;
-    const maxSize = 36;
+    // 根據權重計算大小 (16-48px)
+    const minSize = 16;
+    const maxSize = 48;
     const ratio = (weight - minWeight) / (maxWeight - minWeight);
 
     // 前幾個（權重高的）詞語更大
-    const sizeBonus = index < 3 ? 4 : index < 6 ? 2 : 0;
+    const sizeBonus = index < 3 ? 6 : index < 6 ? 4 : index < 10 ? 2 : 0;
 
     return Math.round(minSize + (maxSize - minSize) * ratio) + sizeBonus;
   }
@@ -1047,5 +1051,28 @@ export class PoliticianDetailComponent {
     } else {
       return 'status-default';
     }
+  }
+
+  // 增加一個方法，用來篩選一年內的月份資料
+  private filterToLastYear(monthlyData: any): any {
+    // 獲取當前日期
+    const now = new Date();
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(now.getFullYear() - 1);
+    oneYearAgo.setDate(1); // 設為該月第一天
+    
+    // 轉換為 YYYY-MM 格式，方便比較
+    const oneYearAgoStr = `${oneYearAgo.getFullYear()}-${String(oneYearAgo.getMonth() + 1).padStart(2, '0')}`;
+    
+    // 篩選月份資料
+    const filteredData: any = {};
+    Object.keys(monthlyData).forEach(monthKey => {
+      // 確保月份格式為 YYYY-MM
+      if (monthKey >= oneYearAgoStr) {
+        filteredData[monthKey] = monthlyData[monthKey];
+      }
+    });
+    
+    return filteredData;
   }
 }
