@@ -1005,169 +1005,58 @@ c-chart canvas {
   }
 }
 
-/* 舊的時間篩選器樣式保留 */
-.time-filter-card {
-  margin-bottom: 1.5rem;
-}
-
-.time-filter-container {
-  .date-inputs {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-
-    .input-group {
-      display: flex;
-      flex-direction: column;
-      min-width: 150px;
-
-      label {
-        font-size: 0.875rem;
-        font-weight: 500;
-        margin-bottom: 0.25rem;
-        color: #6c757d;
-      }
-
-      .form-control {
-        padding: 0.375rem 0.75rem;
-        border: 1px solid #ced4da;
-        border-radius: 0.375rem;
-        font-size: 0.875rem;
-
-        &:focus {
-          border-color: #86b7fe;
-          outline: 0;
-          box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-        }
-      }
+/* 日期篩選按鈕 */
+.date-filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  
+  button {
+    min-width: 80px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    
+    &.active {
+      background-color: $primary-color;
+      color: white;
+      font-weight: 500;
+      box-shadow: 0 2px 5px rgba(37, 99, 235, 0.2);
     }
-  }
-
-  .quick-filters {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-
-    button {
-      font-size: 0.75rem;
-      padding: 0.25rem 0.75rem;
-    }
-  }
-
-  .filter-info {
-    padding: 0.5rem;
-    background-color: #f8f9fa;
-    border-radius: 0.375rem;
-    border-left: 3px solid #0d6efd;
-
-    small {
-      font-size: 0.75rem;
+    
+    &:hover:not(.active) {
+      background-color: #e9eef7;
     }
   }
 }
 
-/* 響應式設計 */
-@media (max-width: 768px) {
-  .time-filter-container {
-    .date-inputs {
-      flex-direction: column;
-
-      .input-group {
-        min-width: 100%;
-      }
-    }
-
-    .quick-filters {
-      justify-content: center;
-
-      button {
-        flex: 1;
-        min-width: 80px;
-      }
+.filter-card {
+  margin-bottom: 16px;
+  box-shadow: $shadow-sm;
+  border-radius: $border-radius;
+  border: 1px solid $border-light;
+  
+  .card-header {
+    background-color: #f8fafc;
+    border-bottom: 1px solid $border-light;
+    padding: 12px 16px;
+    
+    i {
+      margin-right: 8px;
+      color: $primary-color;
     }
   }
-}
-
-/* CoreUI 增強樣式 */
-.chart-container {
-  position: relative;
-
-  canvas {
-    max-height: 100% !important;
-  }
-}
-
-/* 詞雲 Badge 樣式 */
-.word-badge {
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin: 2px;
-
-  &:hover {
-    transform: scale(1.1);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  }
-}
-
-/* 新的詞雲容器 */
-.wordcloud-container-new {
-  .word-badge {
-    animation: fadeInUp 0.3s ease;
-    animation-fill-mode: both;
+  
+  .card-body {
+    padding: 12px;
   }
 
-  .word-badge:nth-child(1) { animation-delay: 0.1s; }
-  .word-badge:nth-child(2) { animation-delay: 0.2s; }
-  .word-badge:nth-child(3) { animation-delay: 0.3s; }
-  .word-badge:nth-child(4) { animation-delay: 0.4s; }
-  .word-badge:nth-child(5) { animation-delay: 0.5s; }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
+  &.full-width {
+    width: 100%;
+    margin-bottom: 20px;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* 卡片增強 */
-c-card {
-  transition: all 0.3s ease;
-  border: 1px solid rgba(0, 0, 0, 0.125);
-
-  &:hover {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-  }
-}
-
-/* 圖表卡片特殊樣式 */
-.chart-card {
-  .chart-container {
-    min-height: 350px;
-  }
-
-  // 雷達圖特別大一點
-  &:has(c-chart[type="radar"]) .chart-container,
-  .radar-chart-container {
-    height: 400px !important;
-    min-height: 400px;
-  }
-}
-
-/* 統計數字樣式 */
-.fs-4 {
-  font-size: 1.5rem !important;
-}
-
-.fw-semibold {
-  font-weight: 600 !important;
 }
 
 /* 載入狀態 */
@@ -1273,6 +1162,71 @@ c-badge {
     min-height: 100px;
     color: $text-gray;
 }
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .time-filter-container {
+    .date-inputs {
+      flex-direction: column;
+
+      .input-group {
+        min-width: 100%;
+      }
+    }
+
+    .quick-filters {
+      justify-content: center;
+
+      button {
+        flex: 1;
+        min-width: 80px;
+      }
+    }
+  }
+}
+
+/* CoreUI 增強樣式 */
+.chart-container {
+  position: relative;
+
+  canvas {
+    max-height: 100% !important;
+  }
+}
+
+/* 卡片增強 */
+c-card {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.125);
+
+  &:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+}
+
+/* 圖表卡片特殊樣式 */
+.chart-card {
+  .chart-container {
+    min-height: 350px;
+  }
+
+  // 雷達圖特別大一點
+  &:has(c-chart[type="radar"]) .chart-container,
+  .radar-chart-container {
+    height: 400px !important;
+    min-height: 400px;
+  }
+}
+
+/* 統計數字樣式 */
+.fs-4 {
+  font-size: 1.5rem !important;
+}
+
+.fw-semibold {
+  font-weight: 600 !important;
 }
 
 /* 載入中 */

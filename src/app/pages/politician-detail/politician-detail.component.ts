@@ -257,7 +257,10 @@ export class PoliticianDetailComponent {
       next: (dateRangeData) => {          // 設定日期範圍限制和初始值
           if (dateRangeData && dateRangeData.start_date && dateRangeData.end_date) {
             this.minDate = dateRangeData.start_date;
-            this.maxDate = dateRangeData.end_date;
+            
+            // 強制設置 maxDate 為今天
+            const today = new Date();
+            this.maxDate = today.toISOString().split('T')[0];
 
             // 計算一年前的日期
             const oneYearAgo = new Date();
@@ -267,6 +270,9 @@ export class PoliticianDetailComponent {
             // 設定初始日期範圍為最近一年
             this.startDate = this.oneYearAgoDate;
             this.endDate = this.maxDate;
+            
+            // 設置默認篩選為一年內
+            this.setQuickFilter('1year');
           }
       },
       error: (error) => {
@@ -362,20 +368,58 @@ export class PoliticianDetailComponent {
     if (shouldUpdateAll || chartTypes.includes('timeseries')) {
       if (data.time_series && data.time_series.labels && data.time_series.labels.length > 0) {
         
+        // 準備數據，保持原本標籤格式
+        const originalLabels = [...data.time_series.labels];
+        const originalDatasets = data.time_series.datasets;
+        
         // 確保數據是累積的
-        const cumulativeDatasets = data.time_series.datasets.map((dataset: any) => {
+        const cumulativeDatasets = originalDatasets.map((dataset: any) => {
           let cumulativeSum = 0;
           const cumulativeData = dataset.data.map((value: number) => {
             cumulativeSum += value;
             return cumulativeSum;
           });
-          return { ...dataset, data: cumulativeData };
+          
+          // 強制添加今天的點（數據為0，但累計值保持不變）
+          const finalCumulativeSum = cumulativeSum; // 保存最終累計值
+          
+          return { 
+            ...dataset, 
+            data: [...cumulativeData, finalCumulativeSum] // 添加今天的累計值
+          };
         });
 
+        // 生成今天的標籤，格式與前面的標籤保持一致
+        const today = new Date();
+        let todayLabel: string;
+        
+        // 檢查最後一個標籤的格式，決定今天標籤的格式
+        const lastLabel = originalLabels[originalLabels.length - 1];
+        if (lastLabel && lastLabel.includes('/') && lastLabel.split('/').length === 2) {
+          // 如果是 MM/DD 格式，今天也用 MM/DD
+          todayLabel = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
+        } else if (lastLabel && lastLabel.includes('-') && lastLabel.split('-').length === 3) {
+          // 如果是 YYYY-MM-DD 格式，今天也用 YYYY-MM-DD
+          todayLabel = today.toISOString().split('T')[0];
+        } else if (lastLabel && lastLabel.includes('-') && lastLabel.split('-').length === 2) {
+          // 如果是 YYYY-MM 格式，今天也用 YYYY-MM
+          todayLabel = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        } else {
+          // 預設使用 MM/DD 格式
+          todayLabel = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
+        }
+        
+        // 檢查最後一個標籤是否已經是今天
+        const finalLabels = (lastLabel !== todayLabel) ? 
+          [...originalLabels, todayLabel] : 
+          originalLabels;
+
         this.demoLineChartData = {
-          ...data.time_series,
+          labels: finalLabels,
           datasets: cumulativeDatasets
         };
+        
+        console.log(`時間序列包含今天的點: ${finalLabels[finalLabels.length - 1]}`);
         
       } else {
         console.log('crawler_data 中沒有時間序列數據');
@@ -533,8 +577,11 @@ export class PoliticianDetailComponent {
       return;
     }
 
+    // 使用 adjustDataPointDensity 根據當前篩選器調整數據點密度
+    const adjustedMonthlyStats = this.adjustDataPointDensity(monthlyStats, this.currentFilter);
+
     // 按日期排序月份
-    const sortedMonths = Object.keys(monthlyStats).sort();
+    const sortedMonths = Object.keys(adjustedMonthlyStats).sort();
       // 準備時間序列數據
     const labels: string[] = [];
     const supportData: number[] = [];
@@ -546,7 +593,7 @@ export class PoliticianDetailComponent {
     
     // 處理每個月份的數據
     sortedMonths.forEach(month => {
-      const monthData = monthlyStats[month];
+      const monthData = adjustedMonthlyStats[month];
       
       // 確保月份格式正確 (YYYY-MM)
       if (!month.match(/^\d{4}-\d{2}$/)) {
@@ -562,9 +609,9 @@ export class PoliticianDetailComponent {
         
         // 只添加有數據的月份
         if (supportCount > 0 || opposeCount > 0) {
-          // 格式化標籤：從 YYYY-MM 轉換為 YYYY/MM 格式
+          // 格式化標籤：從 YYYY-MM 轉換為 MM/DD 格式（假設每月第一天）
           const [year, monthNum] = month.split('-');
-          labels.push(`${year}/${monthNum}`);
+          labels.push(`${monthNum}/01`);
           
           // 計算累加值
           cumulativeSupport += supportCount;
@@ -576,6 +623,40 @@ export class PoliticianDetailComponent {
         }
       }
     });
+    
+    // 生成今天的標籤，格式與前面的標籤保持一致
+    const today = new Date();
+    let todayLabel: string;
+    
+    // 檢查是否有現有標籤來決定格式
+    if (labels.length > 0) {
+      const lastLabel = labels[labels.length - 1];
+      if (lastLabel.includes('/') && lastLabel.split('/').length === 2) {
+        // 如果是 MM/DD 格式，今天也用 MM/DD
+        todayLabel = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
+      } else if (lastLabel.includes('-') && lastLabel.split('-').length === 3) {
+        // 如果是 YYYY-MM-DD 格式，今天也用 YYYY-MM-DD
+        todayLabel = today.toISOString().split('T')[0];
+      } else if (lastLabel.includes('-') && lastLabel.split('-').length === 2) {
+        // 如果是 YYYY-MM 格式，今天也用 YYYY-MM
+        todayLabel = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+      } else {
+        // 預設使用 MM/DD 格式
+        todayLabel = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
+      }
+    } else {
+      // 如果沒有現有標籤，預設使用 MM/DD 格式
+      todayLabel = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
+    }
+    
+    // 檢查最後一個標籤是否已經是今天
+    const lastLabel = labels[labels.length - 1];
+    if (!lastLabel || lastLabel !== todayLabel) {
+      labels.push(todayLabel);
+      // 今天的數據為0，但累計值保持不變
+      supportData.push(cumulativeSupport);
+      opposeData.push(cumulativeOppose);
+    }
     
     // 如果有數據，更新圖表
     if (labels.length > 0) {
@@ -607,33 +688,41 @@ export class PoliticianDetailComponent {
 
   // 統一的情感圖表更新方法
   private updateSentimentChart(sentimentData: any): void {
+    console.log('更新情感分析圓餅圖，原始數據：', JSON.stringify(sentimentData));
+    
     if (!sentimentData) {
       console.log('沒有情感分析數據');
-      this.sentimentChartData = { labels: [], datasets: [{ data: [], backgroundColor: [] }] };
-      this.positiveCount = 0;
-      this.negativeCount = 0;
       return;
     }
 
     // 支持多種可能的數據格式
     // 格式1: { 反對罷免人數: X, 支持罷免人數: Y }
     // 格式2: { oppose_count: X, support_count: Y }
-    this.positiveCount = 
-      sentimentData.反對罷免人數 !== undefined ? sentimentData.反對罷免人數 : 
-      sentimentData.oppose_count !== undefined ? sentimentData.oppose_count : 
-      0;
-      
-    this.negativeCount = 
-      sentimentData.支持罷免人數 !== undefined ? sentimentData.支持罷免人數 : 
-      sentimentData.support_count !== undefined ? sentimentData.support_count : 
-      0;
+    // 格式3: { positive: X, negative: Y }
+    
+    // 先嘗試獲取所有可能的值
+    const opposeCounts = [
+      sentimentData.反對罷免人數,
+      sentimentData.oppose_count,
+      sentimentData.positive
+    ].filter(val => val !== undefined && val !== null);
+    
+    const supportCounts = [
+      sentimentData.支持罷免人數,
+      sentimentData.support_count,
+      sentimentData.negative
+    ].filter(val => val !== undefined && val !== null);
+    
+    // 使用找到的第一個有效值，如果都沒有則為0
+    this.positiveCount = opposeCounts.length > 0 ? opposeCounts[0] : 0;
+    this.negativeCount = supportCounts.length > 0 ? supportCounts[0] : 0;
 
     // 如果數據為0，顯示一個提示
     const total = this.positiveCount + this.negativeCount;
     if (total === 0) {
       console.log('情感分析數據總數為0');
     } else {
-      console.log(`情感分析數據: 反對=${this.positiveCount}, 支持=${this.negativeCount}`);
+      console.log(`情感分析數據: 反對=${this.positiveCount}, 支持=${this.negativeCount}, 總人數=${total}`);
     }
 
     // 更新圖表數據
@@ -712,15 +801,15 @@ export class PoliticianDetailComponent {
   }
   setQuickFilter(period: string): void {
     this.currentFilter = period; // 記錄當前篩選狀態
-    // 使用實際的數據日期範圍，而不是今天的日期
+    
     if (!this.maxDate) {
       return;
     }
 
+    // 使用 maxDate (今天) 作為基準
     const maxDate = new Date(this.maxDate);
-    let startDate: Date;
 
-    // 計算日期差異 (從最晚日期往前推的天數)
+    // 計算日期差異 (從今天往前推的天數)
     const calculateDaysBack = (days: number) => {
       const newStartDate = new Date(maxDate.getTime() - days * 24 * 60 * 60 * 1000);
       const newStartDateStr = newStartDate.toISOString().split('T')[0];
@@ -734,32 +823,36 @@ export class PoliticianDetailComponent {
     switch (period) {
       case 'week':
         this.startDate = calculateDaysBack(7); // 7天
-        this.endDate = this.maxDate;
+        this.endDate = maxDate.toISOString().split('T')[0]; // <-- 在這裡進行轉換
+        break;
+      case '2weeks':
+        this.startDate = calculateDaysBack(14); // 14天
+        this.endDate = maxDate.toISOString().split('T')[0]; // <-- 在這裡進行轉換
         break;
       case 'month':
         this.startDate = calculateDaysBack(30); // 30天
-        this.endDate = this.maxDate;
+        this.endDate = maxDate.toISOString().split('T')[0]; // <-- 在這裡進行轉換
         break;
       case '3months':
         this.startDate = calculateDaysBack(90); // 90天
-        this.endDate = this.maxDate;
+        this.endDate = maxDate.toISOString().split('T')[0]; // <-- 在這裡進行轉換
         break;
       case '6months':
         this.startDate = calculateDaysBack(180); // 180天
-        this.endDate = this.maxDate;
+        this.endDate = maxDate.toISOString().split('T')[0]; // <-- 在這裡進行轉換
         break;
       case '1year':
         this.startDate = calculateDaysBack(365); // 365天
-        this.endDate = this.maxDate;
+        this.endDate = maxDate.toISOString().split('T')[0]; // <-- 在這裡進行轉換
         break;
       case 'all':
         // 全部時間：設定為完整時間範圍
         this.startDate = this.minDate;
-        this.endDate = this.maxDate;
+        this.endDate = maxDate.toISOString().split('T')[0]; // <-- 在這裡進行轉換
         break;
       default:
         this.startDate = calculateDaysBack(30); // 預設30天
-        this.endDate = this.maxDate;
+        this.endDate = maxDate.toISOString().split('T')[0]; // <-- 在這裡進行轉換
     }
     
     console.log(`設置時間範圍: ${this.startDate} 到 ${this.endDate} (${period})`);
@@ -965,8 +1058,8 @@ export class PoliticianDetailComponent {
     if (maxWeight === minWeight) return 18;
 
     // 根據權重計算大小 (16-48px)
-    const minSize = 16;
-    const maxSize = 48;
+    const minSize = 24;
+    const maxSize = 64;
     const ratio = (weight - minWeight) / (maxWeight - minWeight);
 
     // 前幾個（權重高的）詞語更大
@@ -1074,5 +1167,147 @@ export class PoliticianDetailComponent {
     });
     
     return filteredData;
+  }
+
+  // 動態調整數據點密度 - 漸進式密度變化
+  private adjustDataPointDensity(monthlyStats: any, timeRange: string): any {
+    if (!monthlyStats || Object.keys(monthlyStats).length === 0) {
+      return {};
+    }
+
+    // 檢查數據格式 - 是否為月度數據還是日期數據
+    const isDateFormat = Object.keys(monthlyStats).some(key => key.includes('-') && key.split('-').length >= 3);
+    
+    // 按日期排序
+    const sortedKeys = Object.keys(monthlyStats).sort();
+    
+    // 如果資料點太少，不需要調整
+    if (sortedKeys.length <= 6) {
+      return monthlyStats;
+    }
+    
+    // 獲取時間範圍的總天數
+    const getTotalDays = (range: string): number => {
+      switch (range) {
+        case '1year': return 365;
+        case '6months': return 180;
+        case '3months': return 90;
+        case 'month': return 30;
+        case '2weeks': return 14;
+        case 'week': return 7;
+        default: return 365;
+      }
+    };
+
+    const totalDays = getTotalDays(timeRange);
+    
+    // 漸進式密度算法 - 近期密集，遠期稀疏
+    const getProgressiveInterval = (dayFromEnd: number, totalDays: number): number => {
+      const ratio = dayFromEnd / totalDays; // 0 (最新) 到 1 (最舊)
+      
+      if (timeRange === '1year') {
+        // 一年內：最新7天(1天1點) -> 30天(3天1點) -> 90天(7天1點) -> 其餘(30天1點)
+        if (ratio <= 0.02) return 1;      // 最新2% (約7天) - 每日
+        if (ratio <= 0.08) return 3;      // 接下來6% (約30天) - 3天1點
+        if (ratio <= 0.25) return 7;      // 接下來17% (約90天) - 週度
+        return 30;                        // 其餘 - 月度
+      } else if (timeRange === '6months') {
+        // 六個月：最新7天(1天1點) -> 30天(2天1點) -> 其餘(15天1點)
+        if (ratio <= 0.04) return 1;      // 最新4% (約7天) - 每日
+        if (ratio <= 0.17) return 2;      // 接下來13% (約30天) - 2天1點
+        return 15;                        // 其餘 - 半月度
+      } else if (timeRange === '3months') {
+        // 三個月：最新7天(1天1點) -> 30天(3天1點) -> 其餘(7天1點)
+        if (ratio <= 0.08) return 1;      // 最新8% (約7天) - 每日
+        if (ratio <= 0.33) return 3;      // 接下來25% (約30天) - 3天1點
+        return 7;                         // 其餘 - 週度
+      } else if (timeRange === 'month') {
+        // 一個月：最新7天(1天1點) -> 15天(2天1點) -> 其餘(3天1點)
+        if (ratio <= 0.23) return 1;      // 最新23% (約7天) - 每日
+        if (ratio <= 0.50) return 2;      // 接下來27% (約8天) - 2天1點
+        return 3;                         // 其餘 - 3天1點
+      } else if (timeRange === '2weeks') {
+        // 兩週：最新3天(1天1點) -> 7天(1天1點) -> 其餘(2天1點)
+        if (ratio <= 0.21) return 1;      // 最新21% (約3天) - 每日
+        if (ratio <= 0.50) return 1;      // 接下來29% (約4天) - 每日
+        return 2;                         // 其餘 - 2天1點
+      } else {
+        // 一週：最新3天(1天1點) -> 其餘(1天1點)
+        return 1;                         // 所有時間每天一點
+      }
+    };
+    
+    const adjustedStats: any = {};
+    
+    if (isDateFormat) {
+      // 日期數據的漸進式處理
+      const latestDate = new Date(sortedKeys[sortedKeys.length - 1]);
+      let lastIncludedDate: string | null = null;
+      
+      // 從最新到最舊處理
+      for (let i = sortedKeys.length - 1; i >= 0; i--) {
+        const dateKey = sortedKeys[i];
+        const currentDate = new Date(dateKey);
+        
+        // 計算距離最新日期的天數
+        const dayFromEnd = Math.floor((latestDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // 獲取當前位置應該使用的間隔
+        const requiredInterval = getProgressiveInterval(dayFromEnd, totalDays);
+        
+        if (!lastIncludedDate) {
+          // 最新的點總是包含
+          adjustedStats[dateKey] = monthlyStats[dateKey];
+          lastIncludedDate = dateKey;
+        } else {
+          // 檢查與上一個包含點的間隔
+          const lastDate = new Date(lastIncludedDate);
+          const dayDiff = Math.floor((lastDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (dayDiff >= requiredInterval) {
+            adjustedStats[dateKey] = monthlyStats[dateKey];
+            lastIncludedDate = dateKey;
+          }
+        }
+      }
+    } else {
+      // 月份數據的漸進式處理
+      let lastIncludedIndex: number | null = null;
+      
+      // 從最新到最舊處理
+      for (let i = sortedKeys.length - 1; i >= 0; i--) {
+        const monthKey = sortedKeys[i];
+        
+        // 計算距離最新月份的位置比例
+        const ratio = (sortedKeys.length - 1 - i) / (sortedKeys.length - 1);
+        
+        // 獲取當前位置應該使用的間隔
+        const requiredInterval = timeRange === '1year' ? 
+          (ratio <= 0.25 ? 1 : 2) :  // 一年內：前25%每月，後75%每2月
+          1;                          // 其他情況每月
+        
+        if (lastIncludedIndex === null) {
+          // 最新的點總是包含
+          adjustedStats[monthKey] = monthlyStats[monthKey];
+          lastIncludedIndex = i;
+        } else {
+          const indexDiff = lastIncludedIndex - i;
+          if (indexDiff >= requiredInterval) {
+            adjustedStats[monthKey] = monthlyStats[monthKey];
+            lastIncludedIndex = i;
+          }
+        }
+      }
+    }
+    
+    // 確保最舊的數據點也被保留（起始點）
+    const oldestKey = sortedKeys[0];
+    if (!adjustedStats[oldestKey]) {
+      adjustedStats[oldestKey] = monthlyStats[oldestKey];
+    }
+    
+    console.log(`${timeRange} 漸進式密度調整: 原始${sortedKeys.length}點 -> 調整後${Object.keys(adjustedStats).length}點`);
+    
+    return adjustedStats;
   }
 }

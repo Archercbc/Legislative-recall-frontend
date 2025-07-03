@@ -40,30 +40,12 @@
               <div class="progress-value">{{ recallData["罷免門檻"] }}</div>
             </div>
             
-            <!-- 三階投票數據 (如果有) -->
-            <div class="progress-item" *ngIf="recallData['三階投票有效同意數']">
-              <div class="progress-label">三階投票有效同意數</div>
-              <div class="progress-value">{{ recallData["三階投票有效同意數"] }}</div>
-            </div>
-            <div class="progress-item" *ngIf="recallData['三階投票有效不同意數']">
-              <div class="progress-label">三階投票有效不同意數</div>
-              <div class="progress-value">{{ recallData["三階投票有效不同意數"] }}</div>
-            </div>
-            <div class="progress-item" *ngIf="recallData['三階投票無效票數']">
-              <div class="progress-label">三階投票無效票數</div>
-              <div class="progress-value">{{ recallData["三階投票無效票數"] }}</div>
-            </div>
             
-            <!-- 累積人數 (如果有) -->
-            <div class="progress-item" *ngIf="recallData['累積連署人數']">
-              <div class="progress-label">累積連署人數</div>
-              <div class="progress-value">{{ recallData["累積連署人數"] }}</div>
-            </div>
             
             <!-- 正負面聲量比值顯示 - 黑白雙色長條圖 -->
             <div class="sentiment-ratio-container">
               <div class="sentiment-ratio-header">
-                <span class="ratio-label">Public Opinion Index (POI)</span>
+                <span class="ratio-label">社群聲量</span>
                 <span class="ratio-total">{{ getTotalUsers() }} 總聲量</span>
               </div>
 
@@ -126,12 +108,30 @@
 
     <!-- 右側圖表區 -->
     <div class="main-container">
+      <!-- 日期篩選按鈕 - 獨立一列，與底下圖表等寬 -->
+      <div cCard class="filter-card full-width">
+        <div cCardHeader>
+          <i class="cil-calendar"></i>
+          <span>時間範圍篩選</span>
+        </div>
+        <div cCardBody>
+          <div class="date-filter-buttons">
+            <button cButton color="light" [class.active]="currentFilter === '1year'" (click)="setQuickFilter('1year')">一年內</button>
+            <button cButton color="light" [class.active]="currentFilter === '6months'" (click)="setQuickFilter('6months')">六個月</button>
+            <button cButton color="light" [class.active]="currentFilter === '3months'" (click)="setQuickFilter('3months')">三個月</button>
+            <button cButton color="light" [class.active]="currentFilter === 'month'" (click)="setQuickFilter('month')">一個月</button>
+            <button cButton color="light" [class.active]="currentFilter === '2weeks'" (click)="setQuickFilter('2weeks')">兩週內</button>
+            <button cButton color="light" [class.active]="currentFilter === 'week'" (click)="setQuickFilter('week')">一週內</button>
+          </div>
+        </div>
+      </div>
+
       <div class="charts-row">
         <!-- 正負面留言比例 -->
         <div cCard class="chart-card">
           <div cCardHeader>
             <i class="cil-chart-pie"></i>
-            <span>支持/反對圓餅圖- 總人數: {{ positiveCount + negativeCount }}</span>
+            <span>支持/反對圓餅圖- 總人數: {{ (positiveCount + negativeCount).toLocaleString() }}</span>
             <span *ngIf="isLoadingTimeData" class="spinner-border spinner-border-sm ms-2"></span>
           </div>
           <div cCardBody style="overflow: visible; position: relative;">
