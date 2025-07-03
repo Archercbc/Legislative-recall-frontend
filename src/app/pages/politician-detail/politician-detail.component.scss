@@ -56,11 +56,34 @@ $spacing-lg: 24px;
 .profile-info {
   flex: 1;
 
+  .profile-name-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-lg;
+    margin-bottom: $spacing-sm;
+  }
+
   .profile-name {
     font-size: 26px;
     font-weight: 700;
-    margin: 0 0 $spacing-sm 0;
+    margin: 0;
     color: $text-dark;
+  }
+
+  .recall-date-info {
+    font-size: 14px;
+    color: $text-gray;
+    background: #fff3cd;
+    border-radius: 6px;
+    padding: 6px 12px;
+    border-left: 3px solid #e74c3c;
+    white-space: nowrap;
+    
+    strong {
+      color: #2c3e50;
+      font-weight: 600;
+    }
   }
 
   .profile-badge {
@@ -1274,6 +1297,19 @@ c-card {
     display: flex;
     flex-direction: column;
     align-items: center;
+    
+    .profile-name-container {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: $spacing-sm;
+    }
+    
+    .recall-date-info {
+      font-size: 12px;
+      padding: 4px 8px;
+      text-align: center;
+    }
   }
 }
 

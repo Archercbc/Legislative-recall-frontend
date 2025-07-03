@@ -153,6 +153,9 @@
                             {{ politician.recallStatus }}
                         </span>
                     </div>
+                    <div class="recall-date-info" *ngIf="(politician.recallNote || politician.recallVoteDate) && !politician.id.startsWith('no-recall')">
+                        <strong>{{ politician.recallNote }}:</strong> {{ politician.recallVoteDate }}
+                    </div>
                     <div *ngIf="filterRecallOnly && !politician.id.startsWith('no-recall')" class="recall-tip">此議員目前有罷免案進行中</div>
                 </div>
             </div>

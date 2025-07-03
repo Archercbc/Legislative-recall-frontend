@@ -6,7 +6,12 @@
         <img *ngIf="data?.image_url" [src]="data.image_url" cAvatar>
       </div>
       <div class="profile-info">
-        <h1 class="profile-name">{{ data?.name }}</h1>
+        <div class="profile-name-container">
+          <h1 class="profile-name">{{ data?.name }}</h1>
+          <div class="recall-date-info" *ngIf="recallData && (recallData['罷免備註'] || recallData['罷免投票日'])">
+            <strong>{{ recallData['罷免備註'] }}:</strong> {{ recallData['罷免投票日'] }}
+          </div>
+        </div>
         <span cBadge color="danger" class="profile-badge">{{ party }}</span>
         <div class="profile-meta" *ngIf="district">
           <i class="cil-location-pin"></i>

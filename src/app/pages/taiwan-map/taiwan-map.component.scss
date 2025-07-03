@@ -605,6 +605,22 @@
   .status-survey { color: #3498db; font-weight: 500; }
 }
 
+/* 罷免日期資訊樣式 */
+.recall-date-info {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #666;
+  background: #fff3cd;
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.7rem;
+  border-left: 3px solid #e74c3c;
+  
+  strong {
+    color: #2c3e50;
+    font-weight: 600;
+  }
+}
+
 .no-recall-info {
   justify-content: center;
   align-items: center;

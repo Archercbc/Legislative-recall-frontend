@@ -17,6 +17,8 @@ interface Politician {
   constituency?: string;
   district?: string; // 新增 district 屬性
   recallStatus?: string; // 新增 recallStatus 屬性
+  recallNote?: string; // 新增 recallNote 屬性（罷免備註）
+  recallVoteDate?: string; // 新增 recallVoteDate 屬性（罷免投票日）
 }
 export interface AreaCount {
   area: string;
@@ -176,6 +178,7 @@ export class TaiwanMapComponent implements OnInit {
         // 2. 從後端 recall API 取得資料
         this.dataService.getRecallList().subscribe({
           next: recallList => {
+            console.log('recallList', recallList);
             this.recallPoliticians = recallList.map(r => {
               // 找到對應立委主資料
               const match = this.allLegislators.find(l => l.name === r["姓名"]);
@@ -185,7 +188,10 @@ export class TaiwanMapComponent implements OnInit {
                 id: r["姓名"],
                 image_url: match?.image_url || '',
                 party: match?.party || '',
-                constituency: match?.constituency || ''
+                constituency: match?.constituency || '',
+                // 新增罷免備註和罷免投票日
+                recallNote: r["罷免備註"] || r["第一次罷免日期"] || '',
+                recallVoteDate: r["罷免投票日"] || ''
               };
             });
 
@@ -359,7 +365,9 @@ export class TaiwanMapComponent implements OnInit {
         name: r["姓名"],
         image_url: r.image_url,
         constituency: r.constituency,
-        party: r.party
+        party: r.party,
+        recallNote: r.recallNote || '',
+        recallVoteDate: r.recallVoteDate || ''
       }));
       return;
     }
@@ -385,7 +393,9 @@ export class TaiwanMapComponent implements OnInit {
         image_url: r.image_url,
         constituency: r.constituency,
         party: r.party,
-        recallStatus: r.status || r.recall_data?.狀態 || '網路聲量調查'
+        recallStatus: r.status || r.recall_data?.狀態 || '網路聲量調查',
+        recallNote: r.recallNote || '',
+        recallVoteDate: r.recallVoteDate || ''
       }));
     } else {
       // 該縣市在目前的篩選條件下沒有符合的立委，或者該縣市本來就沒有罷免案
