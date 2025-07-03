@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../services/data.service';
@@ -218,7 +218,7 @@ export class PoliticianDetailComponent {
   } 
   }   
 
-  constructor(private route: ActivatedRoute, private dataService: DataService) {
+  constructor(private route: ActivatedRoute, private dataService: DataService, private router: Router) {
     this.initializeDateRange();
 
     this.route.paramMap.subscribe(params => {
@@ -1309,5 +1309,10 @@ export class PoliticianDetailComponent {
     console.log(`${timeRange} 漸進式密度調整: 原始${sortedKeys.length}點 -> 調整後${Object.keys(adjustedStats).length}點`);
     
     return adjustedStats;
+  }
+
+  // 回到主畫面
+  goToMainPage(): void {
+    this.router.navigate(['/']);
   }
 }
