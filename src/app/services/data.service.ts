@@ -28,6 +28,11 @@ export class DataService {
     return this.http.get<any[]>(`${this.apiUrl}/recall`);
   }
 
+  // 獲取罷免統計數據
+  getRecallStats(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/recall-stats`);
+  }
+
   // 獲取立委在特定時間範圍內的數據
   getLegislatorTimeRangeData(name: string, startDate: string, endDate: string): Observable<any> {
     const params = new URLSearchParams({

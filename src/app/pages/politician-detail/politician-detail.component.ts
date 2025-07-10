@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import {  Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../services/data.service';
@@ -10,6 +11,7 @@ import { IconModule } from '@coreui/icons-angular';
 
 import { ChartjsComponent } from '@coreui/angular-chartjs';
 import { Tooltip, type ChartData } from 'chart.js'; // 確保導入 ChartData 類型
+import { TagCloudComponent, CloudData, CloudOptions } from 'angular-tag-cloud-module';
 
 @Component({
   selector: 'app-politician-detail',
@@ -20,6 +22,7 @@ import { Tooltip, type ChartData } from 'chart.js'; // 確保導入 ChartData �
     HttpClientModule,
     NgChartsModule,
     ChartjsComponent,
+    TagCloudComponent,
     // CoreUI Components - 確保都正確導入
     IconModule
   ],
@@ -32,6 +35,18 @@ export class PoliticianDetailComponent {
   recallData: any = null;
   positiveCount = 0;
   negativeCount = 0;
+
+  // 文字雲相關屬性
+  wordCloudData: CloudData[] = [];
+  wordCloudOptions: CloudOptions = {
+    width: 600,
+    height: 400,
+    overflow: false,
+    zoomOnHover: { scale: 1.2, transitionTime: 0.3, delay: 0.1 },
+    realignOnResize: true,
+    randomizeAngle: true
+  };
+  isLoadingWordCloud = false;
 
   // 標準英文情緒標籤
   private readonly STANDARD_EMOTIONS = ['joy', 'anger', 'sadness', 'fear', 'surprise', 'disgust', 'trust', 'anticipation'];
@@ -80,8 +95,7 @@ export class PoliticianDetailComponent {
     datasets: []
   };
 
-  // 詞雲資料 - 初始為空
-  demoWordCloudData: { text: string, weight: number }[] = [];
+  // 詞雲資料 - 初始為空 (已移至文字雲相關屬性中)
 
   // 時間範圍篩選
   startDate: string = '';
@@ -297,11 +311,13 @@ export class PoliticianDetailComponent {
     }
     // 3. 文字雲 - 從 legislators 集合直接獲取
     if (data.word_cloud && data.word_cloud.length > 0) {
-      // 確保數據格式正確 - text 和 weight 欄位
-      this.demoWordCloudData = data.word_cloud.map((item: any) => ({
+      // 轉換為新文字雲組件格式
+      this.wordCloudData = data.word_cloud.map((item: any) => ({
         text: item.text || item.word || '',
-        weight: item.weight || item.count || 0
+        weight: item.weight || item.count || 0,
+        color: this.getWordCloudColor(item.text || item.word || '', 0)
       })).filter((item: any) => item.text && item.weight > 0);
+      console.log('從 legislators 集合載入文字雲', this.wordCloudData.length);
     }
     
     // 4. 月份情感統計 - 從 legislators 集合獲取並轉換為時間序列數據
@@ -354,10 +370,11 @@ export class PoliticianDetailComponent {
     if (shouldUpdateAll || chartTypes.includes('wordcloud')) {
       if (data.word_cloud && data.word_cloud.length > 0) {
         console.log('從 crawler_data 載入文字雲', data.word_cloud.length);
-        // 確保數據格式正確
-        this.demoWordCloudData = data.word_cloud.map((item: any) => ({
+        // 轉換為新文字雲組件格式
+        this.wordCloudData = data.word_cloud.map((item: any, index: number) => ({
           text: item.text || item.word || '',
-          weight: item.weight || item.count || 0
+          weight: item.weight || item.count || 0,
+          color: this.getWordCloudColor(item.text || item.word || '', index)
         })).filter((item: any) => item.text && item.weight > 0);
       } else {
         console.log('crawler_data 中沒有文字雲數據');
@@ -609,9 +626,20 @@ export class PoliticianDetailComponent {
         
         // 只添加有數據的月份
         if (supportCount > 0 || opposeCount > 0) {
-          // 格式化標籤：從 YYYY-MM 轉換為 MM/DD 格式（假設每月第一天）
+          // 根據時間範圍決定標籤格式
           const [year, monthNum] = month.split('-');
-          labels.push(`${monthNum}/01`);
+          let label: string;
+
+          // 如果是近期數據（7天內），顯示年月日格式
+          if (this.currentFilter === 'week' || this.currentFilter === '2weeks') {
+            // 對於週級別的篩選，假設使用月份的第一天
+            label = `${year}年${monthNum}月01日`;
+          } else {
+            // 其他情況使用年月格式
+            label = `${year}年${monthNum}月`;
+          }
+
+          labels.push(label);
           
           // 計算累加值
           cumulativeSupport += supportCount;
@@ -631,7 +659,10 @@ export class PoliticianDetailComponent {
     // 檢查是否有現有標籤來決定格式
     if (labels.length > 0) {
       const lastLabel = labels[labels.length - 1];
-      if (lastLabel.includes('/') && lastLabel.split('/').length === 2) {
+      if (lastLabel.includes('年') && lastLabel.includes('月')) {
+        // 如果是 YYYY年MM月 格式，今天也用 YYYY年MM月
+        todayLabel = `${today.getFullYear()}年${String(today.getMonth() + 1).padStart(2, '0')}月`;
+      } else if (lastLabel.includes('/') && lastLabel.split('/').length === 2) {
         // 如果是 MM/DD 格式，今天也用 MM/DD
         todayLabel = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
       } else if (lastLabel.includes('-') && lastLabel.split('-').length === 3) {
@@ -641,12 +672,12 @@ export class PoliticianDetailComponent {
         // 如果是 YYYY-MM 格式，今天也用 YYYY-MM
         todayLabel = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
       } else {
-        // 預設使用 MM/DD 格式
-        todayLabel = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
+        // 預設使用年月格式
+        todayLabel = `${today.getFullYear()}年${String(today.getMonth() + 1).padStart(2, '0')}月`;
       }
     } else {
-      // 如果沒有現有標籤，預設使用 MM/DD 格式
-      todayLabel = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
+      // 如果沒有現有標籤，預設使用年月格式
+      todayLabel = `${today.getFullYear()}年${String(today.getMonth() + 1).padStart(2, '0')}月`;
     }
     
     // 檢查最後一個標籤是否已經是今天
@@ -856,34 +887,109 @@ export class PoliticianDetailComponent {
     }
     
     console.log(`設置時間範圍: ${this.startDate} 到 ${this.endDate} (${period})`);
-    
-    // 檢查是否是「全部時間」範圍 (startDate == minDate 且 endDate == maxDate)
-    const isAllTimeRange = this.startDate === this.minDate && this.endDate === this.maxDate;
-    
-    if (isAllTimeRange && this.data && this.data.月份情感統計 && Object.keys(this.data.月份情感統計).length > 0) {
-      console.log('使用 legislators 集合中的預計算數據');
-      // 使用完整的月份情感統計數據
-      this.updateTimeSeriesFromMonthlyStats(this.data.月份情感統計);
-      
-      // 更新圓餅圖
-      if (this.data.情感分析) {
-        this.updateSentimentChart(this.data.情感分析);
-      }
-      
-      // 更新文字雲
-      if (this.data.word_cloud && this.data.word_cloud.length > 0) {
-        this.demoWordCloudData = this.data.word_cloud.map((item: any) => ({
-          text: item.text || item.word || '',
-          weight: item.weight || item.count || 0
-        })).filter((item: any) => item.text && item.weight > 0);
-      }
-      
-      // 完成後關閉加載狀態
+
+    // 觸發數據更新
+    this.updateChartsForTimeRange();
+  }
+
+  // 統一的時間範圍數據更新方法
+  private updateChartsForTimeRange(): void {
+    // 檢查是否有預計算數據可用
+    if (!this.data || !this.data.月份情感統計 || Object.keys(this.data.月份情感統計).length === 0) {
+      console.log('⚠️ 沒有預計算數據，無法更新圖表');
       this.isLoadingTimeData = false;
-    } else {
-      // 從 crawler_data 載入時間範圍數據
-      this.loadCrawlerData(['all'], this.startDate, this.endDate);
+      return;
     }
+
+    console.log('✅ 使用 legislators 集合中的預計算數據進行時間範圍篩選');
+
+    // 根據時間範圍篩選月份數據
+    const filteredMonthlyStats = this.filterMonthlyStatsByDateRange(
+      this.data.月份情感統計,
+      this.startDate,
+      this.endDate
+    );
+
+    // 更新時間序列圖（使用篩選後的數據和動態密度）
+    this.updateTimeSeriesFromMonthlyStats(filteredMonthlyStats);
+
+    // 更新圓餅圖（使用篩選後數據重新計算）
+    const filteredSentimentStats = this.calculateSentimentFromFilteredData(filteredMonthlyStats);
+    this.updateSentimentChart(filteredSentimentStats);
+
+    // 更新雷達圖（使用篩選後數據重新計算）
+    const filteredEmotionStats = this.calculateEmotionFromFilteredData(filteredMonthlyStats);
+    this.updateEmotionRadarChart(filteredEmotionStats);
+
+    // 文字雲暫時使用完整數據（因為通常不按時間篩選）
+    if (this.data.word_cloud && this.data.word_cloud.length > 0) {
+      this.wordCloudData = this.data.word_cloud.map((item: any, index: number) => ({
+        text: item.text || item.word || '',
+        weight: item.weight || item.count || 0,
+        color: this.getWordCloudColor(item.text || item.word || '', index)
+      })).filter((item: any) => item.text && item.weight > 0);
+    }
+
+    // 完成後關閉加載狀態
+    this.isLoadingTimeData = false;
+  }
+
+  // 根據日期範圍篩選月份統計數據
+  private filterMonthlyStatsByDateRange(monthlyStats: any, startDate: string, endDate: string): any {
+    if (!monthlyStats || !startDate || !endDate) {
+      return monthlyStats;
+    }
+
+    const filteredStats: any = {};
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    Object.keys(monthlyStats).forEach(monthKey => {
+      // 假設monthKey格式為 YYYY-MM
+      if (monthKey.match(/^\d{4}-\d{2}$/)) {
+        const monthDate = new Date(monthKey + '-01'); // 轉換為該月第一天
+
+        if (monthDate >= start && monthDate <= end) {
+          filteredStats[monthKey] = monthlyStats[monthKey];
+        }
+      }
+    });
+
+    console.log(`📅 時間範圍篩選: ${startDate} 到 ${endDate}, 篩選出 ${Object.keys(filteredStats).length} 個月份`);
+    return filteredStats;
+  }
+
+  // 從篩選後的月份數據計算情感統計
+  private calculateSentimentFromFilteredData(filteredMonthlyStats: any): any {
+    let totalSupport = 0;
+    let totalOppose = 0;
+
+    Object.values(filteredMonthlyStats).forEach((monthData: any) => {
+      if (monthData) {
+        totalSupport += monthData.支持罷免人數 || monthData.support_count || 0;
+        totalOppose += monthData.反對罷免人數 || monthData.oppose_count || 0;
+      }
+    });
+
+    return {
+      支持罷免人數: totalSupport,
+      反對罷免人數: totalOppose
+    };
+  }
+
+  // 從篩選後的月份數據計算情緒統計
+  private calculateEmotionFromFilteredData(filteredMonthlyStats: any): any {
+    const emotionTotals: any = {};
+
+    Object.values(filteredMonthlyStats).forEach((monthData: any) => {
+      if (monthData && monthData.情緒統計) {
+        Object.keys(monthData.情緒統計).forEach(emotion => {
+          emotionTotals[emotion] = (emotionTotals[emotion] || 0) + (monthData.情緒統計[emotion] || 0);
+        });
+      }
+    });
+
+    return emotionTotals;
   }
   
 
@@ -1042,7 +1148,7 @@ export class PoliticianDetailComponent {
     // 根據權重計算字體大小 (12-20px)
     const minSize = 12;
     const maxSize = 20;
-    const maxWeight = Math.max(...this.demoWordCloudData.map(w => w.weight || 1)); // 處理沒有 weight 的情況
+    const maxWeight = Math.max(...this.wordCloudData.map(w => w.weight || 1)); // 處理沒有 weight 的情況
     if (maxWeight === 0) return minSize; // 避免除以零
     const ratio = weight / maxWeight;
     return Math.round(minSize + (maxSize - minSize) * ratio);
@@ -1050,10 +1156,10 @@ export class PoliticianDetailComponent {
 
   // 文字雲專用的大小計算（更大的範圍，出現次數多的在中間且更大）
   getWordCloudSize(weight: number, index: number): number {
-    if (!this.demoWordCloudData.length) return 14;
+    if (!this.wordCloudData.length) return 14;
 
-    const maxWeight = Math.max(...this.demoWordCloudData.map(w => w.weight || 1));
-    const minWeight = Math.min(...this.demoWordCloudData.map(w => w.weight || 1));
+    const maxWeight = Math.max(...this.wordCloudData.map(w => w.weight || 1));
+    const minWeight = Math.min(...this.wordCloudData.map(w => w.weight || 1));
 
     if (maxWeight === minWeight) return 18;
 
@@ -1070,8 +1176,8 @@ export class PoliticianDetailComponent {
 
   // 計算文字雲的最大權重
   get maxWordWeight(): number {
-    if (!this.demoWordCloudData.length) return 1;
-    return Math.max(...this.demoWordCloudData.map(w => w.weight || 1));
+    if (!this.wordCloudData.length) return 1;
+    return Math.max(...this.wordCloudData.map(w => w.weight || 1));
   }
   // 文字雲專用的顏色計算
   getWordCloudColor(_word: string, index: number): string {
@@ -1085,9 +1191,13 @@ export class PoliticianDetailComponent {
       return colors[index % 5];
     }
 
-    // 其他詞語使用較淡的顏色
-    const lightColors = ['#6b7280', '#9ca3af', '#64748b', '#71717a', '#78716c'];
-    return lightColors[index % lightColors.length];
+    return colors[index % colors.length];
+  }
+
+  // 文字雲點擊事件處理
+  onWordCloudClick(clickedWord: CloudData): void {
+    console.log('點擊了關鍵字:', clickedWord);
+    // 這裡可以添加更多互動功能，比如搜索相關內容
   }
 
   // 獲取隨機角度（-30到30度之間）
@@ -1100,7 +1210,7 @@ export class PoliticianDetailComponent {
 
   // 獲取詞語位置（環繞排列）
   getWordPosition(index: number, type: 'top' | 'left'): number {
-    const totalWords = this.demoWordCloudData.length;
+    const totalWords = this.wordCloudData.length;
     if (totalWords <= 0) return 50;
 
     // 前幾個高頻詞放在中間位置
@@ -1310,8 +1420,6 @@ export class PoliticianDetailComponent {
     
     return adjustedStats;
   }
-
-  // 回到主畫面
   goToMainPage(): void {
     this.router.navigate(['/']);
   }

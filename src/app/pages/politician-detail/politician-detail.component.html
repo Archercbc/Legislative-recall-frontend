@@ -6,12 +6,7 @@
         <img *ngIf="data?.image_url" [src]="data.image_url" cAvatar>
       </div>
       <div class="profile-info">
-        <div class="profile-name-container">
-          <h1 class="profile-name">{{ data?.name }}</h1>
-          <div class="recall-date-info" *ngIf="recallData && (recallData['罷免備註'] || recallData['罷免投票日'])">
-            <strong>{{ recallData['罷免備註'] }}:</strong> {{ recallData['罷免投票日'] }}
-          </div>
-        </div>
+        <h1 class="profile-name">{{ data?.name }}</h1>
         <span cBadge color="danger" class="profile-badge">{{ party }}</span>
         <div class="profile-meta" *ngIf="district">
           <i class="cil-location-pin"></i>
@@ -44,13 +39,10 @@
               <div class="progress-label">罷免門檻</div>
               <div class="progress-value">{{ recallData["罷免門檻"] }}</div>
             </div>
-            
-            
-            
             <!-- 正負面聲量比值顯示 - 黑白雙色長條圖 -->
             <div class="sentiment-ratio-container">
               <div class="sentiment-ratio-header">
-                <span class="ratio-label">社群聲量</span>
+                <span class="ratio-label">網路聲量比值</span>
                 <span class="ratio-total">{{ getTotalUsers() }} 總聲量</span>
               </div>
 
@@ -81,25 +73,15 @@
               </div>
 
               
-            </div>            <div class="progress-item">
+            </div>
+            <div class="progress-item">
               <div class="progress-label">行政區</div>
               <div class="progress-value">{{ recallData["行政區"] }}</div>
             </div>
             <div class="progress-item">
-              <div class="progress-label">原始狀態</div>
+              <div class="progress-label">罷免狀態</div>
               <div class="progress-value status">
                 {{ recallData["狀態"] || '網路聲量調查' }}
-              </div>
-            </div>
-            <div class="progress-item" *ngIf="recallData['罷免狀態']">
-              <div class="progress-label">罷免案階段</div>
-              <div class="progress-value status" [ngClass]="getRecallStatusClass()">
-                {{ recallData["罷免狀態"] }}
-              </div>
-            </div>
-            <div class="progress-item description" *ngIf="recallData['罷免狀態描述']">
-              <div class="progress-description">
-                {{ recallData["罷免狀態描述"] }}
               </div>
             </div>
             <div class="social-links" *ngIf="recallData['社群連結']">
@@ -113,20 +95,98 @@
 
     <!-- 右側圖表區 -->
     <div class="main-container">
-      <!-- 日期篩選按鈕 - 獨立一列，與底下圖表等寬 -->
-      <div cCard class="filter-card full-width">
-        <div cCardHeader>
-          <i class="cil-calendar"></i>
-          <span>時間範圍篩選</span>
+      <!-- 時間範圍選擇器 - 優化版本 -->
+      <div cCard class="time-filter-card-modern">
+        <div cCardHeader class="modern-header">
+          <div class="header-content">
+            <i class="cil-calendar me-2"></i>
+            <span class="header-title">時間範圍篩選</span>
+            <div class="loading-indicator" *ngIf="isLoadingTimeData">
+              <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+              <small class="text-muted">載入中...</small>
+            </div>
+          </div>
         </div>
-        <div cCardBody>
-          <div class="date-filter-buttons">
-            <button cButton color="light" [class.active]="currentFilter === '1year'" (click)="setQuickFilter('1year')">一年內</button>
-            <button cButton color="light" [class.active]="currentFilter === '6months'" (click)="setQuickFilter('6months')">六個月</button>
-            <button cButton color="light" [class.active]="currentFilter === '3months'" (click)="setQuickFilter('3months')">三個月</button>
-            <button cButton color="light" [class.active]="currentFilter === 'month'" (click)="setQuickFilter('month')">一個月</button>
-            <button cButton color="light" [class.active]="currentFilter === '2weeks'" (click)="setQuickFilter('2weeks')">兩週內</button>
-            <button cButton color="light" [class.active]="currentFilter === 'week'" (click)="setQuickFilter('week')">一週內</button>
+        <div cCardBody class="modern-body">
+          <!-- 快速篩選按鈕 - 移到最上方 -->
+          <div class="quick-filters-modern">
+            <div class="filter-label">
+              <i class="cil-clock me-1"></i>
+              <span>快速選擇：</span>
+            </div>
+            <div class="filter-buttons">
+              <button
+                cButton
+                [ngClass]="currentFilter === 'week' ? 'btn-primary' : 'btn-outline-primary'"
+                size="sm"
+                (click)="setQuickFilter('week')"
+                [disabled]="isLoadingTimeData"
+                class="filter-btn">
+                <i class="cil-calendar-check me-1"></i>
+                最近一週
+              </button>
+              <button
+                cButton
+                [ngClass]="currentFilter === '2weeks' ? 'btn-primary' : 'btn-outline-primary'"
+                size="sm"
+                (click)="setQuickFilter('2weeks')"
+                [disabled]="isLoadingTimeData"
+                class="filter-btn">
+                <i class="cil-calendar me-1"></i>
+                最近兩週
+              </button>
+              <button
+                cButton
+                [ngClass]="currentFilter === 'month' ? 'btn-primary' : 'btn-outline-primary'"
+                size="sm"
+                (click)="setQuickFilter('month')"
+                [disabled]="isLoadingTimeData"
+                class="filter-btn">
+                <i class="cil-calendar me-1"></i>
+                最近一個月
+              </button>
+              <button
+                cButton
+                [ngClass]="currentFilter === '3months' ? 'btn-primary' : 'btn-outline-primary'"
+                size="sm"
+                (click)="setQuickFilter('3months')"
+                [disabled]="isLoadingTimeData"
+                class="filter-btn">
+                <i class="cil-calendar-range me-1"></i>
+                最近三個月
+              </button>
+              <button
+                cButton
+                [ngClass]="currentFilter === '6months' ? 'btn-primary' : 'btn-outline-primary'"
+                size="sm"
+                (click)="setQuickFilter('6months')"
+                [disabled]="isLoadingTimeData"
+                class="filter-btn">
+                <i class="cil-calendar-range me-1"></i>
+                最近六個月
+              </button>
+              <button
+                cButton
+                [ngClass]="currentFilter === '1year' ? 'btn-primary' : 'btn-outline-primary'"
+                size="sm"
+                (click)="setQuickFilter('1year')"
+                [disabled]="isLoadingTimeData"
+                class="filter-btn">
+                <i class="cil-calendar-range me-1"></i>
+                最近一年
+              </button>
+            </div>
+          </div>
+
+          <!-- 篩選資訊 -->
+          <div class="filter-info-modern" *ngIf="startDate && endDate">
+            <div class="info-card">
+              <i class="cil-info me-2 text-info"></i>
+              <span class="info-text">
+                顯示期間：<strong>{{ formatDateRange(startDate, endDate) }}</strong>
+                <span class="text-muted ms-2">({{ getDateRangeDays() }} 天)</span>
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -136,16 +196,13 @@
         <div cCard class="chart-card">
           <div cCardHeader>
             <i class="cil-chart-pie"></i>
-            <span>支持/反對圓餅圖- 總人數: {{ (positiveCount + negativeCount).toLocaleString() }}</span>
+            <span>罷免民意分析 (總計: {{ positiveCount + negativeCount }}人)</span>
             <span *ngIf="isLoadingTimeData" class="spinner-border spinner-border-sm ms-2"></span>
           </div>
           <div cCardBody style="overflow: visible; position: relative;">
             <div style="display: flex; align-items: center; justify-content: center; height: 350px;">
               <!-- 圓餅圖容器 -->
               <div style="width: 300px; height: 300px; position: relative;">
-                <div *ngIf="!radarChartData?.datasets?.length" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #666;">
-                  載入情感數據中...
-                </div>
                 <c-chart [data]="sentimentChartData" type="doughnut" [options]="doughnutOptions" style="height: 100%; width: 100%;"></c-chart>
               </div>
             </div>
@@ -161,54 +218,77 @@
               </div>
             </div>
           </div>
-        </div>        <!-- 文字雲 (替換原來的情緒雷達圖) -->
+        </div>
+
+        <!-- 情緒雷達圖 
         <div cCard class="chart-card">
           <div cCardHeader>
-            <i class="cil-text-size"></i>
-            <span>關鍵詞文字雲</span>
-            <span *ngIf="isLoadingTimeData" class="spinner-border spinner-border-sm ms-2"></span>
+            <i class="cil-graph"></i>
+            <span>情緒雷達圖</span>
           </div>
           <div cCardBody style="overflow: visible; position: relative;">
-            <div style="display: flex; align-items: center; justify-content: center; height: 450px; overflow: hidden;">
-              <!-- 文字雲容器 -->
-              <div style="width: 500px; height: 450px; position: relative;" class="word-cloud-container">
-                <div *ngIf="!demoWordCloudData?.length" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #666;">
-                  載入關鍵詞數據中...
-                </div>
-                <div 
-                  *ngFor="let word of demoWordCloudData; let i = index" 
-                  class="word-cloud-word" 
-                  [style.font-size.px]="getWordCloudSize(word.weight, i)" 
-                  [style.color]="getWordCloudColor(word.text, i)"
-                  [style.opacity]="0.7 + (word.weight / 100) * 0.3"
-                  [style.transform]="'rotate(' + getRandomAngle(i) + 'deg)'"
-                  [style.top.%]="getWordPosition(i, 'top')"
-                  [style.left.%]="getWordPosition(i, 'left')"
-                  [attr.title]="word.text + ' (出現 ' + word.weight + ' 次)'">
-                  {{word.text}}
-                </div>
+            <div style="display: flex; align-items: center; justify-content: center; height: 450px;">
+               雷達圖容器 - 增大尺寸 
+              <div style="width: 500px; height: 450px; position: relative;">
+                <c-chart [data]="radarChartData" type="radar" [options]="radarChartOptions" style="height: 100%; width: 100%;"></c-chart>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Public Opinion Index (POI) 趨勢 - 獨立一列 -->
-    <div cRow>
+        </div>-->
+        <div cRow>
       <div cCol xs="12">
-        <div cCard class="mb-4">          <div cCardHeader>
-            <i class="cil-chart-line"></i>
-            <span>支持/反對 累計趨勢</span>
+        <div cCard class="mb-4">
+          <div cCardHeader>
+            <i class="cil-text-size"></i>
+            <span>熱門關鍵字</span>
             <div class="loading-indicator" *ngIf="isLoadingTimeData">
               <div class="spinner-border spinner-border-sm text-primary ms-2"></div>
               <small class="text-muted">載入中...</small>
             </div>
           </div>
-          <div cCardBody style="overflow: visible;">
+          <div cCardBody style="max-height: 600px; overflow: hidden;">
+            <div *ngIf="!isLoadingTimeData && wordCloudData.length > 0" class="wordcloud-container">
+              <angular-tag-cloud
+                [data]="wordCloudData"
+                [width]="wordCloudOptions.width"
+                [height]="wordCloudOptions.height"
+                [overflow]="wordCloudOptions.overflow"
+                [zoomOnHover]="wordCloudOptions.zoomOnHover"
+                [realignOnResize]="wordCloudOptions.realignOnResize"
+                [randomizeAngle]="wordCloudOptions.randomizeAngle"
+                (clicked)="onWordCloudClick($event)">
+              </angular-tag-cloud>
+            </div>
+            <div *ngIf="!isLoadingTimeData && wordCloudData.length === 0" class="no-data-placeholder">
+              <p class="text-muted text-center">暫無關鍵字數據</p>
+            </div>
+            <div *ngIf="isLoadingTimeData" class="loading-placeholder">
+              <div class="spinner-border text-primary"></div>
+              <p class="mt-3 text-muted">正在載入關鍵字數據...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+      </div>
+
+    </div>
+
+    <!-- 罷免支持度趨勢 - 獨立一列 -->
+    <div cRow>
+      <div cCol xs="12">
+        <div cCard class="mb-4">
+          <div cCardHeader>
+            <i class="cil-chart-line"></i>
+            <span>罷免支持度趨勢</span>
+            <div class="loading-indicator" *ngIf="isLoadingTimeData">
+              <div class="spinner-border spinner-border-sm text-primary ms-2"></div>
+              <small class="text-muted">載入中...</small>
+            </div>
+          </div>
+          <div cCardBody style="overflow-x: auto; overflow-y: visible;">
             <div *ngIf="!isLoadingTimeData" style="display: flex; align-items: center; justify-content: center; height: 280px;">
-              <div style="width: 100%; height: 250px; position: relative;">
+              <div style="min-width: 600px; width: 100%; height: 250px; position: relative;">
                 <c-chart [data]="demoLineChartData" type="line" [options]="lineChartOptions" style="height: 100%; width: 100%;"></c-chart>
               </div>
             </div>
@@ -220,13 +300,15 @@
         </div>
       </div>
     </div>
-  </div>
-  
-  <!-- 回到主畫面按鈕 -->
+
+     <!-- 回到主畫面按鈕 -->
   <button class="back-to-main-btn" (click)="goToMainPage()" title="回到主畫面">
     <i class="cil-home"></i>
     <span class="btn-text">回到主畫面</span>
   </button>
+</div>
+    
+  </div>
 </div>
 
 <ng-template #loading>

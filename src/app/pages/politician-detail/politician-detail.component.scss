@@ -144,6 +144,8 @@ $spacing-lg: 24px;
   border-bottom: 1px solid $border-light !important;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  min-height: 50px;
 
   i {
     margin-right: $spacing-sm;
@@ -699,10 +701,16 @@ c-chart canvas {
 .wordcloud-container {
   padding: 20px;
   text-align: center;
-  min-height: 100px;
+  min-height: 400px;
+  max-height: 550px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+  position: relative;
+  overflow: hidden;
 }
 
 /* 新聞容器樣式 */
@@ -818,18 +826,6 @@ c-chart canvas {
   margin-bottom: $spacing-md;
 }
 
-.wordcloud-container {
-  padding: 20px;
-  height: 250px;
-  max-height: 250px;
-  overflow-y: auto;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 8px;
-  text-align: center;
-
   .word-item {
     display: inline-block;
     margin: 4px 6px;
@@ -868,7 +864,7 @@ c-chart canvas {
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
   }
-}
+
 
 /* 現代化時間篩選器樣式 */
 .time-filter-card-modern {
