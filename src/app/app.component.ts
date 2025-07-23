@@ -3,10 +3,11 @@ import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { DataService } from './services/data.service';
 import { CommonModule } from '@angular/common';
+import { WebAiAssistantComponent } from './pages/web-ai-assistant/web-ai-assistant.component';
 
 @Component({
     selector: 'app-root',
-    imports: [RouterOutlet, CommonModule],
+    imports: [RouterOutlet, CommonModule, WebAiAssistantComponent],
     templateUrl: './app.component.html',
     styleUrl: './app.component.scss',
     standalone: true
@@ -17,22 +18,22 @@ export class AppComponent implements OnInit {
     total_visits: 0,
     today_visitors: 0
   };
-  private visitRecorded = false; // 標記是否已記錄當次訪問
   
   constructor(private router: Router, private dataService: DataService) {}
   
   ngOnInit() {
+    // 立即記錄頁面訪問（包括刷新頁面）
+    this.recordPageVisit('/');
+    
     // 獲取訪問統計
     this.loadVisitorStats();
     
-    // 監聽路由變化，但只記錄首次訪問
+    // 監聽路由變化，每次訪問都記錄
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe((event: any) => {
-      // 只在首次訪問時記錄
-      if (!this.visitRecorded) {
-        this.checkAndRecordVisit(event.urlAfterRedirects || '/');
-      }
+      // 每次路由變化都記錄
+      this.recordPageVisit(event.urlAfterRedirects || '/');
     });
   }
   
@@ -71,26 +72,9 @@ export class AppComponent implements OnInit {
     });
   }
   
-  // 檢查並記錄頁面訪問 (只記錄每天首次訪問)
-  private checkAndRecordVisit(page: string) {
-    // 檢查 localStorage 中的訪問記錄
-    const today = new Date().toISOString().split('T')[0]; // 格式: YYYY-MM-DD
-    const lastVisitDate = localStorage.getItem('lastVisitDate');
-    
-    // 如果今天沒有訪問過，才記錄訪問
-    if (lastVisitDate !== today) {
-      console.log('記錄今日首次訪問');
-      localStorage.setItem('lastVisitDate', today);
-      this.recordPageVisit(page);
-      this.visitRecorded = true;
-    } else {
-      console.log('今日已記錄過訪問，不重複計數');
-      this.visitRecorded = true;
-    }
-  }
-  
-  // 記錄頁面訪問
-  recordPageVisit(page: string) {
+  // 記錄頁面訪問 (每次訪問都記錄)
+  private recordPageVisit(page: string) {
+    console.log('記錄頁面訪問:', page);
     this.dataService.recordVisit(page).subscribe({
       next: (result) => {
         // 更新訪問計數，確保顯示正確

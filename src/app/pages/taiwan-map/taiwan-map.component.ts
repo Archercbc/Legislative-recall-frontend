@@ -516,6 +516,17 @@ export class TaiwanMapComponent implements OnInit {
     return '';
   }
 
+  // 根據政黨返回對應的顏色
+  getPartyColor(party: string | undefined): string {
+    if (!party) return '#7f8c8d';
+
+    if (party.includes('國民黨')) return '#0078d4';
+    if (party.includes('進步黨')) return '#00a65a';
+    if (party.includes('民眾黨')) return '#f5f5f5';
+
+    return '#7f8c8d';
+  }
+
   onFilterChange() {
     if (this.filterRecallOnly) {
       this.selectedCounty = null;
@@ -526,6 +537,83 @@ export class TaiwanMapComponent implements OnInit {
     }
   }
 
+  // 獲取狀態對應的顏色
+  getStatusColor(status: string): string {
+    const colorMap: { [key: string]: string } = {
+      '二階連署進行中': '#f39c12',
+      '二階連署進行中 (已達門檻)': '#27ae60',
+      '二階失敗': '#95a5a6',
+      '三階投票進行中': '#e74c3c',
+      '三階罷免成功': '#27ae60',
+      '三階罷免失敗': '#7f8c8d',
+      '罷免中止': '#95a5a6'
+    };
+    return colorMap[status] || '#3498db';
+  }
+
+  // 獲取特定狀態的立委數量
+  getStatusCount(status: string): number {
+    return this.recallPoliticians.filter(r =>
+      (r.status || r.recall_data?.狀態) === status
+    ).length;
+  }
+
+  // 罷免狀態圖標（簡化版）
+  getRecallStatusIcon(_status: string): string {
+    // 使用簡單的 SVG 圖標
+    return 'status-icon';
+  }
+
+  // 罷免狀態樣式類別
+  getRecallStatusClass(status: string): string {
+    const classMap: { [key: string]: string } = {
+      '連署進行中': 'status-petition-ongoing',
+      '連署未通過': 'status-petition-failed',
+      '罷免進行中': 'status-recall-ongoing',
+      '罷免未通過': 'status-recall-failed',
+      '罷免成功': 'status-recall-success',
+      '三階投票進行中': 'status-recall-ongoing',
+      '一階進行中': 'status-petition-ongoing',
+      '二階進行中': 'status-recall-ongoing'
+    };
+    return classMap[status] || 'status-survey';
+  }
+
+  closeUsageModal() {
+    this.showUsageModal = false;
+    localStorage.setItem('taiwanMapUsageSeen', '1');
+  }
+
+  // 獲取指定縣市的被罷免立委數量
+  getRecallCountByCountyId(countyId: string): number {
+    const countyName = this.getCountyName(countyId);
+    const count = this.displayPoliticians.filter(r => // 改為使用 displayPoliticians
+      (r["行政區"] || r.recall_data?.行政區) === countyName
+    ).length;
+    return count;
+  }
+
+  // 檢查是否應該顯示數字（只有當數量大於0時才顯示）
+  shouldShowRecallCount(countyId: string): boolean {
+    return this.getRecallCountByCountyId(countyId) > 0;
+  }
+
+  // 獲取縣市標籤位置
+  getCountyLabelPosition(countyId: string): { x: number, y: number } {
+    return this.countyLabelPositions[countyId] || { x: 0, y: 0 };
+  }
+
+  // 根據縣市名稱獲取地圖ID
+  getCountyIdByName(countyName: string): string | null {
+    for (const [id, name] of Object.entries(this.countyNames)) {
+      if (name === countyName) {
+        return id;
+      }
+    }
+    return null;
+  }
+
+  // 根據區域名稱獲取地圖ID
   getCountyIdByAreaName(areaName: string): string | null {
     return this.areaNameToCountyId[areaName] || null;
   }
@@ -604,83 +692,5 @@ export class TaiwanMapComponent implements OnInit {
     this.filteredAreaCounts = [...this.areaCounts]; // 重置為全部縣市
     this.displayPoliticians = [...this.recallPoliticians]; // 重置顯示列表
     this.resetMapHighlight();
-  }
-
-  // 移除地圖高亮功能（已取消）
-
-  // 根據縣市名稱獲取地圖ID
-  getCountyIdByName(countyName: string): string | null {
-    for (const [id, name] of Object.entries(this.countyNames)) {
-      if (name === countyName) {
-        return id;
-      }
-    }
-    return null;
-  }
-
-  // 獲取狀態對應的顏色
-  getStatusColor(status: string): string {
-    const colorMap: { [key: string]: string } = {
-      '二階連署進行中': '#f39c12',
-      '二階連署進行中 (已達門檻)': '#27ae60',
-      '二階失敗': '#95a5a6',
-      '三階投票進行中': '#e74c3c',
-      '三階罷免成功': '#27ae60',
-      '三階罷免失敗': '#7f8c8d',
-      '罷免中止': '#95a5a6'
-    };
-    return colorMap[status] || '#3498db';
-  }
-
-  // 獲取特定狀態的立委數量
-  getStatusCount(status: string): number {
-    return this.recallPoliticians.filter(r =>
-      (r.status || r.recall_data?.狀態) === status
-    ).length;
-  }
-
-  // 罷免狀態圖標（簡化版）
-  getRecallStatusIcon(_status: string): string {
-    // 使用簡單的 SVG 圖標
-    return 'status-icon';
-  }
-
-  // 罷免狀態樣式類別
-  getRecallStatusClass(status: string): string {
-    const classMap: { [key: string]: string } = {
-      '連署進行中': 'status-petition-ongoing',
-      '連署未通過': 'status-petition-failed',
-      '罷免進行中': 'status-recall-ongoing',
-      '罷免未通過': 'status-recall-failed',
-      '罷免成功': 'status-recall-success',
-      '三階投票進行中': 'status-recall-ongoing',
-      '一階進行中': 'status-petition-ongoing',
-      '二階進行中': 'status-recall-ongoing'
-    };
-    return classMap[status] || 'status-survey';
-  }
-
-  closeUsageModal() {
-    this.showUsageModal = false;
-    localStorage.setItem('taiwanMapUsageSeen', '1');
-  }
-
-  // 獲取指定縣市的被罷免立委數量
-  getRecallCountByCountyId(countyId: string): number {
-    const countyName = this.getCountyName(countyId);
-    const count = this.displayPoliticians.filter(r => // 改為使用 displayPoliticians
-      (r["行政區"] || r.recall_data?.行政區) === countyName
-    ).length;
-    return count;
-  }
-
-  // 檢查是否應該顯示數字（只有當數量大於0時才顯示）
-  shouldShowRecallCount(countyId: string): boolean {
-    return this.getRecallCountByCountyId(countyId) > 0;
-  }
-
-  // 獲取縣市標籤位置
-  getCountyLabelPosition(countyId: string): { x: number, y: number } {
-    return this.countyLabelPositions[countyId] || { x: 0, y: 0 };
   }
 }

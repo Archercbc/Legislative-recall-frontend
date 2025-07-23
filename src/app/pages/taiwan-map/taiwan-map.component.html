@@ -1,4 +1,3 @@
-<meta name="google-site-verification" content="Z0Tw_1KvYBxDe_E9PWEokZ_RKDDM_wO8fNS96c5CZB4" />
 <div *ngIf="isLoading" class="loading-container">
   <div class="loading-spinner">
     <div class="spinner"></div>
@@ -140,24 +139,17 @@
                 <div class="legislator-image" *ngIf="!politician.image_url && !politician.id.startsWith('no-recall')">
                     <div class="default-avatar">{{ politician.name.charAt(0) || 'N' }}</div>
                 </div>
-                <div class="legislator-info" [class.no-recall-info]="politician.id.startsWith('no-recall')">
-                    <h3 [class.no-recall-title]="politician.id.startsWith('no-recall')">{{ politician.name }}</h3>
-                    <p class="constituency" *ngIf="politician.constituency && !politician.id.startsWith('no-recall')">{{ politician.constituency }}</p>
-                    <p class="party" *ngIf="politician.party && !politician.id.startsWith('no-recall')" [ngClass]="getPartyColorClass(politician.party)">
+                <div class="legislator-info">
+                    <h3>{{ politician.name }}</h3>
+                    <p class="constituency" *ngIf="politician.constituency">{{ politician.constituency }}</p>
+                    <p class="party" *ngIf="politician.party" [style.background]="getPartyColor(politician.party)">
                         {{ politician.party }}
                     </p>
-                    <div class="recall-status" *ngIf="politician.recallStatus && !politician.id.startsWith('no-recall')">
-                        <svg width="12" height="12" fill="currentColor" class="me-1">
-                            <circle cx="6" cy="6" r="4" [attr.fill]="getStatusColor(politician.recallStatus)"/>
-                        </svg>
-                        <span [class]="getRecallStatusClass(politician.recallStatus)">
-                            {{ politician.recallStatus }}
-                        </span>
-                    </div>
-                    <div class="recall-date-info" *ngIf="(politician.recallNote || politician.recallVoteDate) && !politician.id.startsWith('no-recall')">
-                        <strong>{{ politician.recallNote }}:</strong> {{ politician.recallVoteDate }}
-                    </div>
-                    <div *ngIf="filterRecallOnly && !politician.id.startsWith('no-recall')" class="recall-tip">此議員目前有罷免案進行中</div>
+                    <p class="recall-status" *ngIf="politician.recallStatus" [style.background]="getStatusColor(politician.recallStatus)">
+                        {{ politician.recallStatus }}
+                    </p>
+                    <p class="recall-note" *ngIf="politician.recallNote">{{ politician.recallNote }}</p>
+                    <p class="recall-vote-date" *ngIf="politician.recallVoteDate">投票日: {{ politician.recallVoteDate }}</p>
                 </div>
             </div>
             <div *ngIf="politicians.length === 0" class="no-data">

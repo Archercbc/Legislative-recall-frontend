@@ -24,6 +24,14 @@ export class DataService {
     return this.http.get<any>(`${this.apiUrl}/${id}`);
   }
 
+  // 獲取立委詳細信息，支持時間範圍參數
+  getLegislatorDetailWithTimeRange(id: string, timeRange: string): Observable<any> {
+    const params = new URLSearchParams({
+      time_range: timeRange
+    });
+    return this.http.get<any>(`${this.apiUrl}/${id}?${params.toString()}`);
+  }
+
   getRecallList() {
     return this.http.get<any[]>(`${this.apiUrl}/recall`);
   }

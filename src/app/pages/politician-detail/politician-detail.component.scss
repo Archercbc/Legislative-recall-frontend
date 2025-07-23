@@ -1458,7 +1458,7 @@ c-card {
 .back-to-main-btn {
   position: fixed;
   bottom: 2rem;
-  right: 2rem;
+  left: 2rem;  /* 改為左側，避免與右側的AI聊天按鈕重疊 */
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   color: white;
   border: none;
@@ -1545,7 +1545,7 @@ c-card {
 @media (max-width: 768px) {
   .back-to-main-btn {
     bottom: 1rem;
-    right: 1rem;
+    left: 1rem;  /* 改為左側 */
     padding: 0.8rem 1.2rem;
     font-size: 12px;
     

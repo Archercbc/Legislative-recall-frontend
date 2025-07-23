@@ -299,33 +299,122 @@ export class PoliticianDetailComponent {
 
   // 主要方法1：處理 legislators 集合數據
   private processLegislatorsData(data: any): void {
-    // 1. 情感分析圓餅圖
-    if (data.情感分析) {
-      this.updateSentimentChart(data.情感分析);
+    console.log('處理legislators數據:', data);
+    
+    // 1. 情感分析圓餅圖 - 使用recall_support和recall_oppose
+    if (data.recall_support !== undefined && data.recall_oppose !== undefined) {
+      this.updateSentimentChart({
+        '反對罷免人數': data.recall_oppose,
+        '支持罷免人數': data.recall_support,
+        '中性人數': 0
+      });
     }
-    // 2. 情緒雷達圖 - 根據數據結構使用 positive/negative 分類
-    if (data.情緒分析 && 
-        (data.情緒分析.positive || data.情緒分析.negative)) {
+    
+    // 2. 情緒雷達圖 - 使用emotion_analysis
+    if (data.emotion_analysis && 
+        (data.emotion_analysis.positive || data.emotion_analysis.negative)) {
       console.log('從 legislators 集合載入情緒雷達圖數據');
-      this.updateEmotionRadarChart(data.情緒分析);
+      this.updateEmotionRadarChart(data.emotion_analysis);
     }
-    // 3. 文字雲 - 從 legislators 集合直接獲取
-    if (data.word_cloud && data.word_cloud.length > 0) {
+    
+    // 3. 文字雲 - 使用wordcloud_data
+    if (data.wordcloud_data && data.wordcloud_data.length > 0) {
       // 轉換為新文字雲組件格式
-      this.wordCloudData = data.word_cloud.map((item: any) => ({
+      this.wordCloudData = data.wordcloud_data.map((item: any) => ({
         text: item.text || item.word || '',
         weight: item.weight || item.count || 0,
         color: this.getWordCloudColor(item.text || item.word || '', 0)
       })).filter((item: any) => item.text && item.weight > 0);
       console.log('從 legislators 集合載入文字雲', this.wordCloudData.length);
+    } else {
+      console.log('legislators 中沒有文字雲數據');
     }
     
-    // 4. 月份情感統計 - 從 legislators 集合獲取並轉換為時間序列數據
-    if (data.月份情感統計 && Object.keys(data.月份情感統計).length > 0) {    // 只顯示一年內的資料
-    const filteredMonthlyData = this.filterToLastYear(data.月份情感統計);
-    // 處理時間序列
-    this.updateTimeSeriesFromMonthlyStats(filteredMonthlyData);
+    // 4. 時間序列統計 - 使用time_series_stats
+    if (data.time_series_stats && Object.keys(data.time_series_stats).length > 0) {
+      console.log('從 legislators 集合載入時間序列數據');
+      // 處理時間序列數據
+      this.processTimeSeriesStats(data.time_series_stats);
+    } else {
+      console.log('legislators 中沒有時間序列數據');
+    }
   }
+  
+  // 新增方法：處理時間序列統計數據
+  private processTimeSeriesStats(timeSeriesStats: any): void {
+    // 根據當前篩選器選擇對應的時間範圍數據
+    let selectedStats: any = null;
+    
+    switch (this.currentFilter) {
+      case 'week':
+        selectedStats = timeSeriesStats.recent_7_days;
+        break;
+      case '2weeks':
+        selectedStats = timeSeriesStats.recent_14_days;
+        break;
+      case 'month':
+        selectedStats = timeSeriesStats.recent_30_days;
+        break;
+      case '3months':
+        selectedStats = timeSeriesStats.recent_90_days;
+        break;
+      case '6months':
+        selectedStats = timeSeriesStats.recent_180_days;
+        break;
+      case '1year':
+        selectedStats = timeSeriesStats.recent_365_days;
+        break;
+      default:
+        selectedStats = timeSeriesStats.recent_7_days;
+    }
+    
+    if (selectedStats && selectedStats.stats_points && selectedStats.stats_points.length > 0) {
+      console.log(`📊 使用時間範圍: ${selectedStats.description}`);
+      
+      // 轉換為時間序列圖表格式
+      const labels = selectedStats.stats_points.map((point: any) => point.date);
+      
+      // 根據情緒分類計算正面和負面數據
+      const supportData = selectedStats.stats_points.map((point: any) => {
+        const emotionCounts = point.emotion_counts || {};
+        // 負面情緒：sadness, anger, fear, disgust
+        return (emotionCounts.sadness || 0) + (emotionCounts.anger || 0) + 
+               (emotionCounts.fear || 0) + (emotionCounts.disgust || 0);
+      });
+      
+      const opposeData = selectedStats.stats_points.map((point: any) => {
+        const emotionCounts = point.emotion_counts || {};
+        // 正面情緒：joy, trust, anticipation
+        return (emotionCounts.joy || 0) + (emotionCounts.trust || 0) + 
+               (emotionCounts.anticipation || 0);
+      });
+      
+      this.demoLineChartData = {
+        labels: labels,
+        datasets: [
+          {
+            label: '支持罷免',
+            data: supportData,
+            borderColor: '#f87171',
+            backgroundColor: 'rgba(248, 113, 113, 0.1)',
+            tension: 0.3,
+            fill: true
+          },
+          {
+            label: '反對罷免',
+            data: opposeData,
+            borderColor: '#4f8cff',
+            backgroundColor: 'rgba(79, 140, 255, 0.1)',
+            tension: 0.3,
+            fill: true
+          }
+        ]
+      };
+      
+      console.log(`📊 時間序列圖表更新完成: ${labels.length}個數據點`);
+    } else {
+      console.log('⚠️ 沒有找到對應的時間範圍數據');
+    }
   }
   // 重新設計：統一的數據載入方法
   private loadCrawlerData(
@@ -439,7 +528,6 @@ export class PoliticianDetailComponent {
         console.log(`時間序列包含今天的點: ${finalLabels[finalLabels.length - 1]}`);
         
       } else {
-        console.log('crawler_data 中沒有時間序列數據');
       }
     }
 
@@ -726,34 +814,48 @@ export class PoliticianDetailComponent {
       return;
     }
 
-    // 支持多種可能的數據格式
-    // 格式1: { 反對罷免人數: X, 支持罷免人數: Y }
-    // 格式2: { oppose_count: X, support_count: Y }
-    // 格式3: { positive: X, negative: Y }
-    
-    // 先嘗試獲取所有可能的值
-    const opposeCounts = [
-      sentimentData.反對罷免人數,
-      sentimentData.oppose_count,
-      sentimentData.positive
-    ].filter(val => val !== undefined && val !== null);
-    
-    const supportCounts = [
-      sentimentData.支持罷免人數,
-      sentimentData.support_count,
-      sentimentData.negative
-    ].filter(val => val !== undefined && val !== null);
-    
-    // 使用找到的第一個有效值，如果都沒有則為0
-    this.positiveCount = opposeCounts.length > 0 ? opposeCounts[0] : 0;
-    this.negativeCount = supportCounts.length > 0 ? supportCounts[0] : 0;
-
-    // 如果數據為0，顯示一個提示
-    const total = this.positiveCount + this.negativeCount;
-    if (total === 0) {
-      console.log('情感分析數據總數為0');
+    // 處理emotion_analysis格式：{positive: {...}, negative: {...}}
+    if (sentimentData.positive && sentimentData.negative) {
+      console.log('檢測到emotion_analysis格式數據');
+      
+      // 計算positive和negative的總和
+      const positiveTotal = Object.values(sentimentData.positive).reduce((sum: number, val: any) => sum + (val || 0), 0);
+      const negativeTotal = Object.values(sentimentData.negative).reduce((sum: number, val: any) => sum + (val || 0), 0);
+      
+      this.positiveCount = positiveTotal;  // positive = 反對罷免
+      this.negativeCount = negativeTotal;  // negative = 支持罷免
+      
+      console.log(`情感分析數據: 反對=${this.positiveCount}, 支持=${this.negativeCount}, 總人數=${this.positiveCount + this.negativeCount}`);
     } else {
-      console.log(`情感分析數據: 反對=${this.positiveCount}, 支持=${this.negativeCount}, 總人數=${total}`);
+      // 支持多種可能的數據格式
+      // 格式1: { 反對罷免人數: X, 支持罷免人數: Y }
+      // 格式2: { oppose_count: X, support_count: Y }
+      // 格式3: { positive: X, negative: Y }
+      
+      // 先嘗試獲取所有可能的值
+      const opposeCounts = [
+        sentimentData.反對罷免人數,
+        sentimentData.oppose_count,
+        sentimentData.positive
+      ].filter(val => val !== undefined && val !== null);
+      
+      const supportCounts = [
+        sentimentData.支持罷免人數,
+        sentimentData.support_count,
+        sentimentData.negative
+      ].filter(val => val !== undefined && val !== null);
+      
+      // 使用找到的第一個有效值，如果都沒有則為0
+      this.positiveCount = opposeCounts.length > 0 ? opposeCounts[0] : 0;
+      this.negativeCount = supportCounts.length > 0 ? supportCounts[0] : 0;
+
+      // 如果數據為0，顯示一個提示
+      const total = this.positiveCount + this.negativeCount;
+      if (total === 0) {
+        console.log('情感分析數據總數為0');
+      } else {
+        console.log(`情感分析數據: 反對=${this.positiveCount}, 支持=${this.negativeCount}, 總人數=${total}`);
+      }
     }
 
     // 更新圖表數據
@@ -766,17 +868,101 @@ export class PoliticianDetailComponent {
     };
   }
 
+  // 從time_series_stats計算情感分析數據
+  private calculateSentimentFromTimeSeriesStats(timeSeriesStats: any): void {
+    // 根據當前篩選器選擇對應的時間範圍數據
+    let selectedStats: any = null;
+    
+    switch (this.currentFilter) {
+      case 'week':
+        selectedStats = timeSeriesStats.recent_7_days;
+        break;
+      case '2weeks':
+        selectedStats = timeSeriesStats.recent_14_days;
+        break;
+      case 'month':
+        selectedStats = timeSeriesStats.recent_30_days;
+        break;
+      case '3months':
+        selectedStats = timeSeriesStats.recent_90_days;
+        break;
+      case '6months':
+        selectedStats = timeSeriesStats.recent_180_days;
+        break;
+      case '1year':
+        selectedStats = timeSeriesStats.recent_365_days;
+        break;
+      default:
+        selectedStats = timeSeriesStats.recent_7_days;
+    }
+    
+    if (selectedStats && selectedStats.stats_points && selectedStats.stats_points.length > 0) {
+      // 計算總的正面和負面情緒
+      let totalPositive = 0;
+      let totalNegative = 0;
+      
+      selectedStats.stats_points.forEach((point: any) => {
+        const emotionCounts = point.emotion_counts || {};
+        
+        // 正面情緒：joy, trust, anticipation
+        totalPositive += (emotionCounts.joy || 0) + (emotionCounts.trust || 0) + (emotionCounts.anticipation || 0);
+        
+        // 負面情緒：sadness, anger, fear, disgust
+        totalNegative += (emotionCounts.sadness || 0) + (emotionCounts.anger || 0) + 
+                        (emotionCounts.fear || 0) + (emotionCounts.disgust || 0);
+      });
+      
+      // 更新情感分析數據
+      this.positiveCount = totalPositive;  // 正面情緒 = 反對罷免
+      this.negativeCount = totalNegative;  // 負面情緒 = 支持罷免
+      
+      // 更新圓餅圖
+      this.sentimentChartData = {
+        labels: ['反對罷免', '支持罷免'],
+        datasets: [{
+          data: [this.positiveCount, this.negativeCount],
+          backgroundColor: ['#4f8cff', '#f87171']
+        }]
+      };
+      
+      console.log(`📈 情感分析更新完成: 反對=${this.positiveCount}, 支持=${this.negativeCount}`);
+    }
+  }
 
   get party(): string {
     if (!this.data?.constituency) return '';
-    const found = this.data.constituency.find((c: string) => c.startsWith('黨籍：'));
-    return found ? found.split('：')[1] : '';
+    
+    // 如果constituency是字符串，直接返回
+    if (typeof this.data.constituency === 'string') {
+      return this.data.party || '';
+    }
+    
+    // 如果constituency是數組，查找黨籍信息
+    if (Array.isArray(this.data.constituency)) {
+      const found = this.data.constituency.find((c: string) => c.startsWith('黨籍：'));
+      return found ? found.split('：')[1] : '';
+    }
+    
+    return '';
   }
+  
   get district(): string {
     if (!this.data?.constituency) return '';
-    const found = this.data.constituency.find((c: string) => c.startsWith('選區：'));
-    return found ? found.split('：')[1] : '';
+    
+    // 如果constituency是字符串，直接返回
+    if (typeof this.data.constituency === 'string') {
+      return this.data.constituency || '';
+    }
+    
+    // 如果constituency是數組，查找選區信息
+    if (Array.isArray(this.data.constituency)) {
+      const found = this.data.constituency.find((c: string) => c.startsWith('選區：'));
+      return found ? found.split('：')[1] : '';
+    }
+    
+    return '';
   }
+  
   objectKeys(obj: any): string[] {
     return obj ? Object.keys(obj) : [];
   }
@@ -803,8 +989,6 @@ export class PoliticianDetailComponent {
     return ((this.positiveCount / total) * 100).toFixed(1);  // POSITIVE = 反對
   }
 
-
-
   // 處理中文屬性訪問的方法
   getUserCount(): string {
     if (!this.data) return '0';
@@ -830,355 +1014,112 @@ export class PoliticianDetailComponent {
     this.startDate = '';
     this.endDate = '';
   }
+  
   setQuickFilter(period: string): void {
-    this.currentFilter = period; // 記錄當前篩選狀態
+    console.log(`🔍 setQuickFilter 被調用，參數: ${period}`);
+    console.log(`🔍 當前 politicianId: ${this.politicianId}`);
     
-    if (!this.maxDate) {
-      return;
-    }
-
-    // 使用 maxDate (今天) 作為基準
-    const maxDate = new Date(this.maxDate);
-
-    // 計算日期差異 (從今天往前推的天數)
-    const calculateDaysBack = (days: number) => {
-      const newStartDate = new Date(maxDate.getTime() - days * 24 * 60 * 60 * 1000);
-      const newStartDateStr = newStartDate.toISOString().split('T')[0];
-      // 不早於 minDate
-      return newStartDateStr > this.minDate ? newStartDateStr : this.minDate;
-    };
+    this.currentFilter = period; // 記錄當前篩選狀態
 
     // 顯示加載狀態
     this.isLoadingTimeData = true;
+    console.log('⏳ 設置加載狀態為 true');
 
+    // 將前端時間範圍映射到後端API的時間範圍參數
+    let timeRangeParam: string;
+    
     switch (period) {
       case 'week':
-        this.startDate = calculateDaysBack(7); // 7天
-        this.endDate = maxDate.toISOString().split('T')[0]; // <-- 在這裡進行轉換
+        timeRangeParam = '7';
         break;
       case '2weeks':
-        this.startDate = calculateDaysBack(14); // 14天
-        this.endDate = maxDate.toISOString().split('T')[0]; // <-- 在這裡進行轉換
+        timeRangeParam = '14';
         break;
       case 'month':
-        this.startDate = calculateDaysBack(30); // 30天
-        this.endDate = maxDate.toISOString().split('T')[0]; // <-- 在這裡進行轉換
+        timeRangeParam = '30';
         break;
       case '3months':
-        this.startDate = calculateDaysBack(90); // 90天
-        this.endDate = maxDate.toISOString().split('T')[0]; // <-- 在這裡進行轉換
+        timeRangeParam = '90';
         break;
       case '6months':
-        this.startDate = calculateDaysBack(180); // 180天
-        this.endDate = maxDate.toISOString().split('T')[0]; // <-- 在這裡進行轉換
+        timeRangeParam = '180';
         break;
       case '1year':
-        this.startDate = calculateDaysBack(365); // 365天
-        this.endDate = maxDate.toISOString().split('T')[0]; // <-- 在這裡進行轉換
+        timeRangeParam = '365';
         break;
       case 'all':
-        // 全部時間：設定為完整時間範圍
-        this.startDate = this.minDate;
-        this.endDate = maxDate.toISOString().split('T')[0]; // <-- 在這裡進行轉換
+        timeRangeParam = 'all';
         break;
       default:
-        this.startDate = calculateDaysBack(30); // 預設30天
-        this.endDate = maxDate.toISOString().split('T')[0]; // <-- 在這裡進行轉換
+        timeRangeParam = '30';
     }
     
-    console.log(`設置時間範圍: ${this.startDate} 到 ${this.endDate} (${period})`);
+    console.log(`設置時間範圍: ${period} -> ${timeRangeParam}天`);
 
-    // 觸發數據更新
-    this.updateChartsForTimeRange();
-  }
-
-  // 統一的時間範圍數據更新方法
-  private updateChartsForTimeRange(): void {
-    // 檢查是否有預計算數據可用
-    if (!this.data || !this.data.月份情感統計 || Object.keys(this.data.月份情感統計).length === 0) {
-      console.log('⚠️ 沒有預計算數據，無法更新圖表');
-      this.isLoadingTimeData = false;
-      return;
-    }
-
-    console.log('✅ 使用 legislators 集合中的預計算數據進行時間範圍篩選');
-
-    // 根據時間範圍篩選月份數據
-    const filteredMonthlyStats = this.filterMonthlyStatsByDateRange(
-      this.data.月份情感統計,
-      this.startDate,
-      this.endDate
-    );
-
-    // 更新時間序列圖（使用篩選後的數據和動態密度）
-    this.updateTimeSeriesFromMonthlyStats(filteredMonthlyStats);
-
-    // 更新圓餅圖（使用篩選後數據重新計算）
-    const filteredSentimentStats = this.calculateSentimentFromFilteredData(filteredMonthlyStats);
-    this.updateSentimentChart(filteredSentimentStats);
-
-    // 更新雷達圖（使用篩選後數據重新計算）
-    const filteredEmotionStats = this.calculateEmotionFromFilteredData(filteredMonthlyStats);
-    this.updateEmotionRadarChart(filteredEmotionStats);
-
-    // 文字雲暫時使用完整數據（因為通常不按時間篩選）
-    if (this.data.word_cloud && this.data.word_cloud.length > 0) {
-      this.wordCloudData = this.data.word_cloud.map((item: any, index: number) => ({
-        text: item.text || item.word || '',
-        weight: item.weight || item.count || 0,
-        color: this.getWordCloudColor(item.text || item.word || '', index)
-      })).filter((item: any) => item.text && item.weight > 0);
-    }
-
-    // 完成後關閉加載狀態
-    this.isLoadingTimeData = false;
-  }
-
-  // 根據日期範圍篩選月份統計數據
-  private filterMonthlyStatsByDateRange(monthlyStats: any, startDate: string, endDate: string): any {
-    if (!monthlyStats || !startDate || !endDate) {
-      return monthlyStats;
-    }
-
-    const filteredStats: any = {};
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    Object.keys(monthlyStats).forEach(monthKey => {
-      // 假設monthKey格式為 YYYY-MM
-      if (monthKey.match(/^\d{4}-\d{2}$/)) {
-        const monthDate = new Date(monthKey + '-01'); // 轉換為該月第一天
-
-        if (monthDate >= start && monthDate <= end) {
-          filteredStats[monthKey] = monthlyStats[monthKey];
-        }
-      }
-    });
-
-    console.log(`📅 時間範圍篩選: ${startDate} 到 ${endDate}, 篩選出 ${Object.keys(filteredStats).length} 個月份`);
-    return filteredStats;
-  }
-
-  // 從篩選後的月份數據計算情感統計
-  private calculateSentimentFromFilteredData(filteredMonthlyStats: any): any {
-    let totalSupport = 0;
-    let totalOppose = 0;
-
-    Object.values(filteredMonthlyStats).forEach((monthData: any) => {
-      if (monthData) {
-        totalSupport += monthData.支持罷免人數 || monthData.support_count || 0;
-        totalOppose += monthData.反對罷免人數 || monthData.oppose_count || 0;
-      }
-    });
-
-    return {
-      支持罷免人數: totalSupport,
-      反對罷免人數: totalOppose
-    };
-  }
-
-  // 從篩選後的月份數據計算情緒統計
-  private calculateEmotionFromFilteredData(filteredMonthlyStats: any): any {
-    const emotionTotals: any = {};
-
-    Object.values(filteredMonthlyStats).forEach((monthData: any) => {
-      if (monthData && monthData.情緒統計) {
-        Object.keys(monthData.情緒統計).forEach(emotion => {
-          emotionTotals[emotion] = (emotionTotals[emotion] || 0) + (monthData.情緒統計[emotion] || 0);
-        });
-      }
-    });
-
-    return emotionTotals;
-  }
-  
-
-  onDateRangeChange(): void {
-    this.currentFilter = 'custom'; // 自定義日期時重置篩選狀態
-    if (this.startDate && this.endDate && this.politicianId) {
-      // 顯示加載狀態
-      this.isLoadingTimeData = true;
-      
-      // 檢查是否是「全部時間」範圍 (startDate == minDate 且 endDate == maxDate)
-      const isAllTimeRange = this.startDate === this.minDate && this.endDate === this.maxDate;
-      
-      if (isAllTimeRange && this.data && this.data.月份情感統計 && Object.keys(this.data.月份情感統計).length > 0) {
-        // 全部時間範圍：使用 legislators 集合中的預計算數據
-        console.log('使用 legislators 集合中的預計算數據');
-        this.updateTimeSeriesFromMonthlyStats(this.data.月份情感統計);
-        
-        // 更新圓餅圖
-        if (this.data.情感分析) {
-          this.updateSentimentChart(this.data.情感分析);
+    // 使用新的API獲取數據
+    console.log(`🌐 調用 API: getLegislatorDetailWithTimeRange(${this.politicianId}, ${timeRangeParam})`);
+    this.dataService.getLegislatorDetailWithTimeRange(this.politicianId, timeRangeParam).subscribe({
+      next: (data) => {
+        console.log('✅ API 調用成功，收到數據:', data ? '有數據' : '無數據');
+        if (data) {
+          console.log('✅ 成功獲取時間範圍數據');
+          
+          // 更新基本數據
+          this.data = data;
+          
+          // 處理時間序列圖表數據
+          if (data.time_series_chart) {
+            this.demoLineChartData = data.time_series_chart;
+            console.log('📊 更新時間序列圖表');
+          } else if (data.time_series_stats) {
+            // 處理time_series_stats格式的數據
+            console.log('📊 處理time_series_stats數據');
+            this.processTimeSeriesStats(data.time_series_stats);
+          }
+          
+          // 處理詞雲數據
+          if (data.wordcloud_data && data.wordcloud_data.length > 0) {
+            this.wordCloudData = data.wordcloud_data.map((item: any, index: number) => ({
+              text: item.text || item.word || '',
+              weight: item.weight || item.count || 0,
+              color: this.getWordCloudColor(item.text || item.word || '', index)
+            })).filter((item: any) => item.text && item.weight > 0);
+            console.log('☁️ 更新詞雲數據');
+          }
+          
+          // 處理圓餅圖數據 - 優先使用 recall_support 和 recall_oppose
+          if (data.recall_support !== undefined && data.recall_oppose !== undefined) {
+            console.log('📈 更新圓餅圖數據:', data.recall_support, data.recall_oppose);
+            this.updateSentimentChart({
+              '反對罷免人數': data.recall_oppose,
+              '支持罷免人數': data.recall_support,
+              '中性人數': 0
+            });
+          } else if (data.emotion_analysis) {
+            this.updateSentimentChart(data.emotion_analysis);
+            console.log('📈 更新情感分析圖表');
+          } else if (data.time_series_stats) {
+            // 從time_series_stats計算總的情感分析數據
+            console.log('📈 從time_series_stats計算情感分析數據');
+            this.calculateSentimentFromTimeSeriesStats(data.time_series_stats);
+          }
+          
+          // 處理情緒分析數據
+          if (data.emotion_analysis_detailed) {
+            this.updateEmotionRadarChart(data.emotion_analysis_detailed);
+            console.log('🎯 更新情緒分析圖表');
+          }
         }
         
-        // 更新雷達圖
-        if (this.data.情緒分析 && 
-            (this.data.情緒分析.positive || this.data.情緒分析.negative)) {
-          this.updateEmotionRadarChart(this.data.情緒分析);
-        }
-        
-        // 完成後關閉加載狀態
         this.isLoadingTimeData = false;
-      } else {
-        // 其他時間範圍：直接從 crawler_data 載入數據
-        this.loadCrawlerData(['all'], this.startDate, this.endDate);
+      },
+      error: (error) => {
+        console.error('❌ 獲取時間範圍數據失敗:', error);
+        this.isLoadingTimeData = false;
       }
-    }
-  }
-
-  // 格式化日期範圍顯示
-  formatDateRange(startDate: string, endDate: string): string {
-    if (!startDate || !endDate) return '';
-
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    const formatOptions: Intl.DateTimeFormatOptions = {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    };
-
-    return `${start.toLocaleDateString('zh-TW', formatOptions)} ~ ${end.toLocaleDateString('zh-TW', formatOptions)}`;
-  }
-
-  getDateRangeDays(): number {
-    if (!this.startDate || !this.endDate) return 0;
-    const start = new Date(this.startDate);
-    const end = new Date(this.endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  }
-
-  private loadTimeRangeData(): void {
-    this.isLoadingTimeData = true;
-
-    // 驗證日期範圍
-    if (!this.startDate || !this.endDate) {
-      this.isLoadingTimeData = false;
-      console.error('日期範圍無效');
-      return;
-    }
-
-    console.log(`載入時間範圍數據: ${this.startDate} 至 ${this.endDate}`);
-    
-    // 檢查是否是「全部時間」範圍 (startDate == minDate 且 endDate == maxDate)
-    const isAllTimeRange = this.startDate === this.minDate && this.endDate === this.maxDate;
-    
-    // 只有在「全部時間」且有預計算數據的情況下才使用 legislators 集合
-    if (isAllTimeRange && this.data && this.data.月份情感統計 && 
-        Object.keys(this.data.月份情感統計).length > 0) {
-      console.log('使用 legislators 集合中的完整預計算數據');
-      
-      // 更新時間序列圖表 (使用完整的月份情感統計數據)
-      this.updateTimeSeriesFromMonthlyStats(this.data.月份情感統計);
-      
-      // 更新圓餅圖
-      if (this.data.情感分析) {
-        this.updateSentimentChart(this.data.情感分析);
-      }
-      
-      // 更新雷達圖
-      if (this.data.情緒分析 && 
-          (this.data.情緒分析.positive || this.data.情緒分析.negative)) {
-        this.updateEmotionRadarChart(this.data.情緒分析);
-      }
-      
-      this.isLoadingTimeData = false;
-      return;
-    }
-    
-    // 所有其他時間範圍都從 crawler_data 載入數據
-    console.log('從 crawler_data 載入時間範圍數據');
-    this.loadCrawlerData(['all'], this.startDate, this.endDate);
-  }
-
-  // 新增：更新時間範圍內的圓餅圖和雷達圖
-  private updateTimeRangeCharts(data: any): void {
-    if (!data) {
-      console.error('時間範圍數據為空');
-      return;
-    }
-    
-    // 從時間範圍數據中提取情感和情緒分析
-    if (data.sentiment_analysis) {
-      // 更新情感分析圓餅圖
-      this.updateSentimentChart(data.sentiment_analysis);
-    }
-    
-    // 更新情緒雷達圖
-    if (data.emotion_analysis_detailed) {
-      const emotionData = {
-        positive: data.emotion_analysis_detailed.positive || {},
-        negative: data.emotion_analysis_detailed.negative || {}
-      };
-      this.updateEmotionRadarChart(emotionData);
-    }
-  }
-
-  // CoreUI 相關的輔助方法
-  formatDate(dateString: string): string {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('zh-TW', {
-      month: 'short',
-      day: 'numeric'
     });
   }
 
-  // 只格式化日期部分 (不含時間)
-  formatDateOnly(dateStr: string): string {
-    if (!dateStr) return '';
-    
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('zh-TW', {
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric'
-    });
-  }
-
-  getWordBadgeColor(index: number): string {
-    const colors = ['primary', 'success', 'info', 'warning', 'danger', 'secondary'];
-    return colors[index % colors.length];
-  }
-
-  getWordSize(weight: number): number {
-    // 根據權重計算字體大小 (12-20px)
-    const minSize = 12;
-    const maxSize = 20;
-    const maxWeight = Math.max(...this.wordCloudData.map(w => w.weight || 1)); // 處理沒有 weight 的情況
-    if (maxWeight === 0) return minSize; // 避免除以零
-    const ratio = weight / maxWeight;
-    return Math.round(minSize + (maxSize - minSize) * ratio);
-  }
-
-  // 文字雲專用的大小計算（更大的範圍，出現次數多的在中間且更大）
-  getWordCloudSize(weight: number, index: number): number {
-    if (!this.wordCloudData.length) return 14;
-
-    const maxWeight = Math.max(...this.wordCloudData.map(w => w.weight || 1));
-    const minWeight = Math.min(...this.wordCloudData.map(w => w.weight || 1));
-
-    if (maxWeight === minWeight) return 18;
-
-    // 根據權重計算大小 (16-48px)
-    const minSize = 24;
-    const maxSize = 64;
-    const ratio = (weight - minWeight) / (maxWeight - minWeight);
-
-    // 前幾個（權重高的）詞語更大
-    const sizeBonus = index < 3 ? 6 : index < 6 ? 4 : index < 10 ? 2 : 0;
-
-    return Math.round(minSize + (maxSize - minSize) * ratio) + sizeBonus;
-  }
-
-  // 計算文字雲的最大權重
-  get maxWordWeight(): number {
-    if (!this.wordCloudData.length) return 1;
-    return Math.max(...this.wordCloudData.map(w => w.weight || 1));
-  }
   // 文字雲專用的顏色計算
   getWordCloudColor(_word: string, index: number): string {
     const colors = [
@@ -1198,85 +1139,6 @@ export class PoliticianDetailComponent {
   onWordCloudClick(clickedWord: CloudData): void {
     console.log('點擊了關鍵字:', clickedWord);
     // 這裡可以添加更多互動功能，比如搜索相關內容
-  }
-
-  // 獲取隨機角度（-30到30度之間）
-  getRandomAngle(index: number): number {
-    // 使用索引作為種子，確保每次都相同，但不同詞語有不同角度
-    const seed = index * 137.5 + 42;
-    // 生成-30到30度之間的隨機角度
-    return ((seed % 60) - 30);
-  }
-
-  // 獲取詞語位置（環繞排列）
-  getWordPosition(index: number, type: 'top' | 'left'): number {
-    const totalWords = this.wordCloudData.length;
-    if (totalWords <= 0) return 50;
-
-    // 前幾個高頻詞放在中間位置
-    if (index < 3) {
-      // 前3個詞位於中心區域 (40%-60%)
-      const centerOffset = ((index % 3) * 10) - 10; // -10, 0, 10
-      return type === 'top' ? 50 + centerOffset : 50 + centerOffset;
-    }
-
-    // 其餘詞語環繞排列
-    // 用索引生成角度 (0-360度)
-    const angle = (index * (360 / (totalWords - 3))) % 360;
-    // 距離中心的半徑 (20-40之間，索引越大半徑越大)
-    const radius = 20 + (index / totalWords) * 20;
-    
-    // 將極坐標轉換為直角坐標 (中心點為50,50)
-    if (type === 'top') {
-      return 50 + radius * Math.sin(angle * Math.PI / 180);
-    } else { // left
-      return 50 + radius * Math.cos(angle * Math.PI / 180);
-    }
-  }
-
-  // 取得罷免案狀態的樣式類別
-  getRecallStatusClass(): string {
-    if (!this.recallData || !this.recallData['罷免狀態']) {
-      return '';
-    }
-
-    const status = this.recallData['罷免狀態'];
-    
-    // 根據狀態返回不同的樣式類別
-    if (status.includes('成功')) {
-      return 'status-success';
-    } else if (status.includes('失敗')) {
-      return 'status-failed';
-    } else if (status.includes('進行中')) {
-      return 'status-ongoing';
-    } else if (status.includes('需補件')) {
-      return 'status-supplement';
-    } else {
-      return 'status-default';
-    }
-  }
-
-  // 增加一個方法，用來篩選一年內的月份資料
-  private filterToLastYear(monthlyData: any): any {
-    // 獲取當前日期
-    const now = new Date();
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(now.getFullYear() - 1);
-    oneYearAgo.setDate(1); // 設為該月第一天
-    
-    // 轉換為 YYYY-MM 格式，方便比較
-    const oneYearAgoStr = `${oneYearAgo.getFullYear()}-${String(oneYearAgo.getMonth() + 1).padStart(2, '0')}`;
-    
-    // 篩選月份資料
-    const filteredData: any = {};
-    Object.keys(monthlyData).forEach(monthKey => {
-      // 確保月份格式為 YYYY-MM
-      if (monthKey >= oneYearAgoStr) {
-        filteredData[monthKey] = monthlyData[monthKey];
-      }
-    });
-    
-    return filteredData;
   }
 
   // 動態調整數據點密度 - 漸進式密度變化
@@ -1420,7 +1282,40 @@ export class PoliticianDetailComponent {
     
     return adjustedStats;
   }
+
   goToMainPage(): void {
     this.router.navigate(['/']);
+  }
+
+  // 格式化日期範圍顯示
+  formatDateRange(startDate: string, endDate: string): string {
+    if (!startDate || !endDate) return '';
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // 格式化為 YYYY/MM/DD 格式
+    const formatDate = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}/${month}/${day}`;
+    };
+    
+    return `${formatDate(start)} - ${formatDate(end)}`;
+  }
+
+  // 計算日期範圍的天數
+  getDateRangeDays(): number {
+    if (!this.startDate || !this.endDate) return 0;
+    
+    const start = new Date(this.startDate);
+    const end = new Date(this.endDate);
+    
+    // 計算天數差異
+    const timeDiff = end.getTime() - start.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    
+    return Math.max(1, daysDiff); // 至少返回1天
   }
 }
