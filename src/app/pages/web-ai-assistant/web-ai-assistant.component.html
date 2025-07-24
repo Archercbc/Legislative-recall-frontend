@@ -8,21 +8,16 @@
         <!-- 使用 web_logo.jpg 頭像，通過 CSS 背景圖片顯示 -->
       </div>
       <div class="header-text" *ngIf="isExpanded">
-        <span class="title">網站助手</span>
-        <div class="subscription-info" *ngIf="usageInfo">
-          <small class="text-muted">
-            {{ formatSubscriptionLevel(usageInfo.subscription_level) }} • 
-            剩餘 {{ usageInfo.daily_remaining }}/{{ usageInfo.monthly_remaining }}
-          </small>
-        </div>
+        <span class="title">AI 助手</span>
+        <small class="text-muted">立委數據分析平台</small>
       </div>
     </div>
     <div class="header-actions" *ngIf="isExpanded">
       <c-badge 
-        *ngIf="messages.length > 0" 
+        *ngIf="messages.length > 1" 
         color="success" 
         shape="rounded-pill">
-        {{ messages.length }}
+        {{ messages.length - 1 }}
       </c-badge>
       <svg cIcon name="cilMinus" class="toggle-icon" (click)="toggleExpanded(); $event.stopPropagation()"></svg>
     </div>
@@ -31,19 +26,14 @@
   <!-- 聊天窗口內容 -->
   <div class="chat-content" *ngIf="isExpanded">
 
-    <!-- 使用限制警告 -->
-    <div class="limit-alert" *ngIf="showLimitAlert">
-      <c-alert color="warning" dismissible (close)="closeLimitAlert()">
-        <h6>⚠️ 使用限制</h6>
-        <p>{{ limitMessage }}</p>
-        <button class="btn btn-sm btn-primary" (click)="showUpgradeModal = true; closeLimitAlert()">
-          升級方案
-        </button>
+    <!-- 錯誤提示 -->
+    <div class="error-alert" *ngIf="showError">
+      <c-alert color="danger" dismissible (close)="closeError()">
+        <h6>⚠️ 錯誤</h6>
+        <p>{{ errorMessage }}</p>
       </c-alert>
     </div>
 
-   
-   
     <!-- 訊息區域 -->
     <div class="messages-container" #messagesContainer>
       <div class="messages-list">
@@ -65,16 +55,13 @@
             <!-- AI助理訊息 -->
             <div *ngIf="message.type === 'assistant'" class="assistant-bubble">
               <div class="assistant-avatar">
-                <svg cIcon [name]="getCategoryIcon(message.category)" class="category-icon"></svg>
+                <svg cIcon name="cilSpeech" class="category-icon"></svg>
               </div>
               <div class="assistant-content">
                 <div class="message-text" [innerHTML]="message.content | markdown"></div>
                 <div class="message-meta">
                   <small class="text-muted">
                     {{ formatTime(message.timestamp) }}
-                    <span *ngIf="message.category" class="ms-2 category-tag">
-                      • {{ message.category }}
-                    </span>
                   </small>
                 </div>
               </div>
@@ -91,7 +78,7 @@
               </div>
               <div class="assistant-content">
                 <div class="typing-indicator">
-                  <span>網站助手正在思考</span>
+                  <span>AI 助手正在思考</span>
                   <div class="typing-dots">
                     <span></span>
                     <span></span>
@@ -114,7 +101,7 @@
           (keydown)="onKeyPress($event)"
           [disabled]="isTyping"
           class="message-input"
-          placeholder=""
+          placeholder="輸入您的問題..."
           rows="1">
         </textarea>
         <button
@@ -126,13 +113,26 @@
         </button>
       </div>
       
-      <!-- 使用限制提示 -->
-      <div class="usage-info" *ngIf="usageInfo">
-        <small class="text-muted">
-          今日剩餘: {{ usageInfo.daily_remaining }} | 
-          本月剩餘: {{ usageInfo.monthly_remaining }}
-          <span *ngIf="needsUpgrade()" class="text-warning"> • 建議升級</span>
-        </small>
+      <!-- 快速問題按鈕 -->
+      <div class="quick-questions" *ngIf="messages.length === 1">
+        <small class="text-muted mb-2 d-block">快速問題：</small>
+        <div class="quick-buttons">
+          <button 
+            class="btn btn-sm btn-outline-primary me-2 mb-1"
+            (click)="sendQuickQuestion('這個網站有什麼功能？')">
+            網站功能
+          </button>
+          <button 
+            class="btn btn-sm btn-outline-primary me-2 mb-1"
+            (click)="sendQuickQuestion('請介紹立委數據分析')">
+            數據分析
+          </button>
+          <button 
+            class="btn btn-sm btn-outline-primary me-2 mb-1"
+            (click)="sendQuickQuestion('如何查看文字雲？')">
+            文字雲
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -144,89 +144,3 @@
     <span>💬 有問題嗎？點我開始對話！</span>
   </div>
 </div>
-
-<!-- 升級模態框 -->
-<c-modal 
-  [visible]="showUpgradeModal" 
-  (visibleChange)="showUpgradeModal = $event"
-  size="lg">
-  <c-modal-header>
-    <h5 cModalTitle>🚀 升級您的AI助手體驗</h5>
-    <button cButtonClose (click)="closeUpgradeModal()"></button>
-  </c-modal-header>
-  <c-modal-body>
-    <div class="upgrade-plans">
-      <div class="plan-card">
-        <div class="plan-header">
-          <h6>🆓 免費版</h6>
-          <div class="plan-price">$0</div>
-        </div>
-        <div class="plan-features">
-          <ul>
-            <li>每日 10 次聊天</li>
-            <li>每月 100 次聊天</li>
-            <li>基本功能使用</li>
-            <li>文字雲解釋</li>
-          </ul>
-        </div>
-        <div class="plan-status" *ngIf="isFreeUser()">
-          <span class="badge bg-success">當前方案</span>
-        </div>
-      </div>
-      
-      <div class="plan-card premium">
-        <div class="plan-header">
-          <h6>⭐ 進階版</h6>
-          <div class="plan-price">$99/月</div>
-        </div>
-        <div class="plan-features">
-          <ul>
-            <li>每日 50 次聊天</li>
-            <li>每月 500 次聊天</li>
-            <li>進階分析功能</li>
-            <li>搜尋引擎整合</li>
-            <li>優先客服支援</li>
-          </ul>
-        </div>
-        <div class="plan-action">
-          <button 
-            class="btn btn-primary" 
-            (click)="upgradeSubscription('premium')"
-            [disabled]="!isFreeUser()">
-            {{ isFreeUser() ? '升級' : '當前方案' }}
-          </button>
-        </div>
-      </div>
-      
-      <div class="plan-card pro">
-        <div class="plan-header">
-          <h6>🔥 專業版</h6>
-          <div class="plan-price">$299/月</div>
-        </div>
-        <div class="plan-features">
-          <ul>
-            <li>每日 200 次聊天</li>
-            <li>每月 2000 次聊天</li>
-            <li>所有進階功能</li>
-            <li>API 存取權限</li>
-            <li>專屬客服支援</li>
-            <li>客製化分析</li>
-          </ul>
-        </div>
-        <div class="plan-action">
-          <button 
-            class="btn btn-warning" 
-            (click)="upgradeSubscription('pro')"
-            [disabled]="!isFreeUser()">
-            {{ isFreeUser() ? '升級' : '當前方案' }}
-          </button>
-        </div>
-      </div>
-    </div>
-  </c-modal-body>
-  <c-modal-footer>
-    <button cButton color="secondary" (click)="closeUpgradeModal()">
-      稍後再說
-    </button>
-  </c-modal-footer>
-</c-modal>

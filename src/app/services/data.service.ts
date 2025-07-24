@@ -12,7 +12,7 @@ export class DataService {
   constructor(private http: HttpClient) { }
 
   getLegislators(county?: string, party?: string): Observable<any[]> {
-    let url = this.apiUrl;
+    let url = this.apiUrl + '/';  // 添加結尾斜線
     const params: string[] = [];
     if (county) params.push(`county=${encodeURIComponent(county)}`);
     if (party) params.push(`party=${encodeURIComponent(party)}`);

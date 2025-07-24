@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../services/data.service';
+import { AiAssistantService } from '../../services/ai-assistant.service';
 import { HttpClientModule } from '@angular/common/http';
 import { NgChartsModule } from 'ng2-charts';
 
@@ -232,7 +233,12 @@ export class PoliticianDetailComponent {
   } 
   }   
 
-  constructor(private route: ActivatedRoute, private dataService: DataService, private router: Router) {
+  constructor(
+    private route: ActivatedRoute, 
+    private dataService: DataService, 
+    private router: Router,
+    private aiAssistantService: AiAssistantService
+  ) {
     this.initializeDateRange();
 
     this.route.paramMap.subscribe(params => {
@@ -1138,7 +1144,30 @@ export class PoliticianDetailComponent {
   // 文字雲點擊事件處理
   onWordCloudClick(clickedWord: CloudData): void {
     console.log('點擊了關鍵字:', clickedWord);
-    // 這裡可以添加更多互動功能，比如搜索相關內容
+    
+    // 獲取當前立委名稱
+    const legislatorName = this.politicianId || this.data?.name || '';
+    
+    // 構建解釋請求訊息
+    const explanationMessage = legislatorName 
+      ? `請解釋${legislatorName}的文字雲中「${clickedWord.text}」這個關鍵詞的含義和背景`
+      : `請解釋文字雲中「${clickedWord.text}」這個關鍵詞的含義`;
+    
+    // 直接調用AI聊天服務
+    this.aiAssistantService.sendMessage(explanationMessage).subscribe({
+      next: (response) => {
+        if (response.success) {
+          console.log('AI 詞彙解釋成功:', response);
+          // 可以在這裡添加一些用戶反饋，比如顯示一個小提示
+          console.log(`詞彙「${clickedWord.text}」的解釋已發送到AI聊天窗口`);
+        } else {
+          console.error('AI 詞彙解釋失敗:', response.error);
+        }
+      },
+      error: (error) => {
+        console.error('獲取 AI 詞彙解釋失敗:', error);
+      }
+    });
   }
 
   // 動態調整數據點密度 - 漸進式密度變化
