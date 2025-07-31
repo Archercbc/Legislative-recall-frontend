@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -41,23 +42,54 @@ export class DataService {
     return this.http.get<any>(`${this.apiUrl}/recall-stats`);
   }
 
-  // 獲取立委在特定時間範圍內的數據
-  getLegislatorTimeRangeData(name: string, startDate: string, endDate: string): Observable<any> {
-    const params = new URLSearchParams({
-      start_date: startDate,
-      end_date: endDate
-    });
-    return this.http.get(`${this.apiUrl}/${name}/time-range?${params.toString()}`);
-  }
-
-  // 獲取立委的完整時間序列數據（詞雲 + 時間變化）
-  getLegislatorTimeSeriesData(name: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/${name}/time-series`);
-  }
-
   // 獲取立委的數據時間範圍
   getLegislatorDateRange(name: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/${name}/date-range`);
+  }
+
+  // 統一的立委數據API - 支持時間篩選和數據類型選擇
+  getLegislatorUnifiedData(
+    name: string, 
+    options: {
+      days?: number;
+      includePieChart?: boolean;
+      includeTimeSeries?: boolean;
+      includeWordCloud?: boolean;
+      includeEmotion?: boolean;
+    } = {}
+  ): Observable<any> {
+    const params = new URLSearchParams();
+    
+    // 設置默認值
+    const defaultOptions = {
+      days: 365,
+      includePieChart: true,
+      includeTimeSeries: true,
+      includeWordCloud: true,
+      includeEmotion: true,
+      ...options
+    };
+    
+    // 添加參數
+    params.append('days', defaultOptions.days.toString());
+    
+    if (defaultOptions.includePieChart !== undefined) {
+      params.append('include_pie_chart', defaultOptions.includePieChart.toString());
+    }
+    
+    if (defaultOptions.includeTimeSeries !== undefined) {
+      params.append('include_time_series', defaultOptions.includeTimeSeries.toString());
+    }
+    
+    if (defaultOptions.includeWordCloud !== undefined) {
+      params.append('include_word_cloud', defaultOptions.includeWordCloud.toString());
+    }
+    
+    if (defaultOptions.includeEmotion !== undefined) {
+      params.append('include_emotion', defaultOptions.includeEmotion.toString());
+    }
+    
+    return this.http.get(`${this.apiUrl}/${name}/data?${params.toString()}`);
   }
 
   // 獲取網站訪問統計

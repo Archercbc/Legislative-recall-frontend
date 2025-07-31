@@ -117,61 +117,67 @@
             <div class="filter-buttons">
               <button
                 cButton
-                [ngClass]="currentFilter === 'week' ? 'btn-primary' : 'btn-outline-primary'"
+                [ngClass]="currentFilter === 'week' ? 'btn-primary active-filter' : 'btn-outline-primary'"
                 size="sm"
                 (click)="setQuickFilter('week')"
                 [disabled]="isLoadingTimeData"
-                class="filter-btn">
+                class="filter-btn"
+                title="最近一週">
                 <i class="cil-calendar-check me-1"></i>
                 最近一週
               </button>
               <button
                 cButton
-                [ngClass]="currentFilter === '2weeks' ? 'btn-primary' : 'btn-outline-primary'"
+                [ngClass]="currentFilter === '2weeks' ? 'btn-primary active-filter' : 'btn-outline-primary'"
                 size="sm"
                 (click)="setQuickFilter('2weeks')"
                 [disabled]="isLoadingTimeData"
-                class="filter-btn">
+                class="filter-btn"
+                title="最近兩週">
                 <i class="cil-calendar me-1"></i>
                 最近兩週
               </button>
               <button
                 cButton
-                [ngClass]="currentFilter === 'month' ? 'btn-primary' : 'btn-outline-primary'"
+                [ngClass]="currentFilter === 'month' ? 'btn-primary active-filter' : 'btn-outline-primary'"
                 size="sm"
                 (click)="setQuickFilter('month')"
                 [disabled]="isLoadingTimeData"
-                class="filter-btn">
+                class="filter-btn"
+                title="最近一個月">
                 <i class="cil-calendar me-1"></i>
                 最近一個月
               </button>
               <button
                 cButton
-                [ngClass]="currentFilter === '3months' ? 'btn-primary' : 'btn-outline-primary'"
+                [ngClass]="currentFilter === '3months' ? 'btn-primary active-filter' : 'btn-outline-primary'"
                 size="sm"
                 (click)="setQuickFilter('3months')"
                 [disabled]="isLoadingTimeData"
-                class="filter-btn">
+                class="filter-btn"
+                title="最近三個月">
                 <i class="cil-calendar-range me-1"></i>
                 最近三個月
               </button>
               <button
                 cButton
-                [ngClass]="currentFilter === '6months' ? 'btn-primary' : 'btn-outline-primary'"
+                [ngClass]="currentFilter === '6months' ? 'btn-primary active-filter' : 'btn-outline-primary'"
                 size="sm"
                 (click)="setQuickFilter('6months')"
                 [disabled]="isLoadingTimeData"
-                class="filter-btn">
+                class="filter-btn"
+                title="最近六個月">
                 <i class="cil-calendar-range me-1"></i>
                 最近六個月
               </button>
               <button
                 cButton
-                [ngClass]="currentFilter === '1year' ? 'btn-primary' : 'btn-outline-primary'"
+                [ngClass]="currentFilter === '1year' ? 'btn-primary active-filter' : 'btn-outline-primary'"
                 size="sm"
                 (click)="setQuickFilter('1year')"
                 [disabled]="isLoadingTimeData"
-                class="filter-btn">
+                class="filter-btn"
+                title="最近一年">
                 <i class="cil-calendar-range me-1"></i>
                 最近一年
               </button>
@@ -196,7 +202,7 @@
         <div cCard class="chart-card">
           <div cCardHeader>
             <i class="cil-chart-pie"></i>
-            <span>罷免民意分析 (總計: {{ positiveCount + negativeCount }}人)</span>
+            <span class="chart-title">罷免民意分析 (總計: {{ positiveCount + negativeCount }}人)</span>
             <span *ngIf="isLoadingTimeData" class="spinner-border spinner-border-sm ms-2"></span>
           </div>
           <div cCardBody style="overflow: visible; position: relative;">
