@@ -388,7 +388,7 @@ export class PoliticianDetailComponent {
     
     // 3. 文字雲 - 使用wordcloud_data
     if (data.wordcloud_data && data.wordcloud_data.length > 0) {
-      // 轉換為新文字雲組件格式並過濾無意義詞彙
+      // 轉換為新文字雲組件格式
       this.wordCloudData = data.wordcloud_data
         .map((item: any) => ({
         text: item.text || item.word || '',
@@ -396,11 +396,9 @@ export class PoliticianDetailComponent {
         color: this.getWordCloudColor(item.text || item.word || '', 0)
         }))
         .filter((item: any) => {
-          // 過濾無意義的詞彙
-          const meaninglessWords = ['內容', '留言', '標題', '回覆', '評論', '文章', '新聞', '報導', '訊息', '貼文', '發文', '分享'];
+          // 只保留基本的有效性檢查
           return item.text && 
                  item.weight > 0 && 
-                 !meaninglessWords.includes(item.text) &&
                  item.text.length > 1; // 確保不是單字
         });
       console.log('從 legislators 集合載入文字雲', this.wordCloudData.length);
