@@ -1,0 +1,32 @@
+<header class="header">
+  <div class="header-container">
+    <div class="header-brand">
+      <a [routerLink]="brand.url" class="brand-link">
+        <i [class]="brand.logo"></i>
+        <span class="brand-text">{{ brand.name }}</span>
+      </a>
+    </div>
+    
+    <nav class="header-nav">
+      <a *ngFor="let item of navItems" 
+         [routerLink]="item.url" 
+         routerLinkActive="active" 
+         [routerLinkActiveOptions]="{exact: item.url === '/'}"
+         class="nav-link">
+        <i [class]="item.icon"></i>
+        <span>{{ item.name }}</span>
+      </a>
+    </nav>
+    
+    <div class="header-stats" *ngIf="visitorStats && showStats">
+      <div class="stat-item">
+        <i class="fas fa-users"></i>
+        <span>{{ visitorStats.total_visits | number }}</span>
+      </div>
+      <div class="stat-item">
+        <i class="fas fa-user"></i>
+        <span>{{ visitorStats.today_visitors | number }}</span>
+      </div>
+    </div>
+  </div>
+</header>

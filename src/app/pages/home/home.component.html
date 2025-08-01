@@ -1,0 +1,131 @@
+<div class="home-container">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-content">
+      <h1 class="hero-title">公民意見指數平台</h1>
+      <p class="hero-subtitle">Public Opinion Index (POI)</p>
+      <p class="hero-description">
+        透過大數據分析與AI技術，深度解析台灣政治輿情與公民參與趨勢
+      </p>
+      <div class="hero-buttons">
+        <button class="btn btn-primary" routerLink="/taiwan-map">
+          <i class="fas fa-map"></i> 立委罷免分析
+        </button>
+        <button class="btn btn-secondary" routerLink="/referendum-analysis">
+          <i class="fas fa-vote-yea"></i> 公投案分析
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features-section">
+    <div class="container">
+      <h2 class="section-title">平台特色</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <h3>即時數據分析</h3>
+          <p>運用先進的數據分析技術，即時監控與分析政治輿情趨勢，提供準確的民意洞察。</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-robot"></i>
+          </div>
+          <h3>AI智能分析</h3>
+          <p>結合自然語言處理與機器學習，深度解析社群媒體言論，識別情感傾向與議題熱度。</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <h3>公民參與</h3>
+          <p>促進公民社會參與，透過透明化的數據呈現，讓民眾了解政治議題的多元觀點。</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <h3>學術研究</h3>
+          <p>由世新大學顏宏旭教授與學生團隊開發，專注於政治傳播與公民參與的學術研究。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Statistics Section -->
+  <section class="stats-section">
+    <div class="container">
+      <h2 class="section-title">平台統計</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number">{{ visitorStats?.total_visits || 0 | number }}</div>
+          <div class="stat-label">總訪問次數</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">{{ visitorStats?.today_visitors || 0 | number }}</div>
+          <div class="stat-label">今日訪客</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">35+</div>
+          <div class="stat-label">監控立委</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">24/7</div>
+          <div class="stat-label">即時監控</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section class="about-section">
+    <div class="container">
+      <div class="about-content">
+        <div class="about-text">
+          <h2>關於我們</h2>
+          <p>
+            公民意見指數平台（Public Opinion Index, POI）是由世新大學顏宏旭教授與學生江秉騏、李逸晨共同開發的學術研究平台。
+            我們致力於透過大數據分析技術，深度解析台灣政治輿情與公民參與趨勢。
+          </p>
+          <p>
+            本平台運用先進的自然語言處理技術，分析社群媒體上的政治討論，提供客觀、準確的民意洞察。
+            所有數據僅供研究與學術展示使用，促進公民社會的理性討論與參與。
+          </p>
+        </div>
+        <div class="about-image">
+          <div class="placeholder-image">
+            <i class="fas fa-university"></i>
+            <p>世新大學</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section class="contact-section">
+    <div class="container">
+      <h2 class="section-title">聯絡我們</h2>
+      <div class="contact-info">
+        <div class="contact-item">
+          <i class="fas fa-envelope"></i>
+          <span>學術研究合作請聯繫：research&#64;poi.tw</span>
+        </div>
+        <div class="contact-item">
+          <i class="fas fa-map-marker-alt"></i>
+          <span>世新大學傳播學院</span>
+        </div>
+        <div class="contact-item">
+          <i class="fas fa-info-circle"></i>
+          <span>本平台僅供學術研究使用</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

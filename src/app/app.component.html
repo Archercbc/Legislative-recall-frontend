@@ -1,31 +1,5 @@
-<header class="header">
-    <div class="header-content">
-      <h1>立委 贊成/反對罷免 網民人數地圖 (民調封關中)</h1>
-      <div class="visitor-stats" *ngIf="visitorStats">
-        <span class="stat-item">
-          <i class="cil-people"></i> 總訪問: {{ visitorStats.total_visits | number }}
-        </span>
-        <span class="stat-item">
-          <i class="cil-user"></i> 今日訪客: {{ visitorStats.today_visitors | number }}
-        </span>
-      </div>
-    </div>
-  </header>
-
-<main style="flex: 1">
-    <router-outlet></router-outlet>
-    <app-web-ai-assistant></app-web-ai-assistant>
-  </main>
-  
- 
-
-<footer class="footer">
-    <div class="footer-content">
-      <p>© 2025 Public Opinion Index (POI). All rights reserved.</p>
-      <p>本平台由世新大學顏宏旭教授與學生江秉騏和李逸晨共同開發與維運，資料僅供研究與學術展示使用。</p>
-      <div class="visitor-stats-footer" *ngIf="visitorStats">
-        <span>網站訪問統計: 總訪問 {{ visitorStats.total_visits | number }} | 今日訪客 {{ visitorStats.today_visitors | number }}</span>
-      </div>
-    </div>
-  </footer>
+<app-default-layout>
+  <router-outlet></router-outlet>
+  <app-web-ai-assistant></app-web-ai-assistant>
+</app-default-layout>
   

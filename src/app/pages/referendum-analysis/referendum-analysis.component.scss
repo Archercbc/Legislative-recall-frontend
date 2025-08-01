@@ -1,0 +1,142 @@
+.referendum-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.development-notice {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 3rem;
+  max-width: 600px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.notice-content {
+  .notice-icon {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 2rem;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    i {
+      font-size: 3rem;
+      color: white;
+    }
+  }
+  
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 0.5rem;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: #666;
+    margin-bottom: 2rem;
+  }
+  
+  .notice-text {
+    font-size: 1.2rem;
+    color: #333;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+  }
+  
+  .notice-description {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 2rem;
+  }
+}
+
+.features-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: #e9ecef;
+    transform: translateY(-2px);
+  }
+  
+  i {
+    color: #667eea;
+    font-size: 1.2rem;
+  }
+  
+  span {
+    font-size: 0.9rem;
+    color: #333;
+    font-weight: 500;
+  }
+}
+
+.back-button {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    text-decoration: none;
+    border-radius: 50px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+    
+    i {
+      font-size: 1rem;
+    }
+  }
+}
+
+// 響應式設計
+@media (max-width: 768px) {
+  .development-notice {
+    padding: 2rem;
+    margin: 20px;
+  }
+  
+  .notice-content {
+    h1 {
+      font-size: 2rem;
+    }
+    
+    h2 {
+      font-size: 1.2rem;
+    }
+  }
+  
+  .features-list {
+    grid-template-columns: 1fr;
+  }
+}
