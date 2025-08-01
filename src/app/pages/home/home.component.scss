@@ -334,3 +334,56 @@
     padding: 0 20px;
   }
 }
+
+.analysis-tools-section {
+  background: #f8f9fa;
+  padding: 4rem 0;
+  
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+    
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+  }
+  
+  .tool-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .tool-icon {
+      margin-bottom: 1.5rem;
+      
+      i {
+        font-size: 3rem;
+        color: #007bff;
+      }
+    }
+    
+    h3 {
+      font-size: 1.3rem;
+      color: #333;
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+    
+    p {
+      color: #666;
+      line-height: 1.6;
+    }
+  }
+}
