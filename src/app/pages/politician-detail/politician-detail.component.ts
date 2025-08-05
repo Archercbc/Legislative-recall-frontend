@@ -423,25 +423,25 @@ export class PoliticianDetailComponent {
     
     switch (this.currentFilter) {
       case 'week':
-        selectedStats = timeSeriesStats.recent_7_days;
+        selectedStats = timeSeriesStats.recent_7_days_daily || timeSeriesStats.recent_7_days;
         break;
       case '2weeks':
-        selectedStats = timeSeriesStats.recent_14_days;
+        selectedStats = timeSeriesStats.recent_14_days_daily || timeSeriesStats.recent_14_days;
         break;
       case 'month':
-        selectedStats = timeSeriesStats.recent_30_days;
+        selectedStats = timeSeriesStats.recent_30_days_daily || timeSeriesStats.recent_30_days;
         break;
       case '3months':
-        selectedStats = timeSeriesStats.recent_90_days;
+        selectedStats = timeSeriesStats.recent_90_days_daily || timeSeriesStats.recent_90_days;
         break;
       case '6months':
-        selectedStats = timeSeriesStats.recent_180_days;
+        selectedStats = timeSeriesStats.recent_180_days_daily || timeSeriesStats.recent_180_days;
         break;
       case '1year':
-        selectedStats = timeSeriesStats.recent_365_days;
+        selectedStats = timeSeriesStats.recent_365_days_daily || timeSeriesStats.recent_365_days;
         break;
       default:
-        selectedStats = timeSeriesStats.recent_7_days;
+        selectedStats = timeSeriesStats.recent_7_days_daily || timeSeriesStats.recent_7_days;
     }
     
     if (selectedStats && selectedStats.stats_points && selectedStats.stats_points.length > 0) {
@@ -524,6 +524,17 @@ export class PoliticianDetailComponent {
       };
       
       console.log(`📈 同步圓餅圖數據: 反對=${this.positiveCount}, 支持=${this.negativeCount}, 總計=${this.positiveCount + this.negativeCount}`);
+      
+      // 更新日期範圍顯示
+      if (sortedPoints.length > 0) {
+        const firstDate = new Date(sortedPoints[0].date);
+        const lastDate = new Date(sortedPoints[sortedPoints.length - 1].date);
+        
+        this.startDate = firstDate.toISOString().split('T')[0];
+        this.endDate = lastDate.toISOString().split('T')[0];
+        
+        console.log(`📅 更新日期範圍: ${this.startDate} 到 ${this.endDate}`);
+      }
     } else {
       console.log('⚠️ 沒有找到對應的時間範圍數據');
     }
@@ -1190,13 +1201,32 @@ export class PoliticianDetailComponent {
         if (data) {
           console.log('✅ 成功獲取統一API數據');
           
-          // 不要覆蓋基本數據，只更新圖表相關數據
-          // this.data = data; // 移除這行，避免覆蓋立委基本信息
-          
           // 處理時間序列圖表數據
           if (data.time_series && data.time_series.labels && data.time_series.labels.length > 0) {
             this.demoLineChartData = data.time_series;
             console.log('📊 更新時間序列圖表');
+            
+            // 根據時間序列數據更新日期範圍
+            if (data.time_series.labels.length > 0) {
+              const firstLabel = data.time_series.labels[0];
+              const lastLabel = data.time_series.labels[data.time_series.labels.length - 1];
+              
+              // 嘗試解析日期標籤
+              try {
+                // 處理 YYYY/MM/DD 格式
+                if (firstLabel.includes('/')) {
+                  const firstDate = new Date(firstLabel.replace(/\//g, '-'));
+                  const lastDate = new Date(lastLabel.replace(/\//g, '-'));
+                  
+                  this.startDate = firstDate.toISOString().split('T')[0];
+                  this.endDate = lastDate.toISOString().split('T')[0];
+                  
+                  console.log(`📅 從時間序列更新日期範圍: ${this.startDate} 到 ${this.endDate}`);
+                }
+              } catch (e) {
+                console.log('⚠️ 無法解析時間序列標籤格式');
+              }
+            }
           }
           
           // 處理詞雲數據
