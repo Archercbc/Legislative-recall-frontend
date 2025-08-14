@@ -92,7 +92,7 @@ export class WebAiAssistantComponent implements OnInit, OnDestroy, AfterViewChec
     const welcomeMessage: WebChatMessage = {
       id: this.generateId(),
       type: 'assistant',
-      content: '你好！我是立委罷免數據分析平台的AI助手，可以協助你了解網站功能和數據分析。請問有什麼我可以幫助你的嗎？',
+      content: '你好！我是2025立委罷免數據分析平台的AI助手，可以協助你了解網站功能和數據分析。請問有什麼我可以幫助你的嗎？',
       timestamp: new Date()
     };
     this.messages = [welcomeMessage];
