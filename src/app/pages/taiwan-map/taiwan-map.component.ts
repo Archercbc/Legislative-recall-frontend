@@ -191,11 +191,12 @@ export class TaiwanMapComponent implements OnInit {
                 constituency: match?.constituency || '',
                 // 新增罷免備註和罷免投票日
                 recallNote: r["罷免備註"] || r["第一次罷免日期"] || '',
-                recallVoteDate: r["罷免投票日"] || ''
+                recallVoteDate: r.recall_data?.罷免投票日 || ''
               };
             });
 
-            this.displayPoliticians = [...this.recallPoliticians]; // 初始化顯示列表
+            // 🔥 根據當前日期決定顯示哪些立委
+            this.filterPoliticiansByDate();
 
             // 動態計算有被罷免立委的縣市
             this.calculateAreaCounts();
@@ -306,6 +307,26 @@ export class TaiwanMapComponent implements OnInit {
     }
   }
 
+  // 🔥 根據當前日期決定顯示哪些立委
+  filterPoliticiansByDate() {
+    const currentDate = new Date();
+    const july26 = new Date(2025, 6, 26); // 7月26日 (月份從0開始)
+    const august23 = new Date(2025, 7, 23); // 8月23日
+    
+    if (currentDate < august23) {
+      // 8/23前：只顯示7/26的24位立委
+      this.displayPoliticians = this.recallPoliticians.filter(r => {
+        const voteDate = r.recallVoteDate || r.recall_data?.罷免投票日 || '';
+        return voteDate.includes('7/26') || voteDate.includes('7月26日');
+      });
+      console.log('🔴 8/23前：顯示7/26的立委，共', this.displayPoliticians.length, '位');
+    } else {
+      // 8/23後：顯示全部31位立委
+      this.displayPoliticians = [...this.recallPoliticians];
+      console.log('🔴 8/23後：顯示全部立委，共', this.displayPoliticians.length, '位');
+    }
+  }
+
   // 動態計算有被罷免立委的縣市
   calculateAreaCounts() {
     const areaCounts: { [key: string]: number } = {};
@@ -393,7 +414,7 @@ export class TaiwanMapComponent implements OnInit {
         image_url: r.image_url,
         constituency: r.constituency,
         party: r.party,
-        recallStatus: r.status || r.recall_data?.狀態 || '網路聲量調查',
+        recallStatus: this.getDisplayRecallStatus(r.status || r.recall_data?.狀態 || '網路聲量調查', r["姓名"]),
         recallNote: r.recallNote || '',
         recallVoteDate: r.recallVoteDate || ''
       }));
@@ -579,6 +600,7 @@ export class TaiwanMapComponent implements OnInit {
     return classMap[status] || 'status-survey';
   }
 
+
   closeUsageModal() {
     this.showUsageModal = false;
     localStorage.setItem('taiwanMapUsageSeen', '1');
@@ -596,6 +618,24 @@ export class TaiwanMapComponent implements OnInit {
   // 檢查是否應該顯示數字（只有當數量大於0時才顯示）
   shouldShowRecallCount(countyId: string): boolean {
     return this.getRecallCountByCountyId(countyId) > 0;
+  }
+
+  // 獲取顯示用的罷免狀態文字（與politician-detail組件保持一致）
+  getDisplayRecallStatus(status: string, legislatorName?: string): string {
+    // 只有特定的6個人會顯示民調封關中
+    const blockedLegislators = ['馬文君', '游顥', '羅明才', '江啟臣', '楊瓊瓔', '顏寬恒', '林思銘'];
+    
+    // 檢查是否是指定的民調封關立委
+    if (legislatorName && blockedLegislators.includes(legislatorName)) {
+      // 將特定的罷免狀態改為"民調封關中"
+      const statusList = ['二階連署進行中', '二階失敗', '三階投票進行中', '三階罷免成功', '三階罷免失敗', '二階補件中'];
+      if (statusList.includes(status)) {
+        return '民調封關中';
+      }
+    }
+    
+    // 其他人顯示原本狀態
+    return status;
   }
 
   // 獲取縣市標籤位置

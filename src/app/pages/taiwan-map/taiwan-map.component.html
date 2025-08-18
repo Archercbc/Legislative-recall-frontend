@@ -25,7 +25,7 @@
     
     <!-- 罷免投票日期顯示 -->
     <div class="vote-date-display">
-      罷免投票日期: 8/23
+      罷免投票日期：<span class="date-red">7月26日</span>、<span class="date-red">8月23日</span>
     </div>
 
     <div class="filter-panel">
@@ -146,7 +146,7 @@
                         {{ politician.party }}
                     </p>
                     <p class="recall-status" *ngIf="politician.recallStatus" [style.background]="getStatusColor(politician.recallStatus)">
-                        {{ politician.recallStatus }}
+                        {{ (politician.recallStatus) }}
                     </p>
                     <p class="recall-note" *ngIf="politician.recallNote">{{ politician.recallNote }}</p>
                     <p class="recall-vote-date" *ngIf="politician.recallVoteDate">投票日: {{ politician.recallVoteDate }}</p>

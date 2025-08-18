@@ -405,5 +405,29 @@
       color: #666;
       line-height: 1.6;
     }
+    
+    // 2025立委罷免分析特殊樣式
+    &.recall-analysis {
+      h3 {
+        color: #dc3545; // 紅色
+        font-weight: 700;
+      }
+      
+      .recall-dates {
+        margin-top: 1rem;
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        
+        .date-badge {
+          background: #dc3545;
+          color: white;
+          padding: 0.3rem 0.8rem;
+          border-radius: 20px;
+          font-size: 0.9rem;
+          font-weight: 600;
+        }
+      }
+    }
   }
 }

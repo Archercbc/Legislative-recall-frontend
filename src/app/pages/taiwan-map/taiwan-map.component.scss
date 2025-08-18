@@ -88,6 +88,12 @@
   transform: scale(1.05);
 }
 
+.vote-date-display .date-red {
+  color: #ff6b6b; /* 紅色字體 */
+  font-weight: 700;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
 /* --- 左側篩選區塊容器 (現在只做佈局，不帶卡片樣式) --- */
 .filter-panel {
   width: 760px; /* 根據兩個卡片的總寬度調整 */
