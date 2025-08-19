@@ -112,14 +112,11 @@ export class TaiwanMapComponent implements OnInit {
   allLegislators: any[] = [];
   displayPoliticians: any[] = []; // 新增：用於顯示在地圖上的立委（會被篩選）
 
-  // 罷免狀態定義（簡化圖標）
+  // 罷免狀態定義（更新為三個主要狀態）
   recallStatuses = [
-    { key: '二階連署進行中', label: '二階連署進行中' },
-    { key: '二階失敗', label: '二階失敗' },
-    { key: '三階投票進行中', label: '三階投票進行中' },
-    { key: '三階罷免成功', label: '三階罷免成功' },
-    { key: '三階罷免失敗', label: '三階罷免失敗' },
-    { key: '二階補件中', label: '二階補件中'}
+    { key: '罷免失敗', label: '罷免失敗' },
+    { key: '罷免案不成立', label: '罷免案不成立' },
+    { key: '民調封關中', label: '民調封關中' }
   ];
 
   // 區域名稱對應地圖 id
@@ -195,8 +192,8 @@ export class TaiwanMapComponent implements OnInit {
               };
             });
 
-            // 🔥 根據當前日期決定顯示哪些立委
-            this.filterPoliticiansByDate();
+            // 初始化顯示的立委列表
+            this.initializeDisplayPoliticians();
 
             // 動態計算有被罷免立委的縣市
             this.calculateAreaCounts();
@@ -307,23 +304,18 @@ export class TaiwanMapComponent implements OnInit {
     }
   }
 
-  // 🔥 根據當前日期決定顯示哪些立委
-  filterPoliticiansByDate() {
-    const currentDate = new Date();
-    const july26 = new Date(2025, 6, 26); // 7月26日 (月份從0開始)
-    const august23 = new Date(2025, 7, 23); // 8月23日
-    
-    if (currentDate < august23) {
-      // 8/23前：只顯示7/26的24位立委
-      this.displayPoliticians = this.recallPoliticians.filter(r => {
-        const voteDate = r.recallVoteDate || r.recall_data?.罷免投票日 || '';
-        return voteDate.includes('7/26') || voteDate.includes('7月26日');
-      });
-      console.log('🔴 8/23前：顯示7/26的立委，共', this.displayPoliticians.length, '位');
-    } else {
-      // 8/23後：顯示全部31位立委
+  // 初始化顯示的立委列表
+  initializeDisplayPoliticians() {
+    // 當沒有選擇任何狀態篩選時，顯示所有立委
+    if (this.selectedStatuses.length === 0) {
       this.displayPoliticians = [...this.recallPoliticians];
-      console.log('🔴 8/23後：顯示全部立委，共', this.displayPoliticians.length, '位');
+      console.log('🔴 無狀態篩選：顯示全部立委，共', this.displayPoliticians.length, '位');
+    } else {
+      // 有狀態篩選時，顯示篩選後的立委
+      this.displayPoliticians = this.recallPoliticians.filter(r =>
+        this.selectedStatuses.includes(r.status || r.recall_data?.狀態)
+      );
+      console.log('🔴 有狀態篩選：顯示篩選後立委，共', this.displayPoliticians.length, '位');
     }
   }
 
@@ -331,8 +323,11 @@ export class TaiwanMapComponent implements OnInit {
   calculateAreaCounts() {
     const areaCounts: { [key: string]: number } = {};
 
+    // 當沒有狀態篩選時，統計所有立委；有狀態篩選時，統計篩選後的立委
+    const politiciansToCount = this.selectedStatuses.length === 0 ? this.recallPoliticians : this.displayPoliticians;
+    
     // 統計每個縣市的被罷免立委數量
-    this.recallPoliticians.forEach(r => {
+    politiciansToCount.forEach(r => {
       const area = r["行政區"] || r.recall_data?.行政區;
       if (area) {
         areaCounts[area] = (areaCounts[area] || 0) + 1;
@@ -356,7 +351,10 @@ export class TaiwanMapComponent implements OnInit {
   calculateAreaTargets() {
     const areaTargetsMap: { [key: string]: string[] } = {};
 
-    this.recallPoliticians.forEach(r => {
+    // 當沒有狀態篩選時，統計所有立委；有狀態篩選時，統計篩選後的立委
+    const politiciansToCount = this.selectedStatuses.length === 0 ? this.recallPoliticians : this.displayPoliticians;
+
+    politiciansToCount.forEach(r => {
       const area = r["行政區"] || r.recall_data?.行政區;
       const name = r["姓名"];
       if (area && name) {
@@ -401,8 +399,9 @@ export class TaiwanMapComponent implements OnInit {
     // 更新選中縣市的樣式
     this.updateCountyStyles(id);
 
-    // 使用 displayPoliticians 來檢查及獲取立委，它已經是篩選後的列表
-    const recallListInCounty = this.displayPoliticians.filter(r =>
+    // 當沒有狀態篩選時，檢查所有立委；有狀態篩選時，檢查篩選後的立委
+    const politiciansToCheck = this.selectedStatuses.length === 0 ? this.recallPoliticians : this.displayPoliticians;
+    const recallListInCounty = politiciansToCheck.filter(r =>
       (r["行政區"] || r.recall_data?.行政區) === countyName
     );
 
@@ -588,14 +587,9 @@ export class TaiwanMapComponent implements OnInit {
   // 罷免狀態樣式類別
   getRecallStatusClass(status: string): string {
     const classMap: { [key: string]: string } = {
-      '連署進行中': 'status-petition-ongoing',
-      '連署未通過': 'status-petition-failed',
-      '罷免進行中': 'status-recall-ongoing',
-      '罷免未通過': 'status-recall-failed',
-      '罷免成功': 'status-recall-success',
-      '三階投票進行中': 'status-recall-ongoing',
-      '一階進行中': 'status-petition-ongoing',
-      '二階進行中': 'status-recall-ongoing'
+      '罷免失敗': 'status-recall-failed',
+      '罷免案不成立': 'status-petition-failed',
+      '民調封關中': 'status-recall-ongoing'
     };
     return classMap[status] || 'status-survey';
   }
@@ -689,7 +683,6 @@ export class TaiwanMapComponent implements OnInit {
 
     if (this.selectedStatuses.length === 0) {
       // 沒有選擇任何狀態，顯示所有縣市
-      this.filteredAreaCounts = [...this.areaCounts];
       this.displayPoliticians = [...this.recallPoliticians]; // 重置顯示列表
     } else {
       // 篩選選中狀態的立委，並更新縣市列表
@@ -697,22 +690,10 @@ export class TaiwanMapComponent implements OnInit {
         this.selectedStatuses.includes(r.status || r.recall_data?.狀態)
       );
       this.displayPoliticians = filteredPoliticians; // 更新顯示列表
-
-      // 重新計算篩選後的縣市數量
-      const filteredAreaCounts: { [key: string]: number } = {};
-      filteredPoliticians.forEach(r => {
-        const area = r["行政區"] || r.recall_data?.行政區;
-        if (area) {
-          filteredAreaCounts[area] = (filteredAreaCounts[area] || 0) + 1;
-        }
-      });
-
-      // 更新篩選後的縣市列表，只顯示有相關狀態立委的縣市
-      this.filteredAreaCounts = Object.entries(filteredAreaCounts).map(([area, count]) => ({
-        area,
-        count
-      })).sort((a, b) => b.count - a.count);
     }
+
+    // 重新計算縣市數量和目標列表
+    this.calculateAreaCounts();
 
     // 不再更新地圖高亮，取消高亮功能
     this.resetMapHighlight();
@@ -729,8 +710,9 @@ export class TaiwanMapComponent implements OnInit {
   // 清除所有篩選
   clearAllFilters() {
     this.selectedStatuses = [];
-    this.filteredAreaCounts = [...this.areaCounts]; // 重置為全部縣市
     this.displayPoliticians = [...this.recallPoliticians]; // 重置顯示列表
+    // 重新計算縣市數量和目標列表
+    this.calculateAreaCounts();
     this.resetMapHighlight();
   }
 }

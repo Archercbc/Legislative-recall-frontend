@@ -85,20 +85,6 @@
 
               
             </div>
-            <div class="progress-item">
-              <div class="progress-label">行政區</div>
-              <div class="progress-value">{{ recallData["行政區"] }}</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">罷免狀態</div>
-              <div class="progress-value status">
-                {{ getDisplayRecallStatus(recallData["狀態"], data?.name) || '網路聲量調查' }}
-              </div>
-            </div>
-            <div class="social-links" *ngIf="recallData['社群連結']">
-              <span>社群連結：</span>
-              <a *ngFor="let key of objectKeys(recallData['社群連結'])" [href]="recallData['社群連結'][key]" target="_blank">{{ key }}</a>
-            </div>
           </div>
         </div>
       </div>

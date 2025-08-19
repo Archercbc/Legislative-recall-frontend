@@ -24,17 +24,12 @@ export class CountyDetailComponent implements OnInit {
   loading = false;
   selectedStatus = 'all';
 
-  // 罷免狀態定義（使用 CoreUI 4.0 圖標）
+  // 罷免狀態定義（更新為三個主要狀態）
   recallStatuses = [
     { key: 'all', label: '全部狀態', icon: 'cilList' },
-    { key: '連署進行中', label: '連署進行中', icon: 'cilClock' },
-    { key: '連署未通過', label: '連署未通過', icon: 'cilXCircle' },
-    { key: '罷免進行中', label: '罷免進行中', icon: 'cilWarning' },
-    { key: '罷免未通過', label: '罷免未通過', icon: 'cilBan' },
-    { key: '罷免成功', label: '罷免成功', icon: 'cilCheckCircle' },
-    { key: '三階投票進行中', label: '三階投票進行中', icon: 'cilWarning' },
-    { key: '一階進行中', label: '一階進行中', icon: 'cilClock' },
-    { key: '二階進行中', label: '二階進行中', icon: 'cilWarning' }
+    { key: '罷免失敗', label: '罷免失敗', icon: 'cilBan' },
+    { key: '罷免案不成立', label: '罷免案不成立', icon: 'cilXCircle' },
+    { key: '民調封關中', label: '民調封關中', icon: 'cilWarning' }
   ];
 
   constructor(
@@ -93,7 +88,8 @@ export class CountyDetailComponent implements OnInit {
       this.filteredPoliticians = [...this.allPoliticians];
     } else {
       this.filteredPoliticians = this.allPoliticians.filter(politician =>
-        this.getRecallStatusText(politician.recall_data?.狀態) === status
+        politician.recall_data?.罷免狀態 === status || 
+        politician.status === status
       );
     }
   }
@@ -104,46 +100,30 @@ export class CountyDetailComponent implements OnInit {
       return this.allPoliticians.length;
     }
     return this.allPoliticians.filter(politician =>
-      this.getRecallStatusText(politician.recall_data?.狀態) === status
+      politician.recall_data?.罷免狀態 === status || 
+      politician.status === status
     ).length;
   }
 
   // 罷免狀態文字轉換
   getRecallStatusText(status: string): string {
-    if (!status) return '網路聲量調查';
+    if (!status) return '未知狀態';
 
     const statusMap: { [key: string]: string } = {
-      '網路聲量調查': '網路聲量調查',
-      '連署中': '連署進行中',
-      '連署進行中': '連署進行中',
-      '連署未通過': '連署未通過',
-      '罷免投票中': '罷免進行中',
-      '罷免進行中': '罷免進行中',
-      '罷免未通過': '罷免未通過',
-      '罷免成功': '罷免成功',
-      '已罷免': '罷免成功',
-      '一階進行中': '一階進行中',
-      '一階成功': '一階成功',
-      '一階失敗': '一階失敗',
-      '二階進行中': '二階進行中'
+      '罷免失敗': '罷免失敗',
+      '罷免案不成立': '罷免案不成立',
+      '民調封關中': '民調封關中'
     };
-    return statusMap[status] || status || '網路聲量調查';
+    return statusMap[status] || status || '未知狀態';
   }
 
   // 罷免狀態樣式類別
   getRecallStatusClass(status: string): string {
     const statusText = this.getRecallStatusText(status);
     const classMap: { [key: string]: string } = {
-      '網路聲量調查': 'status-survey',
-      '連署進行中': 'status-petition-ongoing',
-      '連署未通過': 'status-petition-failed',
-      '罷免進行中': 'status-recall-ongoing',
-      '罷免未通過': 'status-recall-failed',
-      '罷免成功': 'status-recall-success',
-      '一階進行中': 'status-petition-ongoing',
-      '一階成功': 'status-petition-success',
-      '一階失敗': 'status-petition-failed',
-      '二階進行中': 'status-recall-ongoing'
+      '罷免失敗': 'status-recall-failed',
+      '罷免案不成立': 'status-petition-failed',
+      '民調封關中': 'status-recall-ongoing'
     };
     return classMap[statusText] || 'status-survey';
   }
@@ -152,17 +132,9 @@ export class CountyDetailComponent implements OnInit {
   getRecallStatusIcon(status: string): string {
     const statusText = this.getRecallStatusText(status);
     const iconMap: { [key: string]: string } = {
-      '網路聲量調查': 'cilChartLine',
-      '連署進行中': 'cilClock',
-      '連署未通過': 'cilXCircle',
-      '罷免進行中': 'cilWarning',
-      '罷免未通過': 'cilBan',
-      '罷免成功': 'cilCheckCircle',
-      '三階投票進行中': 'cilWarning',
-      '一階進行中': 'cilClock',
-      '一階成功': 'cilCheck',
-      '一階失敗': 'cilXCircle',
-      '二階進行中': 'cilWarning'
+      '罷免失敗': 'cilBan',
+      '罷免案不成立': 'cilXCircle',
+      '民調封關中': 'cilWarning'
     };
     return iconMap[statusText] || 'cilChartLine';
   }
@@ -171,11 +143,9 @@ export class CountyDetailComponent implements OnInit {
   getStatusClass(status: string): string {
     const classMap: { [key: string]: string } = {
       'all': 'btn-all',
-      '連署進行中': 'btn-petition-ongoing',
-      '連署未通過': 'btn-petition-failed',
-      '罷免進行中': 'btn-recall-ongoing',
-      '罷免未通過': 'btn-recall-failed',
-      '罷免成功': 'btn-recall-success'
+      '罷免失敗': 'btn-recall-failed',
+      '罷免案不成立': 'btn-petition-failed',
+      '民調封關中': 'btn-recall-ongoing'
     };
     return classMap[status] || 'btn-all';
   }
