@@ -1,0 +1,4 @@
+# Netlify 重定向配置 - 處理 Angular SPA 路由
+# 所有路由都重定向到 index.html，讓 Angular 處理路由
+
+/*    /index.html   200
