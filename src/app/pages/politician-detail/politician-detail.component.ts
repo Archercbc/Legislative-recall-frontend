@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../services/data.service';
 import { AiAssistantService } from '../../services/ai-assistant.service';
+import { TimeSeriesFilterService, FilteredTimeSeriesData } from '../../services/time-series-filter.service';
 import { HttpClientModule } from '@angular/common/http';
 import { NgChartsModule } from 'ng2-charts';
 
@@ -64,17 +65,14 @@ export class PoliticianDetailComponent {
     '期待': 'anticipation'
   };
 
-  // 正面情緒標籤
-  private readonly POSITIVE_EMOTIONS = ['joy', 'trust', 'anticipation'];
-  
-  // 負面情緒標籤
-  private readonly NEGATIVE_EMOTIONS = ['anger', 'sadness', 'fear', 'disgust'];
-  
-  // 中性情緒標籤 (可能正面或負面取決於上下文)
-  private readonly NEUTRAL_EMOTIONS = ['surprise'];
 
   // 被封關的立委列表
   private readonly BLOCKED_LEGISLATORS = ['馬文君', '游顥', '羅明才', '江啟臣', '楊瓊瓔', '顏寬恒', '林思銘'];
+
+  // 時間範圍篩選相關屬性
+  selectedTimeRange: string = '30_days';
+  filteredTimeSeriesData: FilteredTimeSeriesData | null = null;
+  availableIntervals: string[] = [];
 
   // 獲取顯示用的罷免狀態文字
   getDisplayRecallStatus(status: string, legislatorName?: string): string {
@@ -97,6 +95,110 @@ export class PoliticianDetailComponent {
   // 檢查立委是否被封關
   isLegislatorBlocked(name: string): boolean {
     return this.BLOCKED_LEGISLATORS.includes(name);
+  }
+
+  // 時間範圍篩選方法
+  onTimeRangeChange(): void {
+    if (!this.data?.time_series_stats) {
+      return;
+    }
+
+    // 獲取時間範圍建議
+    const timeRange = this.timeSeriesFilterService.getTimeRangeSuggestions(this.selectedTimeRange);
+    
+    // 篩選數據
+    this.filteredTimeSeriesData = this.timeSeriesFilterService.filterData(
+      this.data.time_series_stats,
+      timeRange.startDate,
+      timeRange.endDate,
+      'both'
+    );
+
+    if (this.filteredTimeSeriesData) {
+      console.log('📊 篩選後的時間序列數據:', this.filteredTimeSeriesData);
+      this.updateChartsWithFilteredData();
+    }
+  }
+
+  // 使用篩選後的數據更新圖表
+  private updateChartsWithFilteredData(): void {
+    if (!this.filteredTimeSeriesData) {
+      return;
+    }
+
+    const { daily, cumulative, interval } = this.filteredTimeSeriesData;
+
+    // 更新每日數據圖表
+    if (daily.length > 0) {
+      this.updateDailyChart(daily);
+    }
+
+    // 更新累計數據圖表
+    if (cumulative.length > 0) {
+      this.updateCumulativeChart(cumulative);
+    }
+  }
+
+  // 更新每日數據圖表
+  private updateDailyChart(dailyData: any[]): void {
+    const labels = dailyData.map(item => item.date);
+    const positiveData = dailyData.map(item => item.positive || 0);
+    const negativeData = dailyData.map(item => item.negative || 0);
+
+    this.demoLineChartData = {
+      labels: labels,
+      datasets: [
+        {
+          label: '正面評論',
+          data: positiveData,
+          borderColor: 'rgb(75, 192, 192)',
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          tension: 0.1
+        },
+        {
+          label: '負面評論',
+          data: negativeData,
+          borderColor: 'rgb(255, 99, 132)',
+          backgroundColor: 'rgba(255, 99, 132, 0.2)',
+          tension: 0.1
+        }
+      ]
+    };
+  }
+
+  // 更新累計數據圖表
+  private updateCumulativeChart(cumulativeData: any[]): void {
+    const labels = cumulativeData.map(item => item.date);
+    const supportData = cumulativeData.map(item => item.sentiment_counts?.support || 0);
+    const opposeData = cumulativeData.map(item => item.sentiment_counts?.oppose || 0);
+
+    this.demoLineChartData = {
+      labels: labels,
+      datasets: [
+        {
+          label: '累計支持',
+          data: supportData,
+          borderColor: 'rgb(75, 192, 192)',
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          tension: 0.1
+        },
+        {
+          label: '累計反對',
+          data: opposeData,
+          borderColor: 'rgb(255, 99, 132)',
+          backgroundColor: 'rgba(255, 99, 132, 0.2)',
+          tension: 0.1
+        }
+      ]
+    };
+  }
+
+  // 獲取可用的時間間隔
+  getAvailableIntervals(): void {
+    if (this.data?.time_series_stats) {
+      this.availableIntervals = this.timeSeriesFilterService.getAvailableIntervals(this.data.time_series_stats);
+      console.log('📅 可用的時間間隔:', this.availableIntervals);
+    }
   }
 
   // 當前篩選狀態
@@ -263,7 +365,8 @@ export class PoliticianDetailComponent {
     private route: ActivatedRoute, 
     private dataService: DataService, 
     private router: Router,
-    private aiAssistantService: AiAssistantService
+    private aiAssistantService: AiAssistantService,
+    private timeSeriesFilterService: TimeSeriesFilterService
   ) {
     this.initializeDateRange();
 
@@ -378,8 +481,26 @@ export class PoliticianDetailComponent {
         }
         
         // 處理情緒分析數據
-        if (chartData.emotion_analysis) {
-          this.updateEmotionRadarChart(chartData.emotion_analysis);
+        if (chartData.emotion_analysis && Object.keys(chartData.emotion_analysis).length > 0) {
+          console.log('📊 收到 emotion_analysis 數據:', chartData.emotion_analysis);
+          
+          // 檢查是否為有效的情緒數據（包含 joy, anger 等字段）
+          const hasEmotionData = Object.keys(chartData.emotion_analysis).some(key => 
+            ['joy', 'anger', 'sadness', 'fear', 'surprise', 'disgust', 'trust', 'anticipation'].includes(key)
+          );
+          
+          if (hasEmotionData) {
+            this.updateEmotionRadarChart(chartData.emotion_analysis);
+            console.log('✅ 更新情緒雷達圖成功');
+          } else {
+            console.log('⚠️ emotion_analysis 數據格式不正確，跳過雷達圖更新');
+          }
+          
+          // 同時更新情感分析圓餅圖
+          this.updateSentimentChart(chartData.emotion_analysis);
+          console.log('📊 更新情緒分析圖表');
+        } else {
+          console.log('⚠️ 沒有 emotion_analysis 數據');
         }
         
         // 設置初始篩選為一年
@@ -511,8 +632,17 @@ export class PoliticianDetailComponent {
     // 4. 時間序列統計 - 使用time_series_stats
     if (data.time_series_stats && Object.keys(data.time_series_stats).length > 0) {
       console.log('從 legislators 集合載入時間序列數據');
-      // 處理時間序列數據
-      this.processTimeSeriesStats(data.time_series_stats);
+      
+      // 檢查是否為新格式
+      if (this.timeSeriesFilterService.isNewFormat(data.time_series_stats)) {
+        console.log('🆕 檢測到新的時間序列數據格式');
+        this.getAvailableIntervals();
+        // 初始化時間範圍篩選
+        this.onTimeRangeChange();
+      } else {
+        console.log('📊 使用舊格式處理時間序列數據');
+        this.processTimeSeriesStats(data.time_series_stats);
+      }
     } else {
       console.log('legislators 中沒有時間序列數據');
     }
@@ -555,8 +685,17 @@ export class PoliticianDetailComponent {
     
     selectedStats.stats_points.forEach((point: any) => {
       labels.push(point.date);
-      supportData.push(point.sentiment_counts.support);
-      opposeData.push(point.sentiment_counts.oppose);
+      
+      // 添加數據驗證，防止 sentiment_counts 未定義
+      if (point.sentiment_counts && typeof point.sentiment_counts === 'object') {
+        supportData.push(point.sentiment_counts.support || 0);
+        opposeData.push(point.sentiment_counts.oppose || 0);
+      } else {
+        // 如果沒有 sentiment_counts，使用默認值
+        supportData.push(0);
+        opposeData.push(0);
+        console.warn(`⚠️ 時間點 ${point.date} 缺少 sentiment_counts 數據`);
+      }
     });
     
     // 更新時間序列圖表
@@ -777,67 +916,63 @@ export class PoliticianDetailComponent {
 
   // ===== 圖表更新方法 =====
 
-  // 情緒雷達圖更新方法 - 處理 legislators 的 positive/negative 結構
+  // 情緒雷達圖更新方法 - 處理統一的 emotion_analysis 結構
   private updateEmotionRadarChart(emotionData: any): void {
     if (!emotionData) {
       console.log('沒有情緒分析數據');
       return;
     }
 
-    // 檢查是否至少有一個情緒類別有數據
-    const hasPositiveData = emotionData.positive && Object.keys(emotionData.positive).length > 0;
-    const hasNegativeData = emotionData.negative && Object.keys(emotionData.negative).length > 0;
+    // 檢查數據格式
+    let emotionCounts: { [key: string]: number } = {};
     
-    if (!hasPositiveData && !hasNegativeData) {
+    if (emotionData.positive && emotionData.negative) {
+      // 舊格式：{ positive: {...}, negative: {...} }
+      console.log('檢測到舊格式數據，合併為統一格式');
+      emotionCounts = { ...emotionData.positive, ...emotionData.negative };
+    } else if (typeof emotionData === 'object' && !emotionData.positive && !emotionData.negative) {
+      // 新格式：{ joy: 10, anger: 5, ... }
+      console.log('檢測到新格式數據');
+      emotionCounts = emotionData;
+    } else {
+      console.log('無法識別的情緒分析數據格式');
+      return;
+    }
+
+    // 檢查是否至少有一個情緒類別有數據
+    if (!emotionCounts || Object.keys(emotionCounts).length === 0) {
       console.log('情緒分析數據為空');
       return;
     }
 
-    // 初始化情緒數據
-    const positiveEmotions = emotionData.positive || {};
-    const negativeEmotions = emotionData.negative || {};
-
-    // 根據你的數據結構: { positive: { anger: 561, joy: 128, ... }, negative: { anger: 1422, joy: 424, ... } }
-    const positiveData = this.STANDARD_EMOTIONS.map(emotion => positiveEmotions[emotion] || 0);
-    const negativeData = this.STANDARD_EMOTIONS.map(emotion => negativeEmotions[emotion] || 0);
+    // 根據標準情緒列表生成數據
+    const emotionValues = this.STANDARD_EMOTIONS.map(emotion => emotionCounts[emotion] || 0);
 
     // 檢查是否有有效數據
-    const allZeroes = [...positiveData, ...negativeData].every(val => val === 0);
+    const allZeroes = emotionValues.every(val => val === 0);
     if (allZeroes) {
       console.log('所有情緒分析數據都為0');
       return;
     }
 
     // 計算動態範圍，避免點點擠在一起
-    const allValues = [...positiveData, ...negativeData];
-    const maxValue = Math.max(...allValues);
+    const maxValue = Math.max(...emotionValues);
     let suggestedMax = Math.max(maxValue * 1.5, 50);
     if (maxValue < 10) suggestedMax = 100;
 
-    // 更新雷達圖數據
+    // 更新雷達圖數據 - 只顯示一組數據
     this.radarChartData = {
       labels: this.STANDARD_EMOTIONS,
       datasets: [
         {
-          label: '反對罷免情緒',
-          data: positiveData,
+          label: '情緒分析',
+          data: emotionValues,
           backgroundColor: 'rgba(79, 140, 255, 0.2)',
           borderColor: '#4f8cff',
           pointBackgroundColor: '#4f8cff',
           pointBorderColor: '#fff',
           pointHoverBackgroundColor: '#fff',
           pointHoverBorderColor: '#4f8cff',
-          borderWidth: 2
-        },
-        {
-          label: '支持罷免情緒',
-          data: negativeData,
-          backgroundColor: 'rgba(248, 113, 113, 0.2)',
-          borderColor: '#f87171',
-          pointBackgroundColor: '#f87171',
-          pointBorderColor: '#fff',
-          pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: '#f87171',
           borderWidth: 2
         }
       ]
@@ -985,57 +1120,41 @@ export class PoliticianDetailComponent {
       return;
     }
 
-    // 處理emotion_analysis格式：{positive: {...}, negative: {...}}
+    // 處理統一的 emotion_analysis 格式
     if (sentimentData.positive && sentimentData.negative) {
-      console.log('檢測到emotion_analysis格式數據');
-      
-      // 計算positive和negative的總和
+      // 舊格式：{positive: {...}, negative: {...}}
+      console.log('檢測到舊格式數據，合併為統一格式');
       const positiveTotal = Object.values(sentimentData.positive).reduce((sum: number, val: any) => sum + (val || 0), 0);
       const negativeTotal = Object.values(sentimentData.negative).reduce((sum: number, val: any) => sum + (val || 0), 0);
       
-      this.positiveCount = positiveTotal;  // positive = 反對罷免
-      this.negativeCount = negativeTotal;  // negative = 支持罷免
+      this.positiveCount = positiveTotal;
+      this.negativeCount = negativeTotal;
+    } else if (typeof sentimentData === 'object' && !sentimentData.positive && !sentimentData.negative) {
+      // 新格式：{ joy: 10, anger: 5, ... }
+      console.log('檢測到新格式數據');
+      const totalEmotions = Object.values(sentimentData).reduce((sum: number, val: any) => sum + (val || 0), 0);
       
-      console.log(`情感分析數據: 反對=${this.positiveCount}, 支持=${this.negativeCount}, 總人數=${this.positiveCount + this.negativeCount}`);
+      // 簡單分配：一半為正面，一半為負面（或者根據實際業務邏輯調整）
+      this.positiveCount = Math.floor(totalEmotions / 2);
+      this.negativeCount = totalEmotions - this.positiveCount;
     } else {
-      // 支持多種可能的數據格式
-      // 格式1: { 反對罷免人數: X, 支持罷免人數: Y }
-      // 格式2: { oppose_count: X, support_count: Y }
-      // 格式3: { positive: X, negative: Y }
-      
-      // 先嘗試獲取所有可能的值
-      const opposeCounts = [
-        sentimentData.反對罷免人數,
-        sentimentData.oppose_count,
-        sentimentData.positive
-      ].filter(val => val !== undefined && val !== null);
-      
-      const supportCounts = [
-        sentimentData.支持罷免人數,
-        sentimentData.support_count,
-        sentimentData.negative
-      ].filter(val => val !== undefined && val !== null);
-      
-      // 使用找到的第一個有效值，如果都沒有則為0
-      this.positiveCount = opposeCounts.length > 0 ? opposeCounts[0] : 0;
-      this.negativeCount = supportCounts.length > 0 ? supportCounts[0] : 0;
-
-      // 如果數據為0，顯示一個提示
-      const total = this.positiveCount + this.negativeCount;
-      if (total === 0) {
-        console.log('情感分析數據總數為0');
-      } else {
-        console.log(`情感分析數據: 反對=${this.positiveCount}, 支持=${this.negativeCount}, 總人數=${total}`);
-      }
+      console.log('無法識別的情感分析數據格式');
+      return;
     }
-
-    // 更新圖表數據
+    
+    console.log(`情感分析數據: 正面=${this.positiveCount}, 負面=${this.negativeCount}, 總人數=${this.positiveCount + this.negativeCount}`);
+    
+    // 更新圓餅圖
     this.sentimentChartData = {
-      labels: ['反對罷免', '支持罷免'],
-      datasets: [{
-        data: [this.positiveCount, this.negativeCount],
-        backgroundColor: ['#4f8cff', '#f87171']
-      }]
+      labels: ['正面情緒', '負面情緒'],
+      datasets: [
+        {
+          data: [this.positiveCount, this.negativeCount],
+          backgroundColor: ['#4f8cff', '#f87171'],
+          borderColor: ['#fff', '#fff'],
+          borderWidth: 2
+        }
+      ]
     };
   }
 
@@ -1309,9 +1428,45 @@ export class PoliticianDetailComponent {
           }
           
           // 處理情緒分析數據
-          if (data.emotion_analysis) {
-            this.updateEmotionRadarChart(data.emotion_analysis);
+          if (data.emotion_analysis && Object.keys(data.emotion_analysis).length > 0) {
+            console.log('📊 收到 emotion_analysis 數據:', data.emotion_analysis);
+            
+            // 檢查是否為有效的情緒數據（包含 joy, anger 等字段）
+            const hasEmotionData = Object.keys(data.emotion_analysis).some(key => 
+              ['joy', 'anger', 'sadness', 'fear', 'surprise', 'disgust', 'trust', 'anticipation'].includes(key)
+            );
+            
+            if (hasEmotionData) {
+              this.updateEmotionRadarChart(data.emotion_analysis);
+              console.log('✅ 更新情緒雷達圖成功');
+            } else {
+              console.log('⚠️ emotion_analysis 數據格式不正確，跳過雷達圖更新');
+            }
+            
+            // 同時更新情感分析圓餅圖
+            this.updateSentimentChart(data.emotion_analysis);
             console.log('📊 更新情緒分析圖表');
+          } else {
+            console.log('⚠️ 沒有 emotion_analysis 數據');
+          }
+          
+          // 處理時間序列數據
+          if (data.time_series_stats && Object.keys(data.time_series_stats).length > 0) {
+            console.log('📊 收到 time_series_stats 數據:', data.time_series_stats);
+            
+            // 檢查是否包含有效的時間序列數據
+            const hasTimeSeriesData = Object.keys(data.time_series_stats).some(key => 
+              key.includes('recent') && data.time_series_stats[key]?.stats_points?.length > 0
+            );
+            
+            if (hasTimeSeriesData) {
+              this.processTimeSeriesStats(data.time_series_stats);
+              console.log('✅ 更新時間序列圖表成功');
+            } else {
+              console.log('⚠️ time_series_stats 數據格式不正確，跳過時間圖更新');
+            }
+          } else {
+            console.log('⚠️ 沒有 time_series_stats 數據');
           }
           
           console.log('✅ 所有圖表更新完成');

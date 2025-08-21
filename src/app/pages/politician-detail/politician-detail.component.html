@@ -304,11 +304,33 @@
           <div cCol xs="12">
             <div cCard class="mb-4">
               <div cCardHeader>
-                <i class="cil-chart-line"></i>
-                <span>罷免支持度趨勢</span>
-                <div class="loading-indicator" *ngIf="isLoadingTimeData">
-                  <div class="spinner-border spinner-border-sm text-primary ms-2"></div>
-                  <small class="text-muted">載入中...</small>
+                <div class="chart-header-content">
+                  <div class="chart-title-section">
+                    <i class="cil-chart-line"></i>
+                    <span>罷免支持度趨勢</span>
+                  </div>
+                  
+                  <!-- 時間範圍選擇器 -->
+                  <div class="time-range-selector" *ngIf="availableIntervals.length > 0">
+                    <label for="timeRange" class="time-range-label">時間範圍:</label>
+                    <select 
+                      id="timeRange" 
+                      [(ngModel)]="selectedTimeRange" 
+                      (change)="onTimeRangeChange()"
+                      class="time-range-select">
+                      <option value="7_days">最近7天</option>
+                      <option value="14_days">最近14天</option>
+                      <option value="30_days">最近30天</option>
+                      <option value="90_days">最近90天</option>
+                      <option value="180_days">最近180天</option>
+                      <option value="365_days">最近365天</option>
+                    </select>
+                  </div>
+                  
+                  <div class="loading-indicator" *ngIf="isLoadingTimeData">
+                    <div class="spinner-border spinner-border-sm text-primary ms-2"></div>
+                    <small class="text-muted">載入中...</small>
+                  </div>
                 </div>
               </div>
               <div cCardBody style="overflow-x: auto; overflow-y: visible;">
