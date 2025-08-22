@@ -103,8 +103,18 @@ export class PoliticianDetailComponent {
       return;
     }
 
-    // 獲取時間範圍建議
-    const timeRange = this.timeSeriesFilterService.getTimeRangeSuggestions(this.selectedTimeRange);
+    console.log('🔄 時間範圍變化:', this.selectedTimeRange);
+
+    // 嘗試從數據中獲取實際的日期範圍
+    let timeRange = this.timeSeriesFilterService.getActualTimeRange(this.data.time_series_stats, this.selectedTimeRange);
+    
+    // 如果無法獲取實際範圍，則使用預設範圍
+    if (!timeRange) {
+      console.log('⚠️ 無法獲取實際日期範圍，使用預設範圍');
+      timeRange = this.timeSeriesFilterService.getTimeRangeSuggestions(this.selectedTimeRange);
+    } else {
+      console.log('✅ 使用實際日期範圍:', timeRange);
+    }
     
     // 篩選數據
     this.filteredTimeSeriesData = this.timeSeriesFilterService.filterData(
@@ -117,6 +127,8 @@ export class PoliticianDetailComponent {
     if (this.filteredTimeSeriesData) {
       console.log('📊 篩選後的時間序列數據:', this.filteredTimeSeriesData);
       this.updateChartsWithFilteredData();
+    } else {
+      console.warn('⚠️ 篩選數據失敗');
     }
   }
 
@@ -142,8 +154,33 @@ export class PoliticianDetailComponent {
   // 更新每日數據圖表
   private updateDailyChart(dailyData: any[]): void {
     const labels = dailyData.map(item => item.date);
-    const positiveData = dailyData.map(item => item.positive || 0);
-    const negativeData = dailyData.map(item => item.negative || 0);
+    
+    // 處理不同的數據格式
+    const positiveData = dailyData.map(item => {
+      if (item.positive !== undefined) {
+        return item.positive;
+      } else if (item.sentiment_counts?.POSITIVE !== undefined) {
+        return item.sentiment_counts.POSITIVE;
+      }
+      return 0;
+    });
+    
+    const negativeData = dailyData.map(item => {
+      if (item.negative !== undefined) {
+        return item.negative;
+      } else if (item.sentiment_counts?.NEGATIVE !== undefined) {
+        return item.sentiment_counts.NEGATIVE;
+      }
+      return 0;
+    });
+
+    console.log('📊 更新每日數據圖表:', {
+      labels,
+      positiveData,
+      negativeData,
+      dailyData,
+      sampleItem: dailyData[0]
+    });
 
     this.demoLineChartData = {
       labels: labels,
@@ -169,8 +206,33 @@ export class PoliticianDetailComponent {
   // 更新累計數據圖表
   private updateCumulativeChart(cumulativeData: any[]): void {
     const labels = cumulativeData.map(item => item.date);
-    const supportData = cumulativeData.map(item => item.sentiment_counts?.support || 0);
-    const opposeData = cumulativeData.map(item => item.sentiment_counts?.oppose || 0);
+    
+    // 處理不同的數據格式
+    const supportData = cumulativeData.map(item => {
+      if (item.sentiment_counts?.support !== undefined) {
+        return item.sentiment_counts.support;
+      } else if (item.sentiment_counts?.POSITIVE !== undefined) {
+        return item.sentiment_counts.POSITIVE;
+      }
+      return 0;
+    });
+    
+    const opposeData = cumulativeData.map(item => {
+      if (item.sentiment_counts?.oppose !== undefined) {
+        return item.sentiment_counts.oppose;
+      } else if (item.sentiment_counts?.NEGATIVE !== undefined) {
+        return item.sentiment_counts.NEGATIVE;
+      }
+      return 0;
+    });
+
+    console.log('📊 更新累計數據圖表:', {
+      labels,
+      supportData,
+      opposeData,
+      cumulativeData,
+      sampleItem: cumulativeData[0]
+    });
 
     this.demoLineChartData = {
       labels: labels,
@@ -195,10 +257,42 @@ export class PoliticianDetailComponent {
 
   // 獲取可用的時間間隔
   getAvailableIntervals(): void {
+    console.log('📅 getAvailableIntervals: 開始檢查...');
+    console.log('📅 this.data:', this.data);
+    console.log('📅 this.data?.time_series_stats:', this.data?.time_series_stats);
+    
     if (this.data?.time_series_stats) {
+      console.log('📅 調用時間序列過濾服務...');
       this.availableIntervals = this.timeSeriesFilterService.getAvailableIntervals(this.data.time_series_stats);
       console.log('📅 可用的時間間隔:', this.availableIntervals);
+    } else {
+      console.warn('⚠️ getAvailableIntervals: 沒有時間序列統計數據');
     }
+  }
+
+  // 初始化時間序列圖表
+  private initializeTimeSeriesCharts(): void {
+    console.log('📊 初始化時間序列圖表...');
+    console.log('📊 this.data:', this.data);
+    console.log('📊 this.data?.time_series_stats:', this.data?.time_series_stats);
+    
+    if (!this.data?.time_series_stats) {
+      console.warn('⚠️ 沒有時間序列統計數據');
+      return;
+    }
+
+    console.log('📊 時間序列統計數據結構:', this.data.time_series_stats);
+    console.log('📊 時間序列統計數據類型:', typeof this.data.time_series_stats);
+    console.log('📊 時間序列統計數據鍵:', Object.keys(this.data.time_series_stats));
+    
+    // 獲取可用的時間間隔
+    this.getAvailableIntervals();
+    
+    // 設置默認時間範圍為365天（因為初始應該載入365天）
+    this.selectedTimeRange = '365_days';
+    
+    // 初始化圖表數據
+    this.onTimeRangeChange();
   }
 
   // 當前篩選狀態
@@ -402,8 +496,14 @@ export class PoliticianDetailComponent {
           this.recallData = recallList.find(r => r["姓名"] === this.data.name);
         });
         
-        // 然後使用統一API載入圖表數據
-        this.loadChartData(365);
+        // 檢查是否有時間序列統計數據，如果有則直接使用
+        if (basicData.time_series_stats) {
+          console.log('📊 發現時間序列統計數據，直接初始化圖表');
+          this.initializeTimeSeriesCharts();
+        } else {
+          // 如果沒有時間序列數據，則從API獲取
+          this.loadChartData(365);
+        }
       },
       error: (error: any) => {
         console.error('❌ 載入立委基本信息失敗:', error);
@@ -421,6 +521,14 @@ export class PoliticianDetailComponent {
       return;
     }
     
+    // 首先檢查是否有本地的 time_series_stats 數據
+    if (this.data?.time_series_stats) {
+      console.log('📊 使用本地的時間序列統計數據');
+      this.initializeTimeSeriesCharts();
+      return;
+    }
+    
+    // 如果沒有本地數據，則從API獲取
     this.dataService.getLegislatorUnifiedData(this.politicianId, {
       days: days,
       includePieChart: true,
@@ -603,9 +711,9 @@ export class PoliticianDetailComponent {
     }
     
     // 2. 情緒雷達圖 - 使用emotion_analysis
-    if (data.emotion_analysis && 
-        (data.emotion_analysis.positive || data.emotion_analysis.negative)) {
+    if (data.emotion_analysis) {
       console.log('從 legislators 集合載入情緒雷達圖數據');
+      console.log('emotion_analysis 數據結構:', data.emotion_analysis);
       this.updateEmotionRadarChart(data.emotion_analysis);
     }
     
@@ -923,35 +1031,44 @@ export class PoliticianDetailComponent {
       return;
     }
 
+    console.log('🔍 updateEmotionRadarChart: 輸入數據:', emotionData);
+    console.log('🔍 updateEmotionRadarChart: 數據類型:', typeof emotionData);
+    console.log('🔍 updateEmotionRadarChart: 數據鍵:', Object.keys(emotionData));
+
     // 檢查數據格式
     let emotionCounts: { [key: string]: number } = {};
     
     if (emotionData.positive && emotionData.negative) {
       // 舊格式：{ positive: {...}, negative: {...} }
-      console.log('檢測到舊格式數據，合併為統一格式');
+      console.log('🔍 檢測到舊格式數據，合併為統一格式');
       emotionCounts = { ...emotionData.positive, ...emotionData.negative };
     } else if (typeof emotionData === 'object' && !emotionData.positive && !emotionData.negative) {
       // 新格式：{ joy: 10, anger: 5, ... }
-      console.log('檢測到新格式數據');
+      console.log('🔍 檢測到新格式數據');
       emotionCounts = emotionData;
     } else {
-      console.log('無法識別的情緒分析數據格式');
+      console.log('⚠️ 無法識別的情緒分析數據格式');
       return;
     }
 
+    console.log('🔍 處理後的情緒計數:', emotionCounts);
+
     // 檢查是否至少有一個情緒類別有數據
     if (!emotionCounts || Object.keys(emotionCounts).length === 0) {
-      console.log('情緒分析數據為空');
+      console.log('⚠️ 情緒分析數據為空');
       return;
     }
 
     // 根據標準情緒列表生成數據
     const emotionValues = this.STANDARD_EMOTIONS.map(emotion => emotionCounts[emotion] || 0);
 
+    console.log('🔍 標準情緒列表:', this.STANDARD_EMOTIONS);
+    console.log('🔍 對應的情緒值:', emotionValues);
+
     // 檢查是否有有效數據
     const allZeroes = emotionValues.every(val => val === 0);
     if (allZeroes) {
-      console.log('所有情緒分析數據都為0');
+      console.log('⚠️ 所有情緒分析數據都為0');
       return;
     }
 
@@ -978,7 +1095,8 @@ export class PoliticianDetailComponent {
       ]
     };
 
-    console.log('更新情緒雷達圖完成');
+    console.log('✅ 更新情緒雷達圖完成');
+    console.log('✅ 雷達圖數據:', this.radarChartData);
   }
 
   // 從月份情感統計生成時間序列數據
