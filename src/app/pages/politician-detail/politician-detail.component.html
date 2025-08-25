@@ -233,17 +233,18 @@
                 <div class="custom-chart-stats">
                   <div class="stat-item">
                     <span class="color-dot oppose"></span>
-                    <span class="stat-text">反對 {{ getOpposePercentage() }}%</span>
+                    <span class="stat-text">反對罷免 {{ getOpposePercentage() }}%</span>
                   </div>
                   <div class="stat-item">
                     <span class="color-dot support"></span>
-                    <span class="stat-text">支持 {{ getSupportPercentage() }}%</span>
+                    <span class="stat-text">支持罷免 {{ getSupportPercentage() }}%</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
+          <!--情緒雷達圖
           <div cCol xs="12" lg="6">
             <div cCard class="chart-card">
               <div cCardHeader>
@@ -252,14 +253,28 @@
               </div>
               <div cCardBody style="overflow: visible; position: relative;">
                 <div style="display: flex; align-items: center; justify-content: center; height: 350px;">
-                  <!-- 雷達圖容器 -->
+
                   <div style="width: 300px; height: 300px; position: relative;">
                     <c-chart [data]="radarChartData" type="radar" [options]="radarChartOptions" style="height: 100%; width: 100%;"></c-chart>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </div><div cCol xs="12" lg="6">
+            <div cCard class="chart-card">
+              <div cCardHeader>
+                <i class="cil-graph"></i>
+                <span>情緒雷達圖</span>
+              </div>
+              <div cCardBody style="overflow: visible; position: relative;">
+                <div style="display: flex; align-items: center; justify-content: center; height: 350px;">
+                  <div style="width: 300px; height: 300px; position: relative;">
+                    <c-chart [data]="radarChartData" type="radar" [options]="radarChartOptions" style="height: 100%; width: 100%;"></c-chart>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>-->>
         </div>
 
         <!-- 熱門關鍵字 -->

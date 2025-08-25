@@ -213,8 +213,8 @@ export class TimeSeriesFilterService {
     const result: any = {};
     cumulativeStats.forEach(item => {
       result[item.date] = {
-        positive: item.sentiment_counts?.support || 0,
-        negative: item.sentiment_counts?.oppose || 0,
+        positive: item.sentiment_counts?.POSITIVE || item.sentiment_counts?.positive || 0,
+        negative: item.sentiment_counts?.NEGATIVE || item.sentiment_counts?.negative || 0,
         total_comments: item.cumulative_count || 0,
         daily_count: item.daily_count || 0
       };
