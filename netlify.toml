@@ -2,6 +2,12 @@
   command = "ng build --configuration production"
   publish = "dist/legislative-recall/browser"
 
+[[plugins]]
+  package = "@netlify/angular-runtime"
+
+  [plugins.inputs]
+    disable = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
