@@ -1,0 +1,11 @@
+[build]
+  command = "ng build --configuration production"
+  publish = "dist/legislative-recall/browser"
+
+[plugins]
+  "@netlify/angular-runtime" = { enabled = false }
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
