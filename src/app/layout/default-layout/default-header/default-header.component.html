@@ -12,6 +12,7 @@
          [routerLink]="item.url" 
          routerLinkActive="active" 
          [routerLinkActiveOptions]="{exact: item.url === '/'}"
+         [ngClass]="{'nav-link': true, 'recall-analysis': item.isRecallAnalysis}"
          class="nav-link">
         <i [class]="item.icon"></i>
         <span>{{ item.name }}</span>

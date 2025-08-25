@@ -67,193 +67,12 @@ export class PoliticianDetailComponent {
 
 
   // 被封關的立委列表
-  private readonly BLOCKED_LEGISLATORS = ['馬文君', '游顥', '羅明才', '江啟臣', '楊瓊瓔', '顏寬恒', '林思銘'];
+  private readonly BLOCKED_LEGISLATORS = [''];
 
   // 時間範圍篩選相關屬性
   selectedTimeRange: string = '30_days';
   filteredTimeSeriesData: FilteredTimeSeriesData | null = null;
   availableIntervals: string[] = [];
-
-  // 獲取顯示用的罷免狀態文字
-  getDisplayRecallStatus(status: string, legislatorName?: string): string {
-    // 只有特定的6個人會顯示民調封關中
-    const blockedLegislators = ['馬文君', '游顥', '羅明才', '江啟臣', '楊瓊瓔', '顏寬恒', '林思銘'];
-    
-    // 檢查是否是指定的民調封關立委
-    if (legislatorName && blockedLegislators.includes(legislatorName)) {
-      // 將特定的罷免狀態改為"民調封關中"
-      const statusList = ['二階連署進行中', '二階失敗', '三階投票進行中', '三階罷免成功', '三階罷免失敗', '二階補件中'];
-      if (statusList.includes(status)) {
-        return '民調封關中';
-      }
-    }
-    
-    // 其他人顯示原本狀態
-    return status;
-  }
-
-  // 檢查立委是否被封關
-  isLegislatorBlocked(name: string): boolean {
-    return this.BLOCKED_LEGISLATORS.includes(name);
-  }
-
-  // 時間範圍篩選方法
-  onTimeRangeChange(): void {
-    if (!this.data?.time_series_stats) {
-      return;
-    }
-
-    console.log('🔄 時間範圍變化:', this.selectedTimeRange);
-
-    // 嘗試從數據中獲取實際的日期範圍
-    let timeRange = this.timeSeriesFilterService.getActualTimeRange(this.data.time_series_stats, this.selectedTimeRange);
-    
-    // 如果無法獲取實際範圍，則使用預設範圍
-    if (!timeRange) {
-      console.log('⚠️ 無法獲取實際日期範圍，使用預設範圍');
-      timeRange = this.timeSeriesFilterService.getTimeRangeSuggestions(this.selectedTimeRange);
-    } else {
-      console.log('✅ 使用實際日期範圍:', timeRange);
-    }
-    
-    // 篩選數據
-    this.filteredTimeSeriesData = this.timeSeriesFilterService.filterData(
-      this.data.time_series_stats,
-      timeRange.startDate,
-      timeRange.endDate,
-      'both'
-    );
-
-    if (this.filteredTimeSeriesData) {
-      console.log('📊 篩選後的時間序列數據:', this.filteredTimeSeriesData);
-      this.updateChartsWithFilteredData();
-    } else {
-      console.warn('⚠️ 篩選數據失敗');
-    }
-  }
-
-  // 使用篩選後的數據更新圖表
-  private updateChartsWithFilteredData(): void {
-    if (!this.filteredTimeSeriesData) {
-      return;
-    }
-
-    const { daily, cumulative, interval } = this.filteredTimeSeriesData;
-
-    // 更新每日數據圖表
-    if (daily.length > 0) {
-      this.updateDailyChart(daily);
-    }
-
-    // 更新累計數據圖表
-    if (cumulative.length > 0) {
-      this.updateCumulativeChart(cumulative);
-    }
-  }
-
-  // 更新每日數據圖表
-  private updateDailyChart(dailyData: any[]): void {
-    const labels = dailyData.map(item => item.date);
-    
-    // 處理不同的數據格式
-    const positiveData = dailyData.map(item => {
-      if (item.positive !== undefined) {
-        return item.positive;
-      } else if (item.sentiment_counts?.POSITIVE !== undefined) {
-        return item.sentiment_counts.POSITIVE;
-      }
-      return 0;
-    });
-    
-    const negativeData = dailyData.map(item => {
-      if (item.negative !== undefined) {
-        return item.negative;
-      } else if (item.sentiment_counts?.NEGATIVE !== undefined) {
-        return item.sentiment_counts.NEGATIVE;
-      }
-      return 0;
-    });
-
-    console.log('📊 更新每日數據圖表:', {
-      labels,
-      positiveData,
-      negativeData,
-      dailyData,
-      sampleItem: dailyData[0]
-    });
-
-    this.demoLineChartData = {
-      labels: labels,
-      datasets: [
-        {
-          label: '正面評論',
-          data: positiveData,
-          borderColor: 'rgb(75, 192, 192)',
-          backgroundColor: 'rgba(75, 192, 192, 0.2)',
-          tension: 0.1
-        },
-        {
-          label: '負面評論',
-          data: negativeData,
-          borderColor: 'rgb(255, 99, 132)',
-          backgroundColor: 'rgba(255, 99, 132, 0.2)',
-          tension: 0.1
-        }
-      ]
-    };
-  }
-
-  // 更新累計數據圖表
-  private updateCumulativeChart(cumulativeData: any[]): void {
-    const labels = cumulativeData.map(item => item.date);
-    
-    // 處理不同的數據格式
-    const supportData = cumulativeData.map(item => {
-      if (item.sentiment_counts?.support !== undefined) {
-        return item.sentiment_counts.support;
-      } else if (item.sentiment_counts?.POSITIVE !== undefined) {
-        return item.sentiment_counts.POSITIVE;
-      }
-      return 0;
-    });
-    
-    const opposeData = cumulativeData.map(item => {
-      if (item.sentiment_counts?.oppose !== undefined) {
-        return item.sentiment_counts.oppose;
-      } else if (item.sentiment_counts?.NEGATIVE !== undefined) {
-        return item.sentiment_counts.NEGATIVE;
-      }
-      return 0;
-    });
-
-    console.log('📊 更新累計數據圖表:', {
-      labels,
-      supportData,
-      opposeData,
-      cumulativeData,
-      sampleItem: cumulativeData[0]
-    });
-
-    this.demoLineChartData = {
-      labels: labels,
-      datasets: [
-        {
-          label: '累計支持',
-          data: supportData,
-          borderColor: 'rgb(75, 192, 192)',
-          backgroundColor: 'rgba(75, 192, 192, 0.2)',
-          tension: 0.1
-        },
-        {
-          label: '累計反對',
-          data: opposeData,
-          borderColor: 'rgb(255, 99, 132)',
-          backgroundColor: 'rgba(255, 99, 132, 0.2)',
-          tension: 0.1
-        }
-      ]
-    };
-  }
 
   // 獲取可用的時間間隔
   getAvailableIntervals(): void {
@@ -288,8 +107,11 @@ export class PoliticianDetailComponent {
     // 獲取可用的時間間隔
     this.getAvailableIntervals();
     
-    // 設置默認時間範圍為365天（因為初始應該載入365天）
+    // 設置默認時間範圍為一年（因為初始應該載入365天）
     this.selectedTimeRange = '365_days';
+    this.currentFilter = '1year'; // 設置對應的篩選器
+    
+    console.log('📊 初始化設置: selectedTimeRange =', this.selectedTimeRange, ', currentFilter =', this.currentFilter);
     
     // 初始化圖表數據
     this.onTimeRangeChange();
@@ -386,7 +208,7 @@ export class PoliticianDetailComponent {
           },          label: function(context: any) {
             const label = context.dataset.label || '';
             const value = context.parsed.y;
-            return `${label}累計: ${value} 人`;
+            return `${label}: ${value} 人`;
           }
         },
         external: function(context: any) {
@@ -613,7 +435,7 @@ export class PoliticianDetailComponent {
         
         // 設置初始篩選為一年
         this.currentFilter = '1year';
-        this.updateDateRangeForPeriod(365);
+        // 不強制設置日期範圍，讓圖表數據決定實際範圍
       },
       error: (error) => {
         console.error('❌ 載入圖表數據失敗:', error);
@@ -646,7 +468,7 @@ export class PoliticianDetailComponent {
             oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
             this.oneYearAgoDate = oneYearAgo.toISOString().split('T')[0];
 
-            // 設定初始日期範圍為最近一年
+            // 設定初始日期範圍為最近一年（僅作為備用，實際範圍由圖表數據決定）
             this.startDate = this.oneYearAgoDate;
             this.endDate = this.maxDate;
             
@@ -758,66 +580,100 @@ export class PoliticianDetailComponent {
   
   // 新增方法：處理時間序列統計數據
   private processTimeSeriesStats(timeSeriesStats: any): void {
-    // 根據當前篩選器選擇對應的時間範圍數據
+    // 根據當前篩選器選擇對應的時間範圍數據 - 優先使用累積數據
     let selectedStats: any = null;
+    
+    console.log(`🔍 processTimeSeriesStats: currentFilter = ${this.currentFilter}`);
     
     switch (this.currentFilter) {
       case 'week':
-        selectedStats = timeSeriesStats.recent_7_days_daily;
+        selectedStats = timeSeriesStats.recent_7_days_cumulative || timeSeriesStats.recent_7_days_daily;
         break;
       case '2weeks':
-        selectedStats = timeSeriesStats.recent_14_days_daily;
+        selectedStats = timeSeriesStats.recent_14_days_cumulative || timeSeriesStats.recent_14_days_daily;
         break;
       case 'month':
-        selectedStats = timeSeriesStats.recent_30_days_daily;
+        selectedStats = timeSeriesStats.recent_30_days_cumulative || timeSeriesStats.recent_30_days_daily;
         break;
       case '3months':
-        selectedStats = timeSeriesStats.recent_90_days_daily;
+        selectedStats = timeSeriesStats.recent_90_days_cumulative || timeSeriesStats.recent_90_days_daily;
         break;
       case '6months':
-        selectedStats = timeSeriesStats.recent_180_days_daily;
+        selectedStats = timeSeriesStats.recent_180_days_cumulative || timeSeriesStats.recent_180_days_daily;
         break;
       case '1year':
-        selectedStats = timeSeriesStats.recent_365_days_daily;
+        selectedStats = timeSeriesStats.recent_365_days_cumulative || timeSeriesStats.recent_365_days_daily;
         break;
       default:
-        selectedStats = timeSeriesStats.recent_7_days_daily;
+        selectedStats = timeSeriesStats.recent_14_days_cumulative || timeSeriesStats.recent_14_days_daily;
     }
     
-    console.log(`📊 使用時間範圍: ${selectedStats.description}`);
+    if (!selectedStats) {
+      console.warn('⚠️ 沒有找到對應的時間範圍數據，嘗試使用可用的數據');
+      const availableKeys = Object.keys(timeSeriesStats).filter(key => 
+        key.includes('cumulative') || key.includes('daily')
+      );
+      
+      if (availableKeys.length > 0) {
+        const firstKey = availableKeys[0];
+        selectedStats = timeSeriesStats[firstKey];
+      } else {
+        console.error('❌ 沒有找到任何可用的時間序列數據');
+        return;
+      }
+    }
+    
+    console.log(`📊 使用時間範圍: ${selectedStats?.description || '未知'}`);
     
     // 處理時間序列圖表數據
     const labels: string[] = [];
     const supportData: number[] = [];
     const opposeData: number[] = [];
     
-    selectedStats.stats_points.forEach((point: any) => {
-      labels.push(point.date);
+    if (selectedStats && selectedStats.stats_points) {
+      console.log(`📊 過濾前數據點數量: ${selectedStats.stats_points.length}`);
+      console.log(`📊 過濾前數據點:`, selectedStats.stats_points.map((p: any) => p.date));
       
-      // 添加數據驗證，防止 sentiment_counts 未定義
-      if (point.sentiment_counts && typeof point.sentiment_counts === 'object') {
-        supportData.push(point.sentiment_counts.support || 0);
-        opposeData.push(point.sentiment_counts.oppose || 0);
-      } else {
-        // 如果沒有 sentiment_counts，使用默認值
-        supportData.push(0);
-        opposeData.push(0);
-        console.warn(`⚠️ 時間點 ${point.date} 缺少 sentiment_counts 數據`);
-      }
-    });
+      // 根據選擇的時間範圍過濾數據點
+      const filteredPoints = this.filterStatsPointsByTimeRange(
+        selectedStats.stats_points, 
+        this.currentFilter
+      );
+      
+      console.log(`📊 過濾後數據點數量: ${filteredPoints.length}`);
+      console.log(`📊 過濾後數據點:`, filteredPoints.map((p: any) => p.date));
+      
+      filteredPoints.forEach((point: any) => {
+        labels.push(point.date);
+        
+        if (point.sentiment_counts && typeof point.sentiment_counts === 'object') {
+          const currentSupport = point.sentiment_counts.support || 0;
+          const currentOppose = point.sentiment_counts.oppose || 0;
+          
+          supportData.push(currentSupport);
+          opposeData.push(currentOppose);
+        } else {
+          supportData.push(0);
+          opposeData.push(0);
+        }
+      });
+    } else {
+      console.warn('⚠️ 沒有找到對應的時間範圍數據');
+      return;
+    }
     
     // 更新時間序列圖表
     this.demoLineChartData = {
       labels: labels,
       datasets: [
         {
-          label: '支持罷免',
+          label: '累計支持罷免',
           data: supportData,
           borderColor: '#f87171',
           backgroundColor: 'rgba(248, 113, 113, 0.1)'
         },
         {
-          label: '反對罷免',
+          label: '累計反對罷免',
           data: opposeData,
           borderColor: '#4f8cff',
           backgroundColor: 'rgba(79, 140, 255, 0.1)'
@@ -825,7 +681,7 @@ export class PoliticianDetailComponent {
       ]
     };
     
-    // 圓餅圖始終使用根級別的累計數據
+    // 圓餅圖始終使用根級別的數據
     this.updateSentimentChart({
       '反對罷免人數': this.data.recall_oppose,
       '支持罷免人數': this.data.recall_support,
@@ -836,7 +692,8 @@ export class PoliticianDetailComponent {
     this.positiveCount = this.data.recall_oppose;
     this.negativeCount = this.data.recall_support;
     
-    console.log('✅ 從時間序列統計更新數據: 反對=' + this.positiveCount + ', 支持=' + this.negativeCount);
+    // 更新日期範圍以匹配實際圖表數據
+    this.updateDateRangeFromChartData();
   }
 
   // 重新設計：統一的數據載入方法
@@ -892,27 +749,10 @@ export class PoliticianDetailComponent {
     if (shouldUpdateAll || chartTypes.includes('timeseries')) {
       if (data.time_series && data.time_series.labels && data.time_series.labels.length > 0) {
         
-        // 準備數據，保持原本標籤格式
+        // 直接使用後端回傳的數據，不進行累積計算
         const originalLabels = [...data.time_series.labels];
         const originalDatasets = data.time_series.datasets;
         
-        // 確保數據是累積的
-        const cumulativeDatasets = originalDatasets.map((dataset: any) => {
-          let cumulativeSum = 0;
-          const cumulativeData = dataset.data.map((value: number) => {
-            cumulativeSum += value;
-            return cumulativeSum;
-          });
-          
-          // 強制添加今天的點（數據為0，但累計值保持不變）
-          const finalCumulativeSum = cumulativeSum; // 保存最終累計值
-          
-          return { 
-            ...dataset, 
-            data: [...cumulativeData, finalCumulativeSum] // 添加今天的累計值
-          };
-        });
-
         // 生成今天的標籤，格式與前面的標籤保持一致
         const today = new Date();
         let todayLabel: string;
@@ -938,9 +778,20 @@ export class PoliticianDetailComponent {
           [...originalLabels, todayLabel] : 
           originalLabels;
 
+        // 為今天的數據點添加0值
+        const finalDatasets = originalDatasets.map((dataset: any) => {
+          if (lastLabel !== todayLabel) {
+            return {
+              ...dataset,
+              data: [...dataset.data, 0] // 今天的數據為0
+            };
+          }
+          return dataset;
+        });
+
         this.demoLineChartData = {
           labels: finalLabels,
-          datasets: cumulativeDatasets
+          datasets: finalDatasets
         };
         
         console.log(`時間序列包含今天的點: ${finalLabels[finalLabels.length - 1]}`);
@@ -1116,11 +967,7 @@ export class PoliticianDetailComponent {
     const supportData: number[] = [];
     const opposeData: number[] = [];
     
-    // 用於累加計算
-    let cumulativeSupport = 0;
-    let cumulativeOppose = 0;
-    
-    // 處理每個月份的數據
+    // 處理每個月份的數據 - 直接使用後端回傳的數據，不進行累積計算
     sortedMonths.forEach(month => {
       const monthData = adjustedMonthlyStats[month];
       
@@ -1153,13 +1000,9 @@ export class PoliticianDetailComponent {
 
           labels.push(label);
           
-          // 計算累加值
-          cumulativeSupport += supportCount;
-          cumulativeOppose += opposeCount;
-          
-          // 添加累加後的支持和反對數據
-          supportData.push(cumulativeSupport);
-          opposeData.push(cumulativeOppose);
+          // 直接使用後端回傳的數據，不進行累積計算
+          supportData.push(supportCount);
+          opposeData.push(opposeCount);
         }
       }
     });
@@ -1182,7 +1025,7 @@ export class PoliticianDetailComponent {
         todayLabel = today.toISOString().split('T')[0];
       } else if (lastLabel.includes('-') && lastLabel.split('-').length === 2) {
         // 如果是 YYYY-MM 格式，今天也用 YYYY-MM
-        todayLabel = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        todayLabel = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}月`;
       } else {
         // 預設使用年月格式
         todayLabel = `${today.getFullYear()}年${String(today.getMonth() + 1).padStart(2, '0')}月`;
@@ -1196,9 +1039,9 @@ export class PoliticianDetailComponent {
     const lastLabel = labels[labels.length - 1];
     if (!lastLabel || lastLabel !== todayLabel) {
       labels.push(todayLabel);
-      // 今天的數據為0，但累計值保持不變
-      supportData.push(cumulativeSupport);
-      opposeData.push(cumulativeOppose);
+      // 今天的數據為0
+      supportData.push(0);
+      opposeData.push(0);
     }
     
     // 如果有數據，更新圖表
@@ -1221,9 +1064,9 @@ export class PoliticianDetailComponent {
             backgroundColor: 'rgba(79, 140, 255, 0.1)',
             tension: 0.3,
             fill: true
-          }
-        ]
-      };
+        }
+      ]
+    };
     } else {
       console.log('沒有有效的月份數據');
     }
@@ -1435,13 +1278,11 @@ export class PoliticianDetailComponent {
   
   setQuickFilter(period: string): void {
     console.log(`🔍 setQuickFilter 被調用，參數: ${period}`);
-    console.log(`🔍 當前 politicianId: ${this.politicianId}`);
     
     this.currentFilter = period; // 記錄當前篩選狀態
 
     // 顯示加載狀態
     this.isLoadingTimeData = true;
-    console.log('⏳ 設置加載狀態為 true');
 
     // 將前端時間範圍映射到天數
     let days: number;
@@ -1471,14 +1312,19 @@ export class PoliticianDetailComponent {
       default:
         days = 30;
     }
-    
-    console.log(`設置時間範圍: ${period} -> ${days}天`);
 
-    // 更新日期範圍顯示
-    this.updateDateRangeForPeriod(days);
+    // 首先嘗試使用本地的 time_series_stats 數據
+    if (this.data?.time_series_stats) {
+      this.processTimeSeriesStats(this.data.time_series_stats);
+      
+      // 根據實際圖表數據更新日期範圍
+      this.updateDateRangeFromChartData();
+      
+      this.isLoadingTimeData = false;
+      return;
+    }
 
-    // 使用新的統一API獲取數據
-    console.log(`🌐 調用統一API: getLegislatorUnifiedData(${this.politicianId}, {days: ${days}})`);
+    // 如果沒有本地數據，則從API獲取
     this.dataService.getLegislatorUnifiedData(this.politicianId, {
       days: days,
       includePieChart: true,
@@ -1487,36 +1333,13 @@ export class PoliticianDetailComponent {
       includeEmotion: true
     }).subscribe({
       next: (data) => {
-        console.log('✅ 統一API調用成功，收到數據:', data ? '有數據' : '無數據');
         if (data) {
-          console.log('✅ 成功獲取統一API數據');
-          
           // 處理時間序列圖表數據
           if (data.time_series && data.time_series.labels && data.time_series.labels.length > 0) {
             this.demoLineChartData = data.time_series;
-            console.log('📊 更新時間序列圖表');
             
             // 根據時間序列數據更新日期範圍
-            if (data.time_series.labels.length > 0) {
-              const firstLabel = data.time_series.labels[0];
-              const lastLabel = data.time_series.labels[data.time_series.labels.length - 1];
-              
-              // 嘗試解析日期標籤
-              try {
-                // 處理 YYYY/MM/DD 格式
-                if (firstLabel.includes('/')) {
-                  const firstDate = new Date(firstLabel.replace(/\//g, '-'));
-                  const lastDate = new Date(lastLabel.replace(/\//g, '-'));
-                  
-                  this.startDate = firstDate.toISOString().split('T')[0];
-                  this.endDate = lastDate.toISOString().split('T')[0];
-                  
-                  console.log(`📅 從時間序列更新日期範圍: ${this.startDate} 到 ${this.endDate}`);
-                }
-              } catch (e) {
-                console.log('⚠️ 無法解析時間序列標籤格式');
-              }
-            }
+            this.updateDateRangeFromChartData();
           }
           
           // 處理詞雲數據
@@ -1526,12 +1349,10 @@ export class PoliticianDetailComponent {
               weight: item.weight || item.count || 0,
               color: this.getWordCloudColor(item.text || item.word || '', index)
             })).filter((item: any) => item.text && item.weight > 0);
-            console.log('☁️ 更新詞雲數據');
           }
           
           // 處理圓餅圖數據
           if (data.sentiment_analysis) {
-            console.log('📈 更新圓餅圖數據:', data.sentiment_analysis);
             this.updateSentimentChart({
               '反對罷免人數': data.sentiment_analysis.oppose_count || 0,
               '支持罷免人數': data.sentiment_analysis.support_count || 0,
@@ -1541,58 +1362,21 @@ export class PoliticianDetailComponent {
             // 更新統計數據 - 確保與updateSentimentChart中的邏輯一致
             this.positiveCount = data.sentiment_analysis.oppose_count || 0;  // 反對罷免
             this.negativeCount = data.sentiment_analysis.support_count || 0;  // 支持罷免
-            
-            console.log(`📊 更新統計數據: 反對=${this.positiveCount}, 支持=${this.negativeCount}, 總計=${this.positiveCount + this.negativeCount}`);
           }
           
           // 處理情緒分析數據
-          if (data.emotion_analysis && Object.keys(data.emotion_analysis).length > 0) {
-            console.log('📊 收到 emotion_analysis 數據:', data.emotion_analysis);
-            
-            // 檢查是否為有效的情緒數據（包含 joy, anger 等字段）
-            const hasEmotionData = Object.keys(data.emotion_analysis).some(key => 
-              ['joy', 'anger', 'sadness', 'fear', 'surprise', 'disgust', 'trust', 'anticipation'].includes(key)
-            );
-            
-            if (hasEmotionData) {
-              this.updateEmotionRadarChart(data.emotion_analysis);
-              console.log('✅ 更新情緒雷達圖成功');
-            } else {
-              console.log('⚠️ emotion_analysis 數據格式不正確，跳過雷達圖更新');
-            }
-            
-            // 同時更新情感分析圓餅圖
-            this.updateSentimentChart(data.emotion_analysis);
-            console.log('📊 更新情緒分析圖表');
-          } else {
-            console.log('⚠️ 沒有 emotion_analysis 數據');
+          if (data.emotion_analysis) {
+            this.updateEmotionRadarChart(data.emotion_analysis);
           }
           
-          // 處理時間序列數據
-          if (data.time_series_stats && Object.keys(data.time_series_stats).length > 0) {
-            console.log('📊 收到 time_series_stats 數據:', data.time_series_stats);
-            
-            // 檢查是否包含有效的時間序列數據
-            const hasTimeSeriesData = Object.keys(data.time_series_stats).some(key => 
-              key.includes('recent') && data.time_series_stats[key]?.stats_points?.length > 0
-            );
-            
-            if (hasTimeSeriesData) {
-              this.processTimeSeriesStats(data.time_series_stats);
-              console.log('✅ 更新時間序列圖表成功');
-            } else {
-              console.log('⚠️ time_series_stats 數據格式不正確，跳過時間圖更新');
-            }
-          } else {
-            console.log('⚠️ 沒有 time_series_stats 數據');
-          }
-          
-          console.log('✅ 所有圖表更新完成');
+          this.isLoadingTimeData = false;
+        } else {
+          console.warn('⚠️ 沒有收到數據');
+          this.isLoadingTimeData = false;
         }
-        this.isLoadingTimeData = false;
       },
       error: (error) => {
-        console.error('❌ 統一API調用失敗:', error);
+        console.error('❌ 載入數據失敗:', error);
         this.isLoadingTimeData = false;
       }
     });
@@ -1608,6 +1392,71 @@ export class PoliticianDetailComponent {
     this.endDate = endDate.toISOString().split('T')[0]; // YYYY-MM-DD 格式
     
     console.log(`📅 更新日期範圍: ${this.startDate} 到 ${this.endDate} (${days}天)`);
+  }
+
+  // 新增方法：根據實際圖表數據更新日期範圍
+  private updateDateRangeFromChartData(): void {
+    if (this.demoLineChartData && this.demoLineChartData.labels && this.demoLineChartData.labels.length > 0) {
+      const labels = this.demoLineChartData.labels as string[];
+      const firstLabel = labels[0];
+      const lastLabel = labels[labels.length - 1];
+      
+      // 嘗試解析日期標籤
+      try {
+        let firstDate: Date;
+        let lastDate: Date;
+        
+        // 處理不同的日期格式
+        if (firstLabel.includes('/')) {
+          // YYYY/MM/DD 格式
+          firstDate = new Date(firstLabel.replace(/\//g, '-'));
+          lastDate = new Date(lastLabel.replace(/\//g, '-'));
+        } else if (firstLabel.includes('-')) {
+          // YYYY-MM-DD 格式
+          firstDate = new Date(firstLabel);
+          lastDate = new Date(lastLabel);
+        } else if (firstLabel.includes('年') && firstLabel.includes('月')) {
+          // YYYY年MM月 格式
+          const firstMatch = firstLabel.match(/(\d{4})年(\d{1,2})月/);
+          const lastMatch = lastLabel.match(/(\d{4})年(\d{1,2})月/);
+          
+          if (firstMatch && lastMatch) {
+            firstDate = new Date(parseInt(firstMatch[1]), parseInt(firstMatch[2]) - 1, 1);
+            lastDate = new Date(parseInt(lastMatch[1]), parseInt(lastMatch[2]) - 1, 1);
+          } else {
+            throw new Error('無法解析年月格式');
+          }
+        } else {
+          // 嘗試解析 MM/DD 格式（可能是相對日期）
+          if (firstLabel.includes('/') && firstLabel.split('/').length === 2) {
+            const currentYear = new Date().getFullYear();
+            const [month, day] = firstLabel.split('/');
+            const [lastMonth, lastDay] = lastLabel.split('/');
+            
+            firstDate = new Date(currentYear, parseInt(month) - 1, parseInt(day));
+            lastDate = new Date(currentYear, parseInt(lastMonth) - 1, parseInt(lastDay));
+            
+            // 如果最後日期小於第一個日期，說明跨年了
+            if (lastDate < firstDate) {
+              lastDate.setFullYear(currentYear + 1);
+            }
+          } else {
+            throw new Error('無法識別的日期格式');
+          }
+        }
+        
+        if (firstDate && lastDate && !isNaN(firstDate.getTime()) && !isNaN(lastDate.getTime())) {
+          this.startDate = firstDate.toISOString().split('T')[0];
+          this.endDate = lastDate.toISOString().split('T')[0];
+        } else {
+          throw new Error('日期解析失敗');
+        }
+      } catch (e) {
+        console.warn('⚠️ 無法解析圖表日期標籤格式:', e);
+        // 如果解析失敗，使用預設的日期範圍
+        this.updateDateRangeForPeriod(14); // 預設兩週
+      }
+    }
   }
 
   // 文字雲專用的顏色計算
@@ -1858,5 +1707,251 @@ export class PoliticianDetailComponent {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     return diffDays;
+  }
+
+  // 檢查立委是否被封關
+  isLegislatorBlocked(name: string): boolean {
+    return this.BLOCKED_LEGISLATORS.includes(name);
+  }
+
+  // 時間範圍篩選方法
+  onTimeRangeChange(): void {
+    if (!this.data?.time_series_stats) {
+      return;
+    }
+
+    console.log('🔄 時間範圍變化:', this.selectedTimeRange);
+    console.log('🔍 當前篩選器:', this.currentFilter);
+
+    // 統一使用 currentFilter 來處理時間範圍
+    // 如果 currentFilter 有值，優先使用它
+    if (this.currentFilter && this.currentFilter !== 'all') {
+      console.log('📊 使用 currentFilter 處理時間範圍:', this.currentFilter);
+      this.processTimeSeriesStats(this.data.time_series_stats);
+      return;
+    }
+
+    // 如果沒有 currentFilter，則使用 selectedTimeRange（作為備用）
+    console.log('📊 使用 selectedTimeRange 作為備用:', this.selectedTimeRange);
+    
+    // 嘗試從數據中獲取實際的日期範圍
+    let timeRange = this.timeSeriesFilterService.getActualTimeRange(this.data.time_series_stats, this.selectedTimeRange);
+    
+    // 如果無法獲取實際範圍，則使用預設範圍
+    if (!timeRange) {
+      console.log('⚠️ 無法獲取實際日期範圍，使用預設範圍');
+      timeRange = this.timeSeriesFilterService.getTimeRangeSuggestions(this.selectedTimeRange);
+    } else {
+      console.log('✅ 使用實際日期範圍:', timeRange);
+    }
+    
+    // 篩選數據
+    this.filteredTimeSeriesData = this.timeSeriesFilterService.filterData(
+      this.data.time_series_stats,
+      timeRange.startDate,
+      timeRange.endDate,
+      'both'
+    );
+
+    if (this.filteredTimeSeriesData) {
+      console.log('📊 篩選後的時間序列數據:', this.filteredTimeSeriesData);
+      this.updateChartsWithFilteredData();
+    } else {
+      console.warn('⚠️ 篩選數據失敗');
+    }
+  }
+
+  // 使用篩選後的數據更新圖表
+  private updateChartsWithFilteredData(): void {
+    if (!this.filteredTimeSeriesData) {
+      return;
+    }
+
+    const { daily, cumulative, interval } = this.filteredTimeSeriesData;
+
+    // 更新每日數據圖表
+    if (daily.length > 0) {
+      this.updateDailyChart(daily);
+    }
+
+    // 更新累計數據圖表
+    if (cumulative.length > 0) {
+      this.updateCumulativeChart(cumulative);
+    }
+  }
+
+  // 更新每日數據圖表
+  private updateDailyChart(dailyData: any[]): void {
+    const labels = dailyData.map(item => item.date);
+    
+    // 直接使用後端回傳的數據，不進行累積計算
+    const positiveData = dailyData.map(item => {
+      if (item.positive !== undefined) {
+        return item.positive;
+      } else if (item.sentiment_counts?.POSITIVE !== undefined) {
+        return item.sentiment_counts.POSITIVE;
+      }
+      return 0;
+    });
+    
+    const negativeData = dailyData.map(item => {
+      if (item.negative !== undefined) {
+        return item.negative;
+      } else if (item.sentiment_counts?.NEGATIVE !== undefined) {
+        return item.sentiment_counts.NEGATIVE;
+      }
+      return 0;
+    });
+
+    console.log('📊 更新每日數據圖表:', {
+      labels,
+      positiveData,
+      negativeData,
+      dailyData,
+      sampleItem: dailyData[0]
+    });
+
+    this.demoLineChartData = {
+      labels: labels,
+      datasets: [
+        {
+          label: '正面評論',
+          data: positiveData,
+          borderColor: 'rgb(75, 192, 192)',
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          tension: 0.1
+        },
+        {
+          label: '負面評論',
+          data: negativeData,
+          borderColor: 'rgb(255, 99, 132)',
+          backgroundColor: 'rgba(255, 99, 132, 0.2)',
+          tension: 0.1
+        }
+      ]
+    };
+  }
+
+  // 更新累計數據圖表
+  private updateCumulativeChart(cumulativeData: any[]): void {
+    const labels = cumulativeData.map(item => item.date);
+    
+    // 直接使用後端回傳的數據，不進行累積計算
+    const supportData = cumulativeData.map(item => {
+      if (item.sentiment_counts?.support !== undefined) {
+        return item.sentiment_counts.support;
+      } else if (item.sentiment_counts?.POSITIVE !== undefined) {
+        return item.sentiment_counts.POSITIVE;
+      }
+      return 0;
+    });
+    
+    const opposeData = cumulativeData.map(item => {
+      if (item.sentiment_counts?.oppose !== undefined) {
+        return item.sentiment_counts.oppose;
+      } else if (item.sentiment_counts?.NEGATIVE !== undefined) {
+        return item.sentiment_counts.NEGATIVE;
+      }
+      return 0;
+    });
+
+    console.log('📊 更新累計數據圖表:', {
+      labels,
+      supportData,
+      opposeData,
+      cumulativeData,
+      sampleItem: cumulativeData[0]
+    });
+
+    this.demoLineChartData = {
+      labels: labels,
+      datasets: [
+        {
+          label: '支持罷免',
+          data: supportData,
+          borderColor: 'rgb(75, 192, 192)',
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          tension: 0.1
+        },
+        {
+          label: '反對罷免',
+          data: opposeData,
+          borderColor: 'rgb(255, 99, 132)',
+          backgroundColor: 'rgba(255, 99, 132, 0.2)',
+          tension: 0.1
+        }
+      ]
+    };
+  }
+
+  // 新增方法：根據時間範圍過濾統計數據點
+  private filterStatsPointsByTimeRange(statsPoints: any[], timeRange: string): any[] {
+    if (!statsPoints || statsPoints.length === 0) {
+      return [];
+    }
+    
+    // 計算要保留的天數範圍
+    let daysToKeep: number;
+    switch (timeRange) {
+      case 'week':
+        daysToKeep = 7;
+        break;
+      case '2weeks':
+        daysToKeep = 14;
+        break;
+      case 'month':
+        daysToKeep = 30;
+        break;
+      case '3months':
+        daysToKeep = 90;
+        break;
+      case '6months':
+        daysToKeep = 180;
+        break;
+      case '1year':
+        daysToKeep = 365;
+        break;
+      default:
+        daysToKeep = 14;
+    }
+    
+    // 找到數據點中的最新日期
+    const sortedPoints = [...statsPoints].sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return dateB.getTime() - dateA.getTime(); // 降序排列，最新的在前
+    });
+    
+    const latestDate = new Date(sortedPoints[0].date);
+    const cutoffDate = new Date(latestDate.getTime() - (daysToKeep * 24 * 60 * 60 * 1000));
+    
+    console.log(`📅 過濾邏輯: 保留最近 ${daysToKeep} 天的數據`);
+    console.log(`📅 最新數據日期: ${latestDate.toISOString().split('T')[0]}`);
+    console.log(`📅 截止日期: ${cutoffDate.toISOString().split('T')[0]}`);
+    
+    // 過濾出在截止日期之後的數據點
+    const filteredPoints = statsPoints.filter(point => {
+      const pointDate = new Date(point.date);
+      return pointDate >= cutoffDate;
+    });
+    
+    console.log(`📅 過濾結果: 從 ${statsPoints.length} 個點過濾到 ${filteredPoints.length} 個點`);
+    
+    // 如果過濾後沒有數據，返回最近的幾個點
+    if (filteredPoints.length === 0) {
+      console.log(`📅 過濾後沒有數據，返回最近的 ${Math.min(7, statsPoints.length)} 個點`);
+      return sortedPoints.slice(0, Math.min(7, statsPoints.length)).sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        return dateA.getTime() - dateB.getTime(); // 升序排列，最早的在前
+      });
+    }
+    
+    // 按日期升序排列過濾後的數據點
+    return filteredPoints.sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return dateA.getTime() - dateB.getTime();
+    });
   }
 }

@@ -6,13 +6,15 @@ export interface NavItem {
     variant: string;
     text: string;
   };
+  isRecallAnalysis?: boolean; // 新增標識
 }
 
 export const navItems: NavItem[] = [
   {
     name: '2025立委罷免分析',
     url: '/taiwan-map',
-    icon: 'fas fa-map'
+    icon: 'fas fa-map',
+    isRecallAnalysis: true // 標識為罷免分析
   },
   {
     name: '公投案分析',

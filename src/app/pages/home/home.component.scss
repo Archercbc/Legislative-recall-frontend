@@ -101,12 +101,7 @@
   }
 }
 
-// Features Section
-.features-section {
-  padding: 5rem 0;
-  background: white;
-}
-
+// 通用樣式
 .container {
   max-width: 1200px;
   margin: 0 auto;
@@ -125,57 +120,80 @@
   }
 }
 
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 2rem;
-  margin-top: 3rem;
-  
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-}
-
-.feature-card {
+// Features Section
+.features-section {
   background: white;
-  padding: 2rem;
-  border-radius: 15px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  transition: all 0.3s ease;
+  padding: 4rem 0;
   
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-  }
-  
-  .feature-icon {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 1.5rem;
-    background: linear-gradient(45deg, #667eea, #764ba2);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .features-list {
+    margin-top: 3rem;
     
-    i {
-      font-size: 2rem;
-      color: white;
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.5rem;
+      padding: 2rem 0;
+      border-bottom: 1px solid #e9ecef;
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
+      .feature-icon {
+        flex-shrink: 0;
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        
+        i {
+          font-size: 1.5rem;
+          color: white;
+        }
+      }
+      
+      .feature-content {
+        flex: 1;
+        
+        h3 {
+          font-size: 1.4rem;
+          color: #333;
+          margin-bottom: 0.75rem;
+          font-weight: 600;
+        }
+        
+        p {
+          color: #666;
+          line-height: 1.6;
+          margin: 0;
+          font-size: 1rem;
+        }
+      }
+      
+      &:hover {
+        .feature-icon {
+          transform: scale(1.05);
+          transition: transform 0.3s ease;
+        }
+      }
     }
   }
   
-  h3 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    color: #333;
-  }
-  
-  p {
-    color: #666;
-    line-height: 1.6;
+  @media (max-width: 768px) {
+    .features-list {
+      .feature-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+        
+        .feature-icon {
+          align-self: center;
+        }
+      }
+    }
   }
 }
 
@@ -337,8 +355,16 @@
     }
   }
   
-  .features-grid {
-    grid-template-columns: 1fr;
+  .features-list {
+    .feature-item {
+      flex-direction: column;
+      text-align: center;
+      gap: 1rem;
+      
+      .feature-icon {
+        align-self: center;
+      }
+    }
   }
   
   .stats-grid {
@@ -427,6 +453,14 @@
           font-size: 0.9rem;
           font-weight: 600;
         }
+      }
+    }
+    
+    // 其他三項工具卡片為黑色
+    &:not(.recall-analysis) {
+      h3 {
+        color: #000; // 黑色
+        font-weight: 600;
       }
     }
   }
