@@ -397,39 +397,20 @@ export class PoliticianDetailComponent {
           })).filter((item: any) => item.text && item.weight > 0);
         }
         
-        // 處理圓餅圖數據 - 使用API返回的數據，如果沒有則使用根級別數據
-        if (chartData.sentiment_analysis && 
-            (chartData.sentiment_analysis.support_count > 0 || chartData.sentiment_analysis.oppose_count > 0)) {
-          // 使用API返回的數據
-          this.updateSentimentChart({
-            '反對罷免人數': chartData.sentiment_analysis.oppose_count,
-            '支持罷免人數': chartData.sentiment_analysis.support_count,
-            '中性人數': 0
-          });
-          
-          this.positiveCount = chartData.sentiment_analysis.oppose_count;
-          this.negativeCount = chartData.sentiment_analysis.support_count;
-          
-          console.log('✅ 使用API返回的情感分析數據:', { 
-            support_count: chartData.sentiment_analysis.support_count, 
-            oppose_count: chartData.sentiment_analysis.oppose_count 
-          });
-        } else {
-          // 使用根級別數據
-          this.updateSentimentChart({
-            '反對罷免人數': this.data.recall_oppose,
-            '支持罷免人數': this.data.recall_support,
-            '中性人數': 0
-          });
-          
-          this.positiveCount = this.data.recall_oppose;
-          this.negativeCount = this.data.recall_support;
-          
-          console.log('✅ 使用根級別數據:', { 
-            recall_support: this.data.recall_support, 
-            recall_oppose: this.data.recall_oppose 
-          });
-        }
+        // 直接使用根級別數據，確保與資料庫一致
+        this.updateSentimentChart({
+          '反對罷免人數': this.data.recall_oppose,
+          '支持罷免人數': this.data.recall_support,
+          '中性人數': 0
+        });
+        
+        this.positiveCount = this.data.recall_oppose;
+        this.negativeCount = this.data.recall_support;
+        
+        console.log('✅ 使用根級別數據:', { 
+          recall_support: this.data.recall_support, 
+          recall_oppose: this.data.recall_oppose 
+        });
         
         // 處理情緒分析數據
         if (chartData.emotion_analysis && Object.keys(chartData.emotion_analysis).length > 0) {
@@ -813,31 +794,23 @@ export class PoliticianDetailComponent {
 
     // 按照 before.ts 的正確邏輯處理數據
 
-    // 1. 更新圓餅圖（使用 sentiment_analysis）
-    if (data.sentiment_analysis) {
-      const sentiment = data.sentiment_analysis;
-      // 修正：確保數據映射正確
-      this.positiveCount = sentiment.support_count || 0;   // support_count = 支持罷免
-      this.negativeCount = sentiment.oppose_count || 0;   // oppose_count = 反對罷免
+    // 1. 更新圓餅圖（直接使用根級別數據）
+    // 確保數據正確設置到圓餅圖 - 標籤順序與數據順序一致
+    this.sentimentChartData = {
+      labels: ['支持罷免', '反對罷免'],
+      datasets: [{
+        data: [this.negativeCount, this.positiveCount],  // [支持, 反對]
+        backgroundColor: ['#f87171', '#4f8cff']  // 紅色=支持，藍色=反對
+      }]
+    };
 
-      // 確保數據正確設置到圓餅圖 - 標籤順序與數據順序一致
-      this.sentimentChartData = {
-        labels: ['支持罷免', '反對罷免'],
-        datasets: [{
-          data: [this.positiveCount, this.negativeCount],  // [支持, 反對]
-          backgroundColor: ['#f87171', '#4f8cff']  // 紅色=支持，藍色=反對
-        }]
-      };
-
-      // 調試：檢查圓餅圖數據
-      console.log('🔍 圓餅圖數據設置:', {
-        positiveCount: this.positiveCount,
-        negativeCount: this.negativeCount,
-        chartData: this.sentimentChartData.datasets[0].data,
-        total: this.positiveCount + this.negativeCount
-      });
-
-    }
+    // 調試：檢查圓餅圖數據
+    console.log('🔍 圓餅圖數據設置:', {
+      positiveCount: this.positiveCount,
+      negativeCount: this.negativeCount,
+      chartData: this.sentimentChartData.datasets[0].data,
+      total: this.positiveCount + this.negativeCount
+    });
 
     // 2. 更新雷達圖（使用 emotion_analysis_detailed，按照 before.ts 邏輯）
     if (data.emotion_analysis_detailed &&
@@ -1199,18 +1172,16 @@ export class PoliticianDetailComponent {
             })).filter((item: any) => item.text && item.weight > 0);
           }
           
-          // 處理圓餅圖數據
-          if (data.sentiment_analysis) {
-            this.updateSentimentChart({
-              '反對罷免人數': data.sentiment_analysis.oppose_count || 0,
-              '支持罷免人數': data.sentiment_analysis.support_count || 0,
-              '中性人數': 0
-            });
-            
-            // 更新統計數據 - 確保與updateSentimentChart中的邏輯一致
-            this.positiveCount = data.sentiment_analysis.oppose_count || 0;  // 反對罷免
-            this.negativeCount = data.sentiment_analysis.support_count || 0;  // 支持罷免
-          }
+          // 處理圓餅圖數據 - 直接使用根級別數據
+          this.updateSentimentChart({
+            '反對罷免人數': this.data.recall_oppose,
+            '支持罷免人數': this.data.recall_support,
+            '中性人數': 0
+          });
+          
+          // 更新統計數據 - 確保與updateSentimentChart中的邏輯一致
+          this.positiveCount = this.data.recall_oppose;  // 反對罷免
+          this.negativeCount = this.data.recall_support;  // 支持罷免
           
           // 處理情緒分析數據
           if (data.emotion_analysis) {
