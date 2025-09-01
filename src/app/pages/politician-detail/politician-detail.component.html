@@ -70,16 +70,16 @@
                   [style.width.%]="getSupportPercentage()">
                 </div>
 
-                <!-- 左側文字 (正面) -->
+                <!-- 左側文字 (反對罷免) -->
                 <div class="bar-text-left">
                   {{ getOpposePercentage() }}% 反對罷免
-                  <div class="stat-value positive">{{ positiveCount.toLocaleString() }}人</div>
+                  <div class="stat-value positive">{{ opposeCount.toLocaleString() }}人</div>
                 </div>
 
-                <!-- 右側文字 (負面) -->
+                <!-- 右側文字 (支持罷免) -->
                 <div class="bar-text-right">
                   {{ getSupportPercentage() }}% 支持罷免
-                  <div class="stat-value negative">{{ negativeCount.toLocaleString() }}人</div>
+                  <div class="stat-value negative">{{ supportCount.toLocaleString() }}人</div>
                 </div>
               </div>
 
@@ -219,7 +219,7 @@
             <div cCard class="chart-card">
               <div cCardHeader>
                 <i class="cil-chart-pie"></i>
-                <span class="chart-title">罷免民意分析 (總計: {{ positiveCount + negativeCount }}人)</span>
+                <span class="chart-title">罷免民意分析 (總計: {{ opposeCount + supportCount }}人)</span>
                 <span *ngIf="isLoadingTimeData" class="spinner-border spinner-border-sm ms-2"></span>
               </div>
               <div cCardBody style="overflow: visible; position: relative;">

@@ -47,6 +47,14 @@ export class DataService {
     return this.http.get(`${this.apiUrl}/${name}/date-range`);
   }
 
+  // 圓餅圖數據API - 簡單的圓餅圖數據
+  getLegislatorPieChart(name: string, days: number = 365): Observable<any> {
+    const params = new URLSearchParams();
+    params.append('days', days.toString());
+    
+    return this.http.get(`${this.apiUrl}/${name}/pie-chart?${params.toString()}`);
+  }
+
   // 統一的立委數據API - 支持時間篩選和數據類型選擇
   getLegislatorUnifiedData(
     name: string, 
@@ -100,6 +108,11 @@ export class DataService {
   // 記錄網站訪問
   recordVisit(page: string): Observable<any> {
     return this.http.post(`${this.baseUrl}/api/visitor/record`, { page });
+  }
+
+  // 獲取平台統計數據
+  getPlatformStats(): Promise<any> {
+    return this.http.get<any>(`${this.baseUrl}/api/platform/stats`).toPromise();
   }
 
   // 初始化訪問計數

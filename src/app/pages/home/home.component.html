@@ -63,6 +63,15 @@
           <div class="feature-icon">
             <i class="fas fa-chart-line"></i>
           </div>
+          <div class="feature-item">
+            <div class="feature-icon">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="feature-content">
+              <h3>網友導向洞察</h3>
+              <p>利用用戶數據為核心，而非單純貼文數量，精準呈現真實民意與社群互動影響力。</p>
+            </div>
+          </div>
           <div class="feature-content">
             <h3>即時數據分析</h3>
             <p>運用先進的數據分析技術，即時監控與分析政治輿情趨勢，提供準確的民意洞察。</p>
@@ -98,16 +107,6 @@
             <p>專注於政治傳播與公民參與的學術研究。</p>
           </div>
         </div>
-
-        <div class="feature-item">
-          <div class="feature-icon">
-            <i class="fas fa-chart-line"></i>
-          </div>
-          <div class="feature-content">
-            <h3>網友導向洞察</h3>
-            <p>利用用戶數據為核心，而非單純貼文數量，精準呈現真實民意與社群互動影響力。</p>
-          </div>
-        </div>
       </div>
     </div>
   </section>
@@ -126,8 +125,16 @@
           <div class="stat-label">今日訪客</div>
         </div>
         <div class="stat-card">
-          <div class="stat-number">31</div>
+          <div class="stat-number">{{ getLegislatorCount() }}</div>
           <div class="stat-label">立委輿情分析</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">{{ getTotalUsers() | number }}</div>
+          <div class="stat-label">總用戶數</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">{{ getTotalComments() | number }}</div>
+          <div class="stat-label">總留言數</div>
         </div>
         <div class="stat-card">
           <div class="stat-number">24 hours</div>
