@@ -5,7 +5,7 @@
   <div class="chat-header" (click)="toggleExpanded()">
     <div class="header-content">
       <div class="ai-avatar">
-        <!-- 使用 web_logo.jpg 頭像，通過 CSS 背景圖片顯示 -->
+        <img src="/web_logo.png" alt="AI Assistant" class="avatar-image">
       </div>
       <div class="header-text" *ngIf="isExpanded">
         <span class="title">AI 助手</span>
@@ -55,7 +55,7 @@
             <!-- AI助理訊息 -->
             <div *ngIf="message.type === 'assistant'" class="assistant-bubble">
               <div class="assistant-avatar">
-                <svg cIcon name="cilSpeech" class="category-icon"></svg>
+                <img src="/web_logo.png" alt="AI Assistant" class="avatar-image">
               </div>
               <div class="assistant-content">
                 <div class="message-text" [innerHTML]="message.content | markdown"></div>
@@ -74,7 +74,7 @@
           <div class="message-content">
             <div class="assistant-bubble">
               <div class="assistant-avatar">
-                <svg cIcon name="cilSpeech" class="category-icon"></svg>
+                <img src="/web_logo.png" alt="AI Assistant" class="avatar-image">
               </div>
               <div class="assistant-content">
                 <div class="typing-indicator">

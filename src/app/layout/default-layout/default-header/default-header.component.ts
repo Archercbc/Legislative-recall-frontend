@@ -21,6 +21,10 @@ export class DefaultHeaderComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadVisitorStats();
+    // 定期更新統計數據，確保與首頁同步
+    setInterval(() => {
+      this.loadVisitorStats();
+    }, 30000); // 每30秒更新一次
   }
 
   private loadVisitorStats(): void {

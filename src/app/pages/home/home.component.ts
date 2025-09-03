@@ -13,8 +13,6 @@ import { DataService } from '../../services/data.service';
 })
 export class HomeComponent implements OnInit {
   visitorStats: VisitorStats | null = null;
-  platformStats: any = null;
-  isLoadingPlatformStats = false;
 
   constructor(
     private visitorService: VisitorService,
@@ -23,7 +21,10 @@ export class HomeComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadVisitorStats();
-    this.loadPlatformStats();
+    // 定期更新統計數據，確保與導航欄同步
+    setInterval(() => {
+      this.loadVisitorStats();
+    }, 30000); // 每30秒更新一次
   }
 
   private loadVisitorStats(): void {
@@ -42,51 +43,8 @@ export class HomeComponent implements OnInit {
       });
   }
 
-  private loadPlatformStats(): void {
-    this.isLoadingPlatformStats = true;
-    
-    // 獲取平台統計數據
-    this.dataService.getPlatformStats()
-      .then((stats) => {
-        this.platformStats = stats;
-        console.log('平台統計數據載入成功:', stats);
-      })
-      .catch((error) => {
-        console.error('獲取平台統計失敗:', error);
-        // 使用默認值
-        this.platformStats = {
-          total_legislators: 31,
-          total_users: 0,
-          total_comments: 0,
-          platform_distribution: {
-            'PTT': 0,
-            'Threads': 0,
-            'YouTube': 0
-          }
-        };
-      })
-      .finally(() => {
-        this.isLoadingPlatformStats = false;
-      });
-  }
-
   // 獲取立委輿情分析數量
   getLegislatorCount(): number {
-    return this.platformStats?.total_legislators || 31;
-  }
-
-  // 獲取總用戶數
-  getTotalUsers(): number {
-    return this.platformStats?.total_users || 0;
-  }
-
-  // 獲取總留言數
-  getTotalComments(): number {
-    return this.platformStats?.total_comments || 0;
-  }
-
-  // 獲取平台分布
-  getPlatformDistribution(): any {
-    return this.platformStats?.platform_distribution || {};
+    return 31; // 固定值
   }
 }

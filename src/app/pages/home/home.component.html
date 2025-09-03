@@ -2,6 +2,9 @@
   <!-- Hero Section -->
   <section class="hero-section">
     <div class="hero-content">
+      <div class="hero-logo">
+        <img src="/web_logo.png" alt="POI Logo" class="logo-image">
+      </div>
       <h1 class="hero-title">公民意見指數平台</h1>
       <p class="hero-subtitle">Public Opinion Index (POI)</p>
       <p class="hero-description">
@@ -63,14 +66,15 @@
           <div class="feature-icon">
             <i class="fas fa-chart-line"></i>
           </div>
-          <div class="feature-item">
-            <div class="feature-icon">
-              <i class="fas fa-chart-line"></i>
-            </div>
-            <div class="feature-content">
-              <h3>網友導向洞察</h3>
-              <p>利用用戶數據為核心，而非單純貼文數量，精準呈現真實民意與社群互動影響力。</p>
-            </div>
+          <div class="feature-content">
+            <h3>網友導向洞察</h3>
+            <p>利用用戶數據為核心，而非單純貼文數量，精準呈現真實民意與社群互動影響力。</p>
+          </div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">
+            <i class="fas fa-chart-line"></i>
           </div>
           <div class="feature-content">
             <h3>即時數據分析</h3>
@@ -127,14 +131,6 @@
         <div class="stat-card">
           <div class="stat-number">{{ getLegislatorCount() }}</div>
           <div class="stat-label">立委輿情分析</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number">{{ getTotalUsers() | number }}</div>
-          <div class="stat-label">總用戶數</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number">{{ getTotalComments() | number }}</div>
-          <div class="stat-label">總留言數</div>
         </div>
         <div class="stat-card">
           <div class="stat-number">24 hours</div>

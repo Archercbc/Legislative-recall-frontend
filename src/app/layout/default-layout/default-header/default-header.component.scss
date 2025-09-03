@@ -28,6 +28,14 @@
     font-weight: bold;
     font-size: 1.5rem;
     
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      margin-right: 0.5rem;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    
     i {
       margin-right: 0.5rem;
       color: #007bff;
