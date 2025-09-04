@@ -16,6 +16,9 @@ export interface VisitorStats {
 })
 export class VisitorService {
   private hasRecordedVisit = false;
+  private cachedStats: VisitorStats | null = null;
+  private lastUpdateTime: number = 0;
+  private readonly CACHE_DURATION = 10000; // 10秒緩存
 
   constructor(
     private http: HttpClient,
@@ -51,21 +54,46 @@ export class VisitorService {
   }
 
   /**
-   * 獲取訪問統計
+   * 獲取訪問統計（帶緩存）
    */
   getVisitorStats(): Promise<VisitorStats> {
+    const now = Date.now();
+    
+    // 如果緩存有效，直接返回緩存數據
+    if (this.cachedStats && (now - this.lastUpdateTime) < this.CACHE_DURATION) {
+      return Promise.resolve(this.cachedStats);
+    }
+    
+    // 否則發送新的請求
     return new Promise((resolve, reject) => {
       this.http.get<VisitorStats>(`${environment.apiUrl}/api/visitor/stats`)
         .subscribe({
           next: (stats) => {
+            // 更新緩存
+            this.cachedStats = stats;
+            this.lastUpdateTime = now;
             resolve(stats);
           },
           error: (error) => {
             console.error('獲取訪問統計失敗:', error);
-            reject(error);
+            // 如果有緩存數據，返回緩存數據而不是錯誤
+            if (this.cachedStats) {
+              resolve(this.cachedStats);
+            } else {
+              reject(error);
+            }
           }
         });
     });
+  }
+
+  /**
+   * 強制刷新統計數據
+   */
+  refreshStats(): Promise<VisitorStats> {
+    this.cachedStats = null;
+    this.lastUpdateTime = 0;
+    return this.getVisitorStats();
   }
 
   /**

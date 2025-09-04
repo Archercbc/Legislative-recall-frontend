@@ -666,13 +666,13 @@ export class PoliticianDetailComponent {
       datasets: [
         {
           label: '累計支持罷免',
-          data: points.map((p: any) => p.sentiment_counts?.POSITIVE || p.sentiment_counts?.positive || 0),
+          data: points.map((p: any) => p.sentiment_counts?.NEGATIVE || p.sentiment_counts?.negative || 0),
           borderColor: '#f87171',
           backgroundColor: 'rgba(248, 113, 113, 0.1)'
         },
         {
           label: '累計反對罷免',
-          data: points.map((p: any) => p.sentiment_counts?.NEGATIVE || p.sentiment_counts?.negative || 0),
+          data: points.map((p: any) => p.sentiment_counts?.POSITIVE || p.sentiment_counts?.positive || 0),
           borderColor: '#4f8cff',
           backgroundColor: 'rgba(79, 140, 255, 0.1)'
         }
