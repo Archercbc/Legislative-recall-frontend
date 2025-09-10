@@ -233,11 +233,11 @@
                 <div class="custom-chart-stats">
                   <div class="stat-item">
                     <span class="color-dot oppose"></span>
-                    <span class="stat-text">反對罷免 {{ getOpposePercentage() }}%</span>
+                    <span class="stat-text">反對罷免 {{ opposeCount.toLocaleString() }}人 {{ getOpposePercentage() }}%</span>
                   </div>
                   <div class="stat-item">
                     <span class="color-dot support"></span>
-                    <span class="stat-text">支持罷免 {{ getSupportPercentage() }}%</span>
+                    <span class="stat-text">支持罷免 {{ supportCount.toLocaleString() }}人 {{ getSupportPercentage() }}%</span>
                   </div>
                 </div>
               </div>
@@ -274,7 +274,7 @@
                 </div>
               </div>
             </div>
-          </div>-->>
+          </div>-->
         </div>
 
         <!-- 熱門關鍵字 -->
@@ -322,7 +322,7 @@
                 <div class="chart-header-content">
                   <div class="chart-title-section">
                     <i class="cil-chart-line"></i>
-                    <span>罷免支持度累計趨勢</span>
+                    <span>近一年罷免支持度累計趨勢</span>
                   </div>
                   
                   <!-- 時間範圍選擇器 -->

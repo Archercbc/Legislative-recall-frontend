@@ -326,7 +326,6 @@ export class PoliticianDetailComponent {
     // 載入立委基本信息
     this.dataService.getLegislatorDetail(this.politicianId).subscribe({
       next: (basicData: any) => {
-        console.log('✅ 載入立委基本信息成功:', basicData);
         
         // 更新基本數據
         this.data = basicData;
@@ -347,9 +346,6 @@ export class PoliticianDetailComponent {
           // 如果沒有時間序列數據，則從API獲取
           this.loadChartData(365);
         }
-        
-        // 🔥 載入圓餅圖數據
-        console.log('🔄 開始載入圓餅圖數據...');
         this.loadPieChartData(365);
       },
       error: (error: any) => {
@@ -360,8 +356,7 @@ export class PoliticianDetailComponent {
 
   // 新增方法：載入圖表數據
   private loadChartData(days: number): void {
-    console.log(`🔄 載入圖表數據 (${days}天)...`);
-    
+
     // 檢查立委是否處於民調封關狀態
     if (this.isLegislatorBlocked(this.politicianId)) {
       console.log('⚠️ 立委處於民調封關狀態，跳過圖表數據載入');
@@ -370,7 +365,6 @@ export class PoliticianDetailComponent {
     
     // 首先檢查是否有本地的 time_series_stats 數據
     if (this.data?.time_series_stats) {
-      console.log('📊 使用本地的時間序列統計數據');
       this.initializeTimeSeriesCharts();
       return;
     }
@@ -384,8 +378,7 @@ export class PoliticianDetailComponent {
       includeEmotion: true
     }).subscribe({
       next: (chartData) => {
-        console.log('✅ 載入圖表數據成功');
-        console.log('📊 收到的圖表數據:', chartData);
+
         
         // 處理時間序列圖表數據
         if (chartData.time_series) {
@@ -517,12 +510,6 @@ export class PoliticianDetailComponent {
 
   // 主要方法1：處理 legislators 集合數據
   private processLegislatorsData(data: any): void {
-    console.log('🔄 開始處理legislators數據:', data);
-    console.log('📊 數據結構檢查:');
-    console.log('  - recall_support (根級別):', data.recall_support);
-    console.log('  - recall_oppose (根級別):', data.recall_oppose);
-    console.log('  - emotion_analysis.recall_support:', data.emotion_analysis?.recall_support);
-    console.log('  - emotion_analysis.recall_oppose:', data.emotion_analysis?.recall_oppose);
     
     // 1. 情感分析圓餅圖 - 優先使用emotion_analysis中的recall_support和recall_oppose
     let recallSupport = 0;
@@ -532,19 +519,16 @@ export class PoliticianDetailComponent {
     if (data.emotion_analysis) {
       recallSupport = data.emotion_analysis.recall_support || 0;
       recallOppose = data.emotion_analysis.recall_oppose || 0;
-      console.log('  - 從emotion_analysis獲取:', { recallSupport, recallOppose });
     }
     
     // 如果emotion_analysis中沒有，則使用根級別的數據
     if (recallSupport === 0 && recallOppose === 0) {
       recallSupport = data.recall_support || 0;
       recallOppose = data.recall_oppose || 0;
-      console.log('  - 從根級別獲取:', { recallSupport, recallOppose });
     }
     
     // 更新圓餅圖
     if (recallSupport > 0 || recallOppose > 0) {
-      console.log('✅ 更新圓餅圖數據:', { recallSupport, recallOppose });
       this.updateSentimentChart({
         '反對罷免人數': recallOppose,
         '支持罷免人數': recallSupport,
@@ -555,18 +539,12 @@ export class PoliticianDetailComponent {
       this.opposeCount = recallOppose;  // 反對罷免
       this.supportCount = recallSupport;  // 支持罷免
       
-      console.log('✅ 更新情感分析數據完成:', { 
-        positiveCount: this.opposeCount, 
-        negativeCount: this.supportCount 
-      });
     } else {
       console.log('⚠️ 沒有找到有效的recall數據');
     }
     
     // 2. 情緒雷達圖 - 使用emotion_analysis
     if (data.emotion_analysis) {
-      console.log('從 legislators 集合載入情緒雷達圖數據');
-      console.log('emotion_analysis 數據結構:', data.emotion_analysis);
       this.updateEmotionRadarChart(data.emotion_analysis);
     }
     
@@ -585,16 +563,12 @@ export class PoliticianDetailComponent {
                  item.weight > 0 && 
                  item.text.length > 1; // 確保不是單字
         });
-      console.log('從 legislators 集合載入文字雲', this.wordCloudData.length);
     } else {
       console.log('legislators 中沒有文字雲數據');
     }
     
     // 4. 時間序列統計 - 使用time_series_stats
     if (data.time_series_stats && Object.keys(data.time_series_stats).length > 0) {
-      console.log('從 legislators 集合載入時間序列數據');
-      console.log('時間序列數據結構:', Object.keys(data.time_series_stats));
-      
       // 直接處理時間序列數據，不區分新舊格式
       this.processTimeSeriesStats(data.time_series_stats);
     } else {
@@ -604,10 +578,6 @@ export class PoliticianDetailComponent {
   
   // 簡化方法：處理時間序列統計數據
   private processTimeSeriesStats(timeSeriesStats: any): void {
-    console.log(`🔍 處理時間序列統計: ${this.currentFilter}`);
-    console.log(`🔍 後端數據結構:`, Object.keys(timeSeriesStats));
-    console.log(`🔍 後端數據詳情:`, timeSeriesStats);
-    
     // 根據篩選器選擇對應的數據
     const keyMap: { [key: string]: string } = {
       'week': 'recent_7_days_cumulative',
@@ -619,17 +589,8 @@ export class PoliticianDetailComponent {
     };
     
     const targetKey = keyMap[this.currentFilter] || 'recent_14_days_cumulative';
-    console.log(`🔍 目標鍵名: ${targetKey}`);
-    console.log(`🔍 當前篩選器: ${this.currentFilter}`);
-    
     const selectedStats = timeSeriesStats[targetKey];
-    console.log(`🔍 選中的統計數據:`, selectedStats);
-    
     if (!selectedStats?.stats_points) {
-      console.warn(`⚠️ 沒有找到 ${this.currentFilter} 的數據`);
-      console.warn(`⚠️ 可用的鍵:`, Object.keys(timeSeriesStats));
-      console.warn(`⚠️ 嘗試尋找替代數據...`);
-      
       // 嘗試找到最接近的替代數據
       const fallbackKeys = Object.keys(timeSeriesStats).filter(key => 
         key.includes('cumulative') && key.includes('days')
@@ -638,8 +599,6 @@ export class PoliticianDetailComponent {
       if (fallbackKeys.length > 0) {
         const fallbackKey = fallbackKeys[0];
         const fallbackStats = timeSeriesStats[fallbackKey];
-        console.log(`📊 使用備用數據: ${fallbackKey}`, fallbackStats);
-        
         if (fallbackStats?.stats_points) {
           this.updateChartFromStats(fallbackStats);
           return;
@@ -649,29 +608,23 @@ export class PoliticianDetailComponent {
       console.error('❌ 沒有找到任何可用的時間序列數據');
       return;
     }
-    
-    console.log(`📊 使用數據:`, selectedStats.description || targetKey);
     this.updateChartFromStats(selectedStats);
   }
   
   // 新增方法：從統計數據更新圖表
   private updateChartFromStats(selectedStats: any): void {
     const points = selectedStats.stats_points;
-    console.log(`📊 統計點數量: ${points.length}`);
-    console.log(`📊 第一個點:`, points[0]);
-    console.log(`📊 最後一個點:`, points[points.length - 1]);
-    
     this.demoLineChartData = {
       labels: points.map((p: any) => p.date),
       datasets: [
         {
-          label: '累計支持罷免',
+          label: '近一年累計支持罷免',
           data: points.map((p: any) => p.sentiment_counts?.NEGATIVE || p.sentiment_counts?.negative || 0),
           borderColor: '#f87171',
           backgroundColor: 'rgba(248, 113, 113, 0.1)'
         },
         {
-          label: '累計反對罷免',
+          label: '近一年累計反對罷免',
           data: points.map((p: any) => p.sentiment_counts?.POSITIVE || p.sentiment_counts?.positive || 0),
           borderColor: '#4f8cff',
           backgroundColor: 'rgba(79, 140, 255, 0.1)'
@@ -679,11 +632,6 @@ export class PoliticianDetailComponent {
       ]
     };
     
-        // 🔥 重要：圓餅圖數據現在由 updateChartsFromCrawlerData 方法處理
-        // 這裡不再更新圓餅圖，避免數據衝突
-        console.log('⚠️ 圓餅圖數據更新已移至 updateChartsFromCrawlerData 方法');
-        console.log('🔍 時間序列數據僅用於趨勢圖表，不更新圓餅圖');
-        
         // 只更新日期範圍，不更新圓餅圖數據
         this.updateDateRangeFromChartData();
   }
@@ -900,28 +848,19 @@ export class PoliticianDetailComponent {
       console.log('沒有情緒分析數據');
       return;
     }
-
-    console.log('🔍 updateEmotionRadarChart: 輸入數據:', emotionData);
-    console.log('🔍 updateEmotionRadarChart: 數據類型:', typeof emotionData);
-    console.log('🔍 updateEmotionRadarChart: 數據鍵:', Object.keys(emotionData));
-
-    // 檢查數據格式
     let emotionCounts: { [key: string]: number } = {};
     
     if (emotionData.positive && emotionData.negative) {
       // 舊格式：{ positive: {...}, negative: {...} }
-      console.log('🔍 檢測到舊格式數據，合併為統一格式');
       emotionCounts = { ...emotionData.positive, ...emotionData.negative };
     } else if (typeof emotionData === 'object' && !emotionData.positive && !emotionData.negative) {
       // 新格式：{ joy: 10, anger: 5, ... }
-      console.log('🔍 檢測到新格式數據');
       emotionCounts = emotionData;
     } else {
       console.log('⚠️ 無法識別的情緒分析數據格式');
       return;
     }
 
-    console.log('🔍 處理後的情緒計數:', emotionCounts);
 
     // 檢查是否至少有一個情緒類別有數據
     if (!emotionCounts || Object.keys(emotionCounts).length === 0) {
@@ -932,8 +871,6 @@ export class PoliticianDetailComponent {
     // 根據標準情緒列表生成數據
     const emotionValues = this.STANDARD_EMOTIONS.map(emotion => emotionCounts[emotion] || 0);
 
-    console.log('🔍 標準情緒列表:', this.STANDARD_EMOTIONS);
-    console.log('🔍 對應的情緒值:', emotionValues);
 
     // 檢查是否有有效數據
     const allZeroes = emotionValues.every(val => val === 0);
@@ -965,15 +902,12 @@ export class PoliticianDetailComponent {
       ]
     };
 
-    console.log('✅ 更新情緒雷達圖完成');
-    console.log('✅ 雷達圖數據:', this.radarChartData);
   }
 
 
 
   // 統一的情感圖表更新方法 - 修正版本
   private updateSentimentChart(sentimentData: any): void {
-    console.log('更新情感分析圓餅圖，原始數據：', JSON.stringify(sentimentData));
     
     if (!sentimentData) {
       console.log('沒有情感分析數據');
@@ -983,12 +917,10 @@ export class PoliticianDetailComponent {
     // 檢查是否為罷免相關的數據格式
     if (sentimentData['反對罷免人數'] !== undefined && sentimentData['支持罷免人數'] !== undefined) {
       // 罷免數據格式：直接使用
-      console.log('檢測到罷免數據格式');
       this.opposeCount = sentimentData['反對罷免人數'] || 0;
       this.supportCount = sentimentData['支持罷免人數'] || 0;
     } else if (sentimentData.positive && sentimentData.negative) {
       // 舊格式：{positive: {...}, negative: {...}}
-      console.log('檢測到舊格式數據，合併為統一格式');
       const positiveTotal = Object.values(sentimentData.positive).reduce((sum: number, val: any) => sum + (val || 0), 0);
       const negativeTotal = Object.values(sentimentData.negative).reduce((sum: number, val: any) => sum + (val || 0), 0);
       
@@ -996,7 +928,6 @@ export class PoliticianDetailComponent {
       this.supportCount = negativeTotal;
     } else if (typeof sentimentData === 'object' && !sentimentData.positive && !sentimentData.negative) {
       // 新格式：{ joy: 10, anger: 5, ... }
-      console.log('檢測到新格式數據');
       const totalEmotions = Object.values(sentimentData).reduce((sum: number, val: any) => sum + (val || 0), 0);
       
       // 簡單分配：一半為正面，一半為負面（或者根據實際業務邏輯調整）
@@ -1007,12 +938,6 @@ export class PoliticianDetailComponent {
       return;
     }
     
-    console.log(`情感分析數據: 正面=${this.opposeCount}, 負面=${this.supportCount}, 總人數=${this.opposeCount + this.supportCount}`);
-    
-    // 🔥 重要：圓餅圖數據現在由 updateChartsFromCrawlerData 方法統一處理
-    // 這裡不再更新圓餅圖，避免數據衝突
-    console.log('⚠️ 圓餅圖數據更新已移至 updateChartsFromCrawlerData 方法');
-    console.log('🔍 此方法僅處理情緒雷達圖，不更新圓餅圖');
   }
 
 
@@ -1104,11 +1029,8 @@ export class PoliticianDetailComponent {
   }
   
   setQuickFilter(period: string): void {
-    console.log(`🔍 setQuickFilter 被調用，參數: ${period}`);
-    console.log(`🔍 調用前的 currentFilter: ${this.currentFilter}`);
     
     this.currentFilter = period; // 記錄當前篩選狀態
-    console.log(`🔍 設置後的 currentFilter: ${this.currentFilter}`);
 
     // 顯示加載狀態
     this.isLoadingTimeData = true;
@@ -1146,8 +1068,6 @@ export class PoliticianDetailComponent {
 
     // 首先嘗試使用本地的 time_series_stats 數據
     if (this.data?.time_series_stats) {
-      console.log(`🔍 使用本地 time_series_stats 數據`);
-      console.log(`🔍 本地數據結構:`, Object.keys(this.data.time_series_stats));
       this.processTimeSeriesStats(this.data.time_series_stats);
       
       // 🔥 調用圓餅圖 API 更新數據
@@ -1403,32 +1323,25 @@ export class PoliticianDetailComponent {
       return;
     }
 
-    console.log('🔄 時間範圍變化:', this.selectedTimeRange);
-    console.log('🔍 當前篩選器:', this.currentFilter);
-
     // 🔥 調用新的圓餅圖 API 更新數據
     this.updatePieChartFromAPI();
 
     // 直接使用 currentFilter 處理時間範圍
     if (this.currentFilter && this.currentFilter !== 'all') {
-      console.log('📊 使用 currentFilter 處理時間範圍:', this.currentFilter);
       this.processTimeSeriesStats(this.data.time_series_stats);
       return;
     }
 
     // 如果沒有 currentFilter，使用預設的一年數據
-    console.log('📊 沒有 currentFilter，使用預設的一年數據');
     this.currentFilter = '1year';
     this.processTimeSeriesStats(this.data.time_series_stats);
   }
   
   // 🔥 新增：載入圓餅圖數據
   private loadPieChartData(days: number): void {
-    console.log(`🔄 載入圓餅圖數據: ${days}天`);
     
     this.dataService.getLegislatorPieChart(this.politicianId, days).subscribe({
       next: (pieData: any) => {
-        console.log('✅ 圓餅圖API返回數據:', pieData);
         
         // 更新圓餅圖數據
         this.sentimentChartData = {
