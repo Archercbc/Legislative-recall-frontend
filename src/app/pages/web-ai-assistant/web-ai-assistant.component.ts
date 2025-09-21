@@ -104,10 +104,11 @@ export class WebAiAssistantComponent implements OnInit, OnDestroy, AfterViewChec
   toggleExpanded(): void {
     this.isExpanded = !this.isExpanded;
     if (this.isExpanded) {
+      // 延遲執行以確保動畫完成
       setTimeout(() => {
         this.focusInput();
         this.scrollToBottom();
-      }, 100);
+      }, 300);
     }
   }
 
@@ -124,10 +125,29 @@ export class WebAiAssistantComponent implements OnInit, OnDestroy, AfterViewChec
     this.isTyping = true;
     this.showError = false;
 
+    // 添加用戶訊息到聊天歷史
+    const userMessage: WebChatMessage = {
+      id: this.generateId(),
+      type: 'user',
+      content: message,
+      timestamp: new Date()
+    };
+    this.messages.push(userMessage);
+    this.shouldScrollToBottom = true;
+
     try {
       const response = await this.aiAssistantService.sendMessage(message).toPromise();
       
-      if (!response?.success) {
+      if (response?.success) {
+        // 添加AI回應到聊天歷史
+        const assistantMessage: WebChatMessage = {
+          id: this.generateId(),
+          type: 'assistant',
+          content: response.message || '抱歉，我無法回應您的問題。',
+          timestamp: new Date()
+        };
+        this.messages.push(assistantMessage);
+      } else {
         this.showError = true;
         this.errorMessage = response?.error || '發送訊息失敗，請稍後再試。';
       }
@@ -137,6 +157,7 @@ export class WebAiAssistantComponent implements OnInit, OnDestroy, AfterViewChec
       this.errorMessage = '網路連線錯誤，請稍後再試。';
     } finally {
       this.isTyping = false;
+      this.shouldScrollToBottom = true;
     }
   }
 
@@ -147,6 +168,9 @@ export class WebAiAssistantComponent implements OnInit, OnDestroy, AfterViewChec
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       this.sendMessage();
+    } else if (event.key === 'Enter' && event.shiftKey) {
+      // Shift + Enter 換行
+      return;
     }
   }
 
@@ -156,7 +180,11 @@ export class WebAiAssistantComponent implements OnInit, OnDestroy, AfterViewChec
   private scrollToBottom(): void {
     if (this.messagesContainer) {
       const element = this.messagesContainer.nativeElement;
-      element.scrollTop = element.scrollHeight;
+      // 使用平滑滾動
+      element.scrollTo({
+        top: element.scrollHeight,
+        behavior: 'smooth'
+      });
     }
   }
 
@@ -207,6 +235,15 @@ export class WebAiAssistantComponent implements OnInit, OnDestroy, AfterViewChec
   sendQuickQuestion(question: string): void {
     this.currentMessage = question;
     this.sendMessage();
+  }
+
+  /**
+   * 自動調整輸入框高度
+   */
+  autoResizeTextarea(event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
   }
 
   /**

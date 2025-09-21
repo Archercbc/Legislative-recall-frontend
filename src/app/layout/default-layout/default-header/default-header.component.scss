@@ -6,7 +6,7 @@
   left: 0;
   right: 0;
   z-index: 1000;
-  height: 70px;
+  height: 80px;
 }
 
 .header-container {
@@ -29,11 +29,13 @@
     font-size: 1.5rem;
     
     .brand-logo {
-      width: 32px;
-      height: 32px;
-      margin-right: 0.5rem;
-      border-radius: 50%;
-      object-fit: cover;
+      width: 62px;
+      height: 62px;
+      margin-right: 0.75rem;
+      border-radius: 8px;
+      object-fit: contain;
+      object-position: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
     i {

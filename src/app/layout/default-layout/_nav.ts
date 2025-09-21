@@ -17,7 +17,7 @@ export const navItems: NavItem[] = [
     isRecallAnalysis: true // 標識為罷免分析
   },
   {
-    name: '公投案分析',
+    name: '公民議題分析',
     url: '/referendum-analysis',
     icon: 'fas fa-vote-yea'
   },

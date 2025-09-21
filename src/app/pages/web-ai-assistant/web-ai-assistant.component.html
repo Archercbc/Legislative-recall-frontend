@@ -1,5 +1,5 @@
 <!-- Web AI 助手 - 懸浮窗口 -->
-<div class="web-ai-container" [class.expanded]="isExpanded">
+<div class="ai-assistant-container" [class.expanded]="isExpanded">
   
   <!-- 聊天窗口標題欄 -->
   <div class="chat-header" (click)="toggleExpanded()">
@@ -9,25 +9,30 @@
       </div>
       <div class="header-text" *ngIf="isExpanded">
         <span class="title">AI 助手</span>
-        <small class="text-muted">立委數據分析平台</small>
+        <small class="subtitle">立委數據分析平台</small>
       </div>
     </div>
     <div class="header-actions" *ngIf="isExpanded">
       <c-badge 
         *ngIf="messages.length > 1" 
         color="success" 
-        shape="rounded-pill">
+        shape="rounded-pill"
+        class="message-count">
         {{ messages.length - 1 }}
       </c-badge>
-      <svg cIcon name="cilMinus" class="toggle-icon" (click)="toggleExpanded(); $event.stopPropagation()"></svg>
+      <button 
+        class="minimize-btn"
+        (click)="toggleExpanded(); $event.stopPropagation()"
+        title="最小化">
+        <svg cIcon name="cilMinus"></svg>
+      </button>
     </div>
   </div>
 
   <!-- 聊天窗口內容 -->
   <div class="chat-content" *ngIf="isExpanded">
-
     <!-- 錯誤提示 -->
-    <div class="error-alert" *ngIf="showError">
+    <div class="error-container" *ngIf="showError">
       <c-alert color="danger" dismissible (close)="closeError()">
         <h6>⚠️ 錯誤</h6>
         <p>{{ errorMessage }}</p>
@@ -39,51 +44,41 @@
       <div class="messages-list">
         <div 
           *ngFor="let message of messages; trackBy: trackByMessageId"
-          class="message-wrapper"
+          class="message-item"
           [class.user-message]="message.type === 'user'"
           [class.assistant-message]="message.type === 'assistant'">
           
-          <div class="message-content">
-            <!-- 用戶訊息 -->
-            <div *ngIf="message.type === 'user'" class="user-bubble">
-              <div class="message-text">{{ message.content }}</div>
-              <div class="message-meta">
-                <small class="text-muted">{{ formatTime(message.timestamp) }}</small>
-              </div>
-            </div>
+          <!-- 用戶訊息 -->
+          <div *ngIf="message.type === 'user'" class="user-message-bubble">
+            <div class="message-text">{{ message.content }}</div>
+            <div class="message-time">{{ formatTime(message.timestamp) }}</div>
+          </div>
 
-            <!-- AI助理訊息 -->
-            <div *ngIf="message.type === 'assistant'" class="assistant-bubble">
-              <div class="assistant-avatar">
-                <img src="/web_logo.png" alt="AI Assistant" class="avatar-image">
-              </div>
-              <div class="assistant-content">
-                <div class="message-text" [innerHTML]="message.content | markdown"></div>
-                <div class="message-meta">
-                  <small class="text-muted">
-                    {{ formatTime(message.timestamp) }}
-                  </small>
-                </div>
-              </div>
+          <!-- AI助理訊息 -->
+          <div *ngIf="message.type === 'assistant'" class="assistant-message-bubble">
+            <div class="assistant-avatar">
+              <img src="/web_logo.png" alt="AI Assistant" class="avatar-image">
+            </div>
+            <div class="assistant-content">
+              <div class="message-text" [innerHTML]="message.content | markdown"></div>
+              <div class="message-time">{{ formatTime(message.timestamp) }}</div>
             </div>
           </div>
         </div>
 
         <!-- 打字指示器 -->
-        <div *ngIf="isTyping" class="message-wrapper assistant-message">
-          <div class="message-content">
-            <div class="assistant-bubble">
-              <div class="assistant-avatar">
-                <img src="/web_logo.png" alt="AI Assistant" class="avatar-image">
-              </div>
-              <div class="assistant-content">
-                <div class="typing-indicator">
-                  <span>AI 助手正在思考</span>
-                  <div class="typing-dots">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
+        <div *ngIf="isTyping" class="message-item assistant-message">
+          <div class="assistant-message-bubble">
+            <div class="assistant-avatar">
+              <img src="/web_logo.png" alt="AI Assistant" class="avatar-image">
+            </div>
+            <div class="assistant-content">
+              <div class="typing-indicator">
+                <span class="typing-text">AI 助手正在思考</span>
+                <div class="typing-dots">
+                  <span></span>
+                  <span></span>
+                  <span></span>
                 </div>
               </div>
             </div>
@@ -95,40 +90,44 @@
     <!-- 輸入區域 -->
     <div class="input-container">
       <div class="input-wrapper">
-        <textarea
-          #messageInput
-          [(ngModel)]="currentMessage"
-          (keydown)="onKeyPress($event)"
-          [disabled]="isTyping"
-          class="message-input"
-          placeholder="輸入您的問題..."
-          rows="1">
-        </textarea>
-        <button
-          type="button"
-          class="btn btn-primary send-button"
-          (click)="sendMessage()"
-          [disabled]="!currentMessage.trim() || isTyping">
-          <svg cIcon name="cilSend"></svg>
-        </button>
+        <div class="input-field">
+          <textarea
+            #messageInput
+            [(ngModel)]="currentMessage"
+            (keydown)="onKeyPress($event)"
+            (input)="autoResizeTextarea($event)"
+            [disabled]="isTyping"
+            class="message-input"
+            placeholder="輸入您的問題..."
+            rows="1">
+          </textarea>
+          <button
+            type="button"
+            class="send-button"
+            (click)="sendMessage()"
+            [disabled]="!currentMessage.trim() || isTyping"
+            title="發送訊息">
+            <svg cIcon name="cilSend"></svg>
+          </button>
+        </div>
       </div>
       
       <!-- 快速問題按鈕 -->
       <div class="quick-questions" *ngIf="messages.length === 1">
-        <small class="text-muted mb-2 d-block">快速問題：</small>
+        <div class="quick-questions-title">快速問題：</div>
         <div class="quick-buttons">
           <button 
-            class="btn btn-sm btn-outline-primary me-2 mb-1"
+            class="quick-btn"
             (click)="sendQuickQuestion('這個網站有什麼功能？')">
             網站功能
           </button>
           <button 
-            class="btn btn-sm btn-outline-primary me-2 mb-1"
+            class="quick-btn"
             (click)="sendQuickQuestion('請介紹立委數據分析')">
             數據分析
           </button>
           <button 
-            class="btn btn-sm btn-outline-primary me-2 mb-1"
+            class="quick-btn"
             (click)="sendQuickQuestion('如何查看文字雲？')">
             文字雲
           </button>
