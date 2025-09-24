@@ -413,7 +413,7 @@ export class TaiwanMapComponent implements OnInit {
         image_url: r.image_url,
         constituency: r.constituency,
         party: r.party,
-        recallStatus: this.getDisplayRecallStatus(r.status || r.recall_data?.狀態 || '網路聲量調查', r["姓名"]),
+        recallStatus: this.getDisplayRecallStatus(r.status || r.recall_data?.狀態 || '網友總聲量調查', r["姓名"]),
         recallNote: r.recallNote || '',
         recallVoteDate: r.recallVoteDate || ''
       }));

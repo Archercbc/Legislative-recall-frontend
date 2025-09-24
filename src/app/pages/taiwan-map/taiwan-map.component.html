@@ -14,7 +14,7 @@
       <li>可依罷免狀態、政黨等條件篩選。</li>
       <li>點擊立委姓名可進一步查看詳細資料。</li>
       <li>如需重設篩選，請點擊「清除所有篩選」。</li>
-      <li>本研究是依照社群平台中發言人數進行網路聲量調查</li>
+      <li>本研究是依照社群平台中發言人數進行網友總聲量調查</li>
       <li>僅供學術參考使用，請勿用於商業用途</li>
     </ul>
     <button (click)="closeUsageModal()">我知道了</button>
@@ -174,7 +174,7 @@
                     <p class="constituency" *ngIf="politician.constituency">{{ politician.constituency }}</p>
                     <p class="party" *ngIf="politician.party"
                         style="background:#e74c3c;color:#fff;">
-                        網路聲量調查
+                        網友總聲量調查
                     </p>
                 </div>
             </div>
