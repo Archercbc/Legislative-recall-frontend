@@ -1444,30 +1444,38 @@ export class PoliticianDetailComponent {
     switch (period) {
       case 'week':
         days = 7;
+        this.selectedTimeRange = '7_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       case '2weeks':
         days = 14;
+        this.selectedTimeRange = '14_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       case 'month':
         days = 30;
+        this.selectedTimeRange = '30_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       case '3months':
         days = 90;
+        this.selectedTimeRange = '90_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       case '6months':
         days = 180;
+        this.selectedTimeRange = '180_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       case '1year':
         days = 365;
+        this.selectedTimeRange = '365_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       case 'all':
         days = 365; // 預設一年
+        this.selectedTimeRange = '365_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       default:
         days = 30;
+        this.selectedTimeRange = '30_days'; // 🔥 同步下面的時間範圍選擇器
     }
 
-    console.log(`🔍 映射的天數: ${days}`);
+    console.log(`🔍 映射的天數: ${days}, 同步 selectedTimeRange: ${this.selectedTimeRange}`);
 
     // 🔥 更新顯示的日期範圍為最新（結束日期永遠是今天）
     this.updateDisplayDateRange(days);
@@ -1743,20 +1751,39 @@ export class PoliticianDetailComponent {
     const days = this.getDaysFromTimeRange(this.selectedTimeRange);
     this.updateDisplayDateRange(days);
 
+    // 🔥 同步上面的快速篩選按鈕狀態
+    switch (this.selectedTimeRange) {
+      case '7_days':
+        this.currentFilter = 'week';
+        break;
+      case '14_days':
+        this.currentFilter = '2weeks';
+        break;
+      case '30_days':
+        this.currentFilter = 'month';
+        break;
+      case '90_days':
+        this.currentFilter = '3months';
+        break;
+      case '180_days':
+        this.currentFilter = '6months';
+        break;
+      case '365_days':
+        this.currentFilter = '1year';
+        break;
+      default:
+        this.currentFilter = '1year';
+    }
+
+    console.log(`🔍 時間範圍變更: ${this.selectedTimeRange}, 同步 currentFilter: ${this.currentFilter}`);
+
     // 🔥 調用新的圓餅圖 API 更新數據
     this.updatePieChartFromAPI();
 
     // 重新載入事件標記點
     this.loadEventMarkers();
 
-    // 直接使用 currentFilter 處理時間範圍
-    if (this.currentFilter && this.currentFilter !== 'all') {
-      this.processTimeSeriesStats(this.data.time_series_stats);
-      return;
-    }
-
-    // 如果沒有 currentFilter，使用預設的一年數據
-    this.currentFilter = '1year';
+    // 處理時間範圍
     this.processTimeSeriesStats(this.data.time_series_stats);
   }
   
