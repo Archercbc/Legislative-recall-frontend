@@ -316,6 +316,10 @@ export class PoliticianDetailComponent {
     // 設置默認時間範圍為一年（因為初始應該載入365天）
     this.selectedTimeRange = '365_days';
     this.currentFilter = '1year'; // 設置對應的篩選器
+    
+    // 🔥 設定顯示日期範圍為最新（結束日期永遠是今天）
+    this.updateDisplayDateRange(365);
+    
     // 直接初始化圖表數據，不調用 onTimeRangeChange
     this.processTimeSeriesStats(this.data.time_series_stats);
   }
@@ -890,8 +894,7 @@ export class PoliticianDetailComponent {
     // 添加事件標記點
     this.addEventMarkersToChart();
     
-    // 只更新日期範圍，不更新圓餅圖數據
-    this.updateDateRangeFromChartData();
+    // 不再從圖表數據更新日期範圍，因為日期範圍已在篩選器中設定為最新
   }
 
   // 新增方法：更新圖表選項以改善可視性
@@ -1466,15 +1469,15 @@ export class PoliticianDetailComponent {
 
     console.log(`🔍 映射的天數: ${days}`);
 
+    // 🔥 更新顯示的日期範圍為最新（結束日期永遠是今天）
+    this.updateDisplayDateRange(days);
+
     // 首先嘗試使用本地的 time_series_stats 數據
     if (this.data?.time_series_stats) {
       this.processTimeSeriesStats(this.data.time_series_stats);
       
       // 🔥 調用圓餅圖 API 更新數據
       this.updatePieChartFromAPI();
-      
-      // 根據實際圖表數據更新日期範圍
-      this.updateDateRangeFromChartData();
       
       this.isLoadingTimeData = false;
       return;
@@ -1495,8 +1498,7 @@ export class PoliticianDetailComponent {
           if (data.time_series && data.time_series.labels && data.time_series.labels.length > 0) {
             this.demoLineChartData = data.time_series;
             
-            // 根據時間序列數據更新日期範圍
-            this.updateDateRangeFromChartData();
+            // 日期範圍已在篩選器中設定為最新，不需要再次更新
           }
           
           // 處理詞雲數據
@@ -1569,8 +1571,22 @@ export class PoliticianDetailComponent {
 
 
 
-  // 簡化方法：根據圖表數據更新日期範圍
+  // 🔥 新增方法：更新顯示的日期範圍為最新（結束日期永遠是今天）
+  private updateDisplayDateRange(days: number): void {
+    const today = new Date();
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - days);
+    
+    this.endDate = today.toISOString().split('T')[0];
+    this.startDate = startDate.toISOString().split('T')[0];
+    
+    console.log(`📅 更新顯示日期範圍: ${this.startDate} - ${this.endDate} (${days}天)`);
+  }
+
+  // 簡化方法：根據圖表數據更新日期範圍（已棄用，改用 updateDisplayDateRange）
   private updateDateRangeFromChartData(): void {
+    // 此方法已被 updateDisplayDateRange 取代，保留以避免破壞現有代碼
+    // 但不再主動調用
     if (!this.demoLineChartData?.labels?.length) return;
     
     const labels = this.demoLineChartData.labels as string[];
@@ -1722,6 +1738,10 @@ export class PoliticianDetailComponent {
     if (!this.data?.time_series_stats) {
       return;
     }
+
+    // 🔥 根據選擇的時間範圍更新顯示日期為最新
+    const days = this.getDaysFromTimeRange(this.selectedTimeRange);
+    this.updateDisplayDateRange(days);
 
     // 🔥 調用新的圓餅圖 API 更新數據
     this.updatePieChartFromAPI();
