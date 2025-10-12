@@ -316,6 +316,10 @@ export class LegislatorsDetailComponent {
     // 設置默認時間範圍為一年（因為初始應該載入365天）
     this.selectedTimeRange = '365_days';
     this.currentFilter = '1year'; // 設置對應的篩選器
+    
+    // 🔥 設定顯示日期範圍為最新（結束日期永遠是今天）
+    this.updateDisplayDateRange(365);
+    
     // 直接初始化圖表數據，不調用 onTimeRangeChange
     this.processTimeSeriesStats(this.data.time_series_stats);
   }
@@ -890,8 +894,7 @@ export class LegislatorsDetailComponent {
     // 添加事件標記點
     this.addEventMarkersToChart();
     
-    // 只更新日期範圍，不更新圓餅圖數據
-    this.updateDateRangeFromChartData();
+    // 不再從圖表數據更新日期範圍，因為日期範圍已在篩選器中設定為最新
   }
 
   // 新增方法：更新圖表選項以改善可視性
@@ -1441,30 +1444,41 @@ export class LegislatorsDetailComponent {
     switch (period) {
       case 'week':
         days = 7;
+        this.selectedTimeRange = '7_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       case '2weeks':
         days = 14;
+        this.selectedTimeRange = '14_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       case 'month':
         days = 30;
+        this.selectedTimeRange = '30_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       case '3months':
         days = 90;
+        this.selectedTimeRange = '90_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       case '6months':
         days = 180;
+        this.selectedTimeRange = '180_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       case '1year':
         days = 365;
+        this.selectedTimeRange = '365_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       case 'all':
         days = 365; // 預設一年
+        this.selectedTimeRange = '365_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       default:
         days = 30;
+        this.selectedTimeRange = '30_days'; // 🔥 同步下面的時間範圍選擇器
     }
 
-    console.log(`🔍 映射的天數: ${days}`);
+    console.log(`🔍 映射的天數: ${days}, 同步 selectedTimeRange: ${this.selectedTimeRange}`);
+
+    // 🔥 更新顯示的日期範圍為最新（結束日期永遠是今天）
+    this.updateDisplayDateRange(days);
 
     // 首先嘗試使用本地的 time_series_stats 數據
     if (this.data?.time_series_stats) {
@@ -1472,9 +1486,6 @@ export class LegislatorsDetailComponent {
       
       // 🔥 調用圓餅圖 API 更新數據
       this.updatePieChartFromAPI();
-      
-      // 根據實際圖表數據更新日期範圍
-      this.updateDateRangeFromChartData();
       
       this.isLoadingTimeData = false;
       return;
@@ -1495,8 +1506,7 @@ export class LegislatorsDetailComponent {
           if (data.time_series && data.time_series.labels && data.time_series.labels.length > 0) {
             this.demoLineChartData = data.time_series;
             
-            // 根據時間序列數據更新日期範圍
-            this.updateDateRangeFromChartData();
+            // 日期範圍已在篩選器中設定為最新，不需要再次更新
           }
           
           // 處理詞雲數據
@@ -1569,8 +1579,22 @@ export class LegislatorsDetailComponent {
 
 
 
-  // 簡化方法：根據圖表數據更新日期範圍
+  // 🔥 新增方法：更新顯示的日期範圍為最新（結束日期永遠是今天）
+  private updateDisplayDateRange(days: number): void {
+    const today = new Date();
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - days);
+    
+    this.endDate = today.toISOString().split('T')[0];
+    this.startDate = startDate.toISOString().split('T')[0];
+    
+    console.log(`📅 更新顯示日期範圍: ${this.startDate} - ${this.endDate} (${days}天)`);
+  }
+
+  // 簡化方法：根據圖表數據更新日期範圍（已棄用，改用 updateDisplayDateRange）
   private updateDateRangeFromChartData(): void {
+    // 此方法已被 updateDisplayDateRange 取代，保留以避免破壞現有代碼
+    // 但不再主動調用
     if (!this.demoLineChartData?.labels?.length) return;
     
     const labels = this.demoLineChartData.labels as string[];
@@ -1723,20 +1747,43 @@ export class LegislatorsDetailComponent {
       return;
     }
 
+    // 🔥 根據選擇的時間範圍更新顯示日期為最新
+    const days = this.getDaysFromTimeRange(this.selectedTimeRange);
+    this.updateDisplayDateRange(days);
+
+    // 🔥 同步上面的快速篩選按鈕狀態
+    switch (this.selectedTimeRange) {
+      case '7_days':
+        this.currentFilter = 'week';
+        break;
+      case '14_days':
+        this.currentFilter = '2weeks';
+        break;
+      case '30_days':
+        this.currentFilter = 'month';
+        break;
+      case '90_days':
+        this.currentFilter = '3months';
+        break;
+      case '180_days':
+        this.currentFilter = '6months';
+        break;
+      case '365_days':
+        this.currentFilter = '1year';
+        break;
+      default:
+        this.currentFilter = '1year';
+    }
+
+    console.log(`🔍 時間範圍變更: ${this.selectedTimeRange}, 同步 currentFilter: ${this.currentFilter}`);
+
     // 🔥 調用新的圓餅圖 API 更新數據
     this.updatePieChartFromAPI();
 
     // 重新載入事件標記點
     this.loadEventMarkers();
 
-    // 直接使用 currentFilter 處理時間範圍
-    if (this.currentFilter && this.currentFilter !== 'all') {
-      this.processTimeSeriesStats(this.data.time_series_stats);
-      return;
-    }
-
-    // 如果沒有 currentFilter，使用預設的一年數據
-    this.currentFilter = '1year';
+    // 處理時間範圍
     this.processTimeSeriesStats(this.data.time_series_stats);
   }
   
