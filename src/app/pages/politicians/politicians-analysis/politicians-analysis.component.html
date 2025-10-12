@@ -1,0 +1,127 @@
+<div class="politicians-analysis-container">
+  <!-- 頁面標題 -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="cil-user"></i>
+      </div>
+      <div class="header-text">
+        <h1>{{ politicianName }} 分析</h1>
+        <p class="header-subtitle">政治人物網路聲量與情感分析</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-container">
+    <!-- 左側基本資料 -->
+    <div class="sidebar-container">
+      <div cCard class="info-card">
+        <div cCardHeader>
+          <h3>基本資訊</h3>
+        </div>
+        <div cCardBody>
+          <div class="info-item">
+            <span class="label">姓名：</span>
+            <span class="value">{{ data?.name || politicianName }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">總討論數：</span>
+            <span class="value">{{ data?.total_posts || 0 | number }} 則</span>
+          </div>
+          <div class="info-item">
+            <span class="label">參與人數：</span>
+            <span class="value">{{ data?.total_users || 0 | number }} 人</span>
+          </div>
+          <div class="info-item">
+            <span class="label">最後更新：</span>
+            <span class="value">{{ data?.last_updated | date:'yyyy-MM-dd HH:mm' }}</span>
+          </div>
+        </div>
+      </div>
+
+      
+    </div>
+
+    <!-- 右側圖表區域 -->
+    <div class="charts-container">
+      <!-- 時間篩選器 -->
+      <div cCard class="filter-card">
+        <div cCardBody>
+          <div class="time-filter">
+            <button 
+              *ngFor="let filter of ['7_days', '30_days', '90_days', '1year']"
+              class="filter-btn"
+              [class.active]="currentFilter === filter"
+              (click)="setQuickFilter(filter)">
+              {{ getFilterLabel(filter) }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 情感分析圓餅圖 -->
+      <div cCard class="chart-card">
+        <div cCardHeader>
+          <h3>情感分析</h3>
+        </div>
+        <div cCardBody>
+          <div class="chart-container">
+            <canvas 
+              baseChart
+              [data]="sentimentChartData"
+              [type]="'doughnut'"
+              [options]="doughnutOptions">
+            </canvas>
+          </div>
+          <div class="chart-stats">
+            <div class="stat-item positive">
+              <span class="stat-label">正面</span>
+              <span class="stat-value">{{ getPositiveCount() | number }} 則</span>
+            </div>
+            <div class="stat-item negative">
+              <span class="stat-label">負面</span>
+              <span class="stat-value">{{ getNegativeCount() | number }} 則</span>
+            </div>
+            <div class="stat-item neutral">
+              <span class="stat-label">中性</span>
+              <span class="stat-value">{{ getNeutralCount() | number }} 則</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 詞雲 -->
+      <div cCard class="chart-card">
+        <div cCardHeader>
+          <h3>關鍵詞分析</h3>
+        </div>
+        <div cCardBody>
+          <div class="word-cloud-container">
+            <angular-tag-cloud
+              [data]="wordCloudData"
+              [config]="wordCloudOptions"
+              (clicked)="onWordCloudClick($event)">
+            </angular-tag-cloud>
+          </div>
+        </div>
+      </div>
+
+      <!-- 趨勢圖 -->
+      <div cCard class="chart-card">
+        <div cCardHeader>
+          <h3>聲量趨勢</h3>
+        </div>
+        <div cCardBody>
+          <div class="chart-container">
+            <canvas 
+              baseChart
+              [data]="demoLineChartData"
+              [type]="'line'"
+              [options]="lineChartOptions">
+            </canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

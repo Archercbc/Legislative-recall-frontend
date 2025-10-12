@@ -1,0 +1,32 @@
+<div class="politicians-container">
+  <!-- 政治人物列表 -->
+  <div class="politicians-grid">
+    <div 
+      *ngFor="let politician of filteredPoliticians" 
+      class="politician-card"
+      (click)="viewPoliticianDetail(politician.name, politician.target_type)">
+      
+      <div class="card-content">
+        <div class="politician-name">{{ politician.name }}</div>
+        <div class="politician-type">
+          <span [class]="'badge ' + (politician.target_type === 'legislator' ? 'badge-primary' : 'badge-info')">
+            {{ politician.target_type === 'legislator' ? '立法委員' : '政治人物' }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 載入狀態 -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="spinner-border text-primary"></div>
+    <p class="mt-3 text-muted">正在載入政治人物資料...</p>
+  </div>
+
+  <!-- 空狀態 -->
+  <div *ngIf="!isLoading && filteredPoliticians.length === 0" class="empty-state">
+    <i class="cil-user"></i>
+    <h4>暫無政治人物資料</h4>
+    <p>請稍後再試或聯繫管理員</p>
+  </div>
+</div>
