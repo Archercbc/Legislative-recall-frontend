@@ -49,7 +49,7 @@ export class PoliticiansComponent implements OnInit {
     Promise.all([legislatorsPromise, politiciansPromise])
       .then(([legislatorsResponse, politiciansResponse]) => {
         const legislators = legislatorsResponse.politicians || [];
-        const politicians = politiciansResponse.politicians || [];
+        const politicians = Array.isArray(politiciansResponse) ? politiciansResponse : (politiciansResponse.politicians || []);
         
         // 合併數據並添加target_type
         this.politicians = [
