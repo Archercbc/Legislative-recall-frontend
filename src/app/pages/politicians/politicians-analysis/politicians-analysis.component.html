@@ -219,7 +219,7 @@
             <div cCard class="chart-card">
               <div cCardHeader>
                 <i class="cil-chart-pie"></i>
-                <span class="chart-title">罷免民意分析 (總計: {{ (opposeCount || 0) + (supportCount || 0) }}人)</span>
+                <span class="chart-title">{{data?.name}}民意分析 (總計: {{ (opposeCount || 0) + (supportCount || 0) }}人)</span>
                 <span *ngIf="isLoadingTimeData" class="spinner-border spinner-border-sm ms-2"></span>
               </div>
               <div cCardBody style="overflow: visible; position: relative;">
@@ -233,11 +233,11 @@
                 <div class="custom-chart-stats">
                   <div class="stat-item">
                     <span class="color-dot oppose"></span>
-                    <span class="stat-text">反對罷免 {{ (opposeCount || 0).toLocaleString() }}人 {{ getOpposePercentage() }}%</span>
+                    <span class="stat-text">支持{{data?.name}} {{ (opposeCount || 0).toLocaleString() }}人 {{ getOpposePercentage() }}%</span>
                   </div>
                   <div class="stat-item">
                     <span class="color-dot support"></span>
-                    <span class="stat-text">支持罷免 {{ (supportCount || 0).toLocaleString() }}人 {{ getSupportPercentage() }}%</span>
+                    <span class="stat-text">反對{{data?.name}} {{ (supportCount || 0).toLocaleString() }}人 {{ getSupportPercentage() }}%</span>
                   </div>
                 </div>
               </div>
@@ -313,7 +313,6 @@
           </div>
         </div>
 
-        <!-- 罷免支持度趨勢 -->
         <div cRow>
           <div cCol xs="12">
             <div cCard class="mb-4">

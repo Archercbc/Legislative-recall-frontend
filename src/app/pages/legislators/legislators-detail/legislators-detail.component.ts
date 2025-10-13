@@ -697,13 +697,7 @@ export class LegislatorsDetailComponent {
     }
     
     // 如果沒有本地數據，則從API獲取
-    this.dataService.getLegislatorUnifiedData(this.politicianId, {
-      days: days,
-      includePieChart: true,
-      includeTimeSeries: true,
-      includeWordCloud: true,
-      includeEmotion: true
-    }).subscribe({
+    this.dataService.getLegislatorUnifiedData(this.politicianId).subscribe({
       next: (chartData) => {
 
         
@@ -795,11 +789,18 @@ export class LegislatorsDetailComponent {
   }
 
   private loadDateRange(): void {
-    this.dataService.getLegislatorDateRange(this.politicianId).subscribe({
-      next: (dateRangeData) => {          // 設定日期範圍限制和初始值
-          if (dateRangeData && dateRangeData.start_date && dateRangeData.end_date) {
-            this.minDate = dateRangeData.start_date;
+    // 使用統一API獲取日期範圍信息
+    this.dataService.getLegislatorUnifiedData(this.politicianId).subscribe({
+      next: (data) => {
+        // 從時間序列數據中提取日期範圍
+        if (data.time_series_stats && data.time_series_stats.recent_365_days_cumulative) {
+          const timeSeriesData = data.time_series_stats.recent_365_days_cumulative;
+          if (timeSeriesData.stats_points && timeSeriesData.stats_points.length > 0) {
+            const points = timeSeriesData.stats_points;
+            const startDate = points[0].date;
+            const endDate = points[points.length - 1].date;
             
+            this.minDate = startDate;
             // 強制設置 maxDate 為今天
             const today = new Date();
             this.maxDate = today.toISOString().split('T')[0];
@@ -812,10 +813,8 @@ export class LegislatorsDetailComponent {
             // 設定初始日期範圍為最近一年（僅作為備用，實際範圍由圖表數據決定）
             this.startDate = this.oneYearAgoDate;
             this.endDate = this.maxDate;
-            
-            // 移除這行，避免在初始化時觸發setQuickFilter
-            // this.setQuickFilter('1year');
           }
+        }
       },
       error: (error) => {
         console.error('❌ 載入日期範圍失敗:', error);
@@ -1147,7 +1146,7 @@ export class LegislatorsDetailComponent {
     options.includeWordCloud = shouldUpdateAll || chartTypes.includes('wordcloud');
     options.includeEmotion = shouldUpdateAll || chartTypes.includes('emotion');
 
-    this.dataService.getLegislatorUnifiedData(this.politicianId, options).subscribe({
+    this.dataService.getLegislatorUnifiedData(this.politicianId).subscribe({
       next: (data) => {
         if (!data) {
           this.isLoadingTimeData = false;
@@ -1559,13 +1558,7 @@ export class LegislatorsDetailComponent {
     }
 
     // 如果沒有本地數據，則從API獲取
-    this.dataService.getLegislatorUnifiedData(this.politicianId, {
-      days: days,
-      includePieChart: true,
-      includeTimeSeries: true,
-      includeWordCloud: true,
-      includeEmotion: true
-    }).subscribe({
+    this.dataService.getLegislatorUnifiedData(this.politicianId).subscribe({
       next: (data) => {
         if (data) {
           // 處理時間序列圖表數據
@@ -1808,23 +1801,27 @@ export class LegislatorsDetailComponent {
   
   // 🔥 新增：載入圓餅圖數據
   private loadPieChartData(days: number): void {
-    
-    this.dataService.getLegislatorPieChart(this.politicianId, days).subscribe({
-      next: (pieData: any) => {
-        
-        // 更新圓餅圖數據
-        this.sentimentChartData = {
-          labels: ['支持罷免', '反對罷免'],
-          datasets: [{
-            data: [pieData.support_count, pieData.oppose_count],  // [支持, 反對]
-            backgroundColor: ['#f87171', '#4f8cff']  // 紅色=支持，藍色=反對
-          }]
-        };
-        
-        // 更新統計數據
-        this.supportCount = pieData.support_count;
-        this.opposeCount = pieData.oppose_count;
-        
+    // 使用統一API獲取圓餅圖數據
+    this.dataService.getLegislatorUnifiedData(this.politicianId).subscribe({
+      next: (data: any) => {
+        // 從統一API響應中提取圓餅圖數據
+        if (data.sentiment_analysis) {
+          const supportCount = data.sentiment_analysis.support_count || 0;
+          const opposeCount = data.sentiment_analysis.oppose_count || 0;
+          
+          // 更新圓餅圖數據
+          this.sentimentChartData = {
+            labels: ['支持罷免', '反對罷免'],
+            datasets: [{
+              data: [supportCount, opposeCount],  // [支持, 反對]
+              backgroundColor: ['#f87171', '#4f8cff']  // 紅色=支持，藍色=反對
+            }]
+          };
+          
+          // 更新統計數據
+          this.supportCount = supportCount;
+          this.opposeCount = opposeCount;
+        }
       },
       error: (error: any) => {
         console.error('❌ 圓餅圖API調用失敗:', error);
@@ -1861,23 +1858,27 @@ export class LegislatorsDetailComponent {
     }
     
     
-    // 調用新的圓餅圖 API
-    this.dataService.getLegislatorPieChart(this.politicianId, days).subscribe({
-      next: (pieData: any) => {
-        
-        // 更新圓餅圖數據
-        this.sentimentChartData = {
-          labels: ['支持罷免', '反對罷免'],
-          datasets: [{
-            data: [pieData.support_count, pieData.oppose_count],  // [支持, 反對]
-            backgroundColor: ['#f87171', '#4f8cff']  // 紅色=支持，藍色=反對
-          }]
-        };
-        
-        // 更新統計數據
-        this.supportCount = pieData.support_count;
-        this.opposeCount = pieData.oppose_count;
-        
+    // 使用統一API獲取圓餅圖數據
+    this.dataService.getLegislatorUnifiedData(this.politicianId).subscribe({
+      next: (data: any) => {
+        // 從統一API響應中提取圓餅圖數據
+        if (data.sentiment_analysis) {
+          const supportCount = data.sentiment_analysis.support_count || 0;
+          const opposeCount = data.sentiment_analysis.oppose_count || 0;
+          
+          // 更新圓餅圖數據
+          this.sentimentChartData = {
+            labels: ['支持罷免', '反對罷免'],
+            datasets: [{
+              data: [supportCount, opposeCount],  // [支持, 反對]
+              backgroundColor: ['#f87171', '#4f8cff']  // 紅色=支持，藍色=反對
+            }]
+          };
+          
+          // 更新統計數據
+          this.supportCount = supportCount;
+          this.opposeCount = opposeCount;
+        }
       },
       error: (error: any) => {
         console.error('❌ 圓餅圖API調用失敗:', error);

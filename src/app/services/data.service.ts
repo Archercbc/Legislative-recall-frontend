@@ -25,98 +25,14 @@ export class DataService {
     return this.http.get<any>(`${this.apiUrl}/${id}`);
   }
 
-  // 獲取立委詳細信息，支持時間範圍參數
-  getLegislatorDetailWithTimeRange(id: string, timeRange: string): Observable<any> {
-    const params = new URLSearchParams({
-      time_range: timeRange
-    });
-    return this.http.get<any>(`${this.apiUrl}/${id}?${params.toString()}`);
-  }
-
   getRecallList() {
     return this.http.get<any[]>(`${this.apiUrl}/recall`);
   }
 
-  // 獲取罷免統計數據
-  getRecallStats(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/recall-stats`);
+
+  // 統一的立委數據API - 簡化版本，直接返回全部數據
+  getLegislatorUnifiedData(name: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/${name}/data`);
   }
 
-  // 獲取立委的數據時間範圍
-  getLegislatorDateRange(name: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/${name}/date-range`);
-  }
-
-  // 圓餅圖數據API - 簡單的圓餅圖數據
-  getLegislatorPieChart(name: string, days: number = 365): Observable<any> {
-    const params = new URLSearchParams();
-    params.append('days', days.toString());
-    
-    return this.http.get(`${this.apiUrl}/${name}/pie-chart?${params.toString()}`);
-  }
-
-  // 統一的立委數據API - 支持時間篩選和數據類型選擇
-  getLegislatorUnifiedData(
-    name: string, 
-    options: {
-      days?: number;
-      includePieChart?: boolean;
-      includeTimeSeries?: boolean;
-      includeWordCloud?: boolean;
-      includeEmotion?: boolean;
-    } = {}
-  ): Observable<any> {
-    const params = new URLSearchParams();
-    
-    // 設置默認值
-    const defaultOptions = {
-      days: 365,
-      includePieChart: true,
-      includeTimeSeries: true,
-      includeWordCloud: true,
-      includeEmotion: true,
-      ...options
-    };
-    
-    // 添加參數
-    params.append('days', defaultOptions.days.toString());
-    
-    if (defaultOptions.includePieChart !== undefined) {
-      params.append('include_pie_chart', defaultOptions.includePieChart.toString());
-    }
-    
-    if (defaultOptions.includeTimeSeries !== undefined) {
-      params.append('include_time_series', defaultOptions.includeTimeSeries.toString());
-    }
-    
-    if (defaultOptions.includeWordCloud !== undefined) {
-      params.append('include_word_cloud', defaultOptions.includeWordCloud.toString());
-    }
-    
-    if (defaultOptions.includeEmotion !== undefined) {
-      params.append('include_emotion', defaultOptions.includeEmotion.toString());
-    }
-    
-    return this.http.get(`${this.apiUrl}/${name}/data?${params.toString()}`);
-  }
-
-  // 獲取網站訪問統計
-  getVisitorStats(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/api/visitor/stats`);
-  }
-
-  // 記錄網站訪問
-  recordVisit(page: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/api/visitor/record`, { page });
-  }
-
-  // 獲取平台統計數據
-  getPlatformStats(): Promise<any> {
-    return this.http.get<any>(`${this.baseUrl}/api/platform/stats`).toPromise();
-  }
-
-  // 初始化訪問計數
-  initVisitorStats(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/api/visitor/init`);
-  }
 }
