@@ -253,7 +253,6 @@
               </div>
               <div cCardBody style="overflow: visible; position: relative;">
                 <div style="display: flex; align-items: center; justify-content: center; height: 350px;">
-
                   <div style="width: 300px; height: 300px; position: relative;">
                     <c-chart [data]="radarChartData" type="radar" [options]="radarChartOptions" style="height: 100%; width: 100%;"></c-chart>
                   </div>
@@ -322,7 +321,7 @@
                 <div class="chart-header-content">
                   <div class="chart-title-section">
                     <i class="cil-chart-line"></i>
-                    <span>近一年罷免支持度累計趨勢</span>
+                    <span>{{ chartTitle }}</span>
                   </div>
                   
                   <!-- 時間範圍選擇器 -->
@@ -349,16 +348,18 @@
                   
                   <!-- 事件標記點控制 -->
                   <div class="event-markers-control ms-3">
-                    <button 
-                      type="button" 
-                      class="btn btn-sm"
-                      [class.btn-primary]="showEventMarkers"
-                      [class.btn-outline-primary]="!showEventMarkers"
-                      (click)="toggleEventMarkers()"
-                      title="切換事件標記點顯示">
-                      <i class="cil-location-pin"></i>
-                      <span class="ms-1">事件標記</span>
-                    </button>
+                    <div class="form-check form-switch">
+                      <input 
+                        class="form-check-input" 
+                        type="checkbox" 
+                        id="eventMarkersSwitch"
+                        [checked]="showEventMarkers"
+                        (change)="toggleEventMarkers()">
+                      <label class="form-check-label" for="eventMarkersSwitch">
+                        <i class="cil-location-pin me-1"></i>
+                        事件標記
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>

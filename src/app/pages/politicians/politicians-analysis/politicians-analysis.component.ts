@@ -74,6 +74,14 @@ export class PoliticiansAnalysisComponent {
   // 事件標記點相關屬性
   eventMarkers: any[] = [];
   showEventMarkers: boolean = true;
+
+  // 數據時間範圍限制
+  minDate: string = '';
+  maxDate: string = '';
+  oneYearAgoDate: string = '';
+
+  // 當前篩選狀態
+  currentFilter: string = 'all';
   
   @ViewChild('lineChart') lineChartComponent!: ChartjsComponent;
 
@@ -91,6 +99,22 @@ export class PoliticiansAnalysisComponent {
     // 政治人物分析不需要事件標記點
     this.eventMarkers = [];
   }
+
+  // 切換事件標記點顯示
+  toggleEventMarkers(): void {
+    this.showEventMarkers = !this.showEventMarkers;
+    this.updateLineChartWithEventMarkers();
+  }
+
+  // 更新線圖以包含事件標記點
+  updateLineChartWithEventMarkers(): void {
+    if (!this.demoLineChartData) {
+      console.log('📌 沒有圖表數據');
+      return;
+    }
+    // 重新生成圖表選項以更新註釋
+    this.updateLineChartOptionsForEventMarkers();
+  }
   
   // 根據時間範圍獲取天數
   private getDaysFromTimeRange(timeRange: string): number {
@@ -103,12 +127,6 @@ export class PoliticiansAnalysisComponent {
       '365_days': 365
     };
     return daysMap[timeRange] || 30;
-  }
-  
-  // 切換事件標記點顯示
-  toggleEventMarkers(): void {
-    this.showEventMarkers = !this.showEventMarkers;
-    this.updateLineChartWithEventMarkers();
   }
   
   // 生成事件註釋
@@ -200,16 +218,6 @@ export class PoliticiansAnalysisComponent {
     return annotations;
   }
 
-  // 更新線圖以包含事件標記點
-  updateLineChartWithEventMarkers(): void {
-    if (!this.demoLineChartData) {
-      console.log('📌 沒有圖表數據');
-      return;
-    }
-    // 重新生成圖表選項以更新註釋
-    this.updateLineChartOptionsForEventMarkers();
-  }
-  
   // 更新圖表選項以包含事件標記點
   private updateLineChartOptionsForEventMarkers(): void {
     // 創建新的圖表選項，包含事件註釋
@@ -310,9 +318,6 @@ export class PoliticiansAnalysisComponent {
     this.processTimeSeriesStats(this.data.time_series_stats);
   }
 
-  // 當前篩選狀態
-  currentFilter: string = 'all';
-
   // 雷達圖數據 - 初始為空或通用標籤，實際數據從後端獲取
   radarChartData: ChartData<'radar'> = { // 使用 ChartData 類型
     labels: ['joy', 'anger', 'sadness', 'fear', 'surprise', 'disgust', 'trust', 'anticipation'], // 預設或通用標籤，實際可能由後端提供
@@ -340,10 +345,6 @@ export class PoliticiansAnalysisComponent {
   endDate: string = '';
   isLoadingTimeData: boolean = false;
 
-  // 數據時間範圍限制
-  minDate: string = '';
-  maxDate: string = '';
-  oneYearAgoDate: string = '';  // 新增一年前日期
 
   // 圓餅圖配置 - 美化 tooltip
   doughnutOptions = {
@@ -624,6 +625,43 @@ export class PoliticiansAnalysisComponent {
   // 獲取中性數量
   getNeutralCount(): number {
     return this.data?.sentiment_stats?.neutral_count || 0;
+  }
+
+  // 獲取平台統計數據
+  getTopPlatforms(platformStats: { [key: string]: number }): Array<{key: string, value: number}> {
+    if (!platformStats) return [];
+    
+    return Object.entries(platformStats)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 3)
+      .map(([key, value]) => ({ key, value }));
+  }
+
+  // 獲取總用戶數
+  getTotalUsers(): string {
+    const total = this.getPositiveCount() + this.getNegativeCount() + this.getNeutralCount();
+    return total.toLocaleString();
+  }
+
+  // 獲取正面百分比
+  getPositivePercentage(): string {
+    const total = this.getPositiveCount() + this.getNegativeCount() + this.getNeutralCount();
+    if (total === 0) return '0.0';
+    return ((this.getPositiveCount() / total) * 100).toFixed(1);
+  }
+
+  // 獲取負面百分比
+  getNegativePercentage(): string {
+    const total = this.getPositiveCount() + this.getNegativeCount() + this.getNeutralCount();
+    if (total === 0) return '0.0';
+    return ((this.getNegativeCount() / total) * 100).toFixed(1);
+  }
+
+  // 獲取中性百分比
+  getNeutralPercentage(): string {
+    const total = this.getPositiveCount() + this.getNegativeCount() + this.getNeutralCount();
+    if (total === 0) return '0.0';
+    return ((this.getNeutralCount() / total) * 100).toFixed(1);
   }
 
   // 新增方法：載入圖表數據
@@ -1413,6 +1451,52 @@ export class PoliticiansAnalysisComponent {
     this.startDate = '';
     this.endDate = '';
   }
+
+  // 計算日期差異
+  getDaysDifference(): number {
+    if (!this.startDate || !this.endDate) {
+      return 0;
+    }
+    
+    const start = new Date(this.startDate);
+    const end = new Date(this.endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
+  }
+
+  // 格式化日期範圍顯示
+  formatDateRange(startDate: string, endDate: string): string {
+    if (!startDate || !endDate) return '';
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // 格式化為 YYYY/MM/DD 格式
+    const formatDate = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}/${month}/${day}`;
+    };
+    
+    return `${formatDate(start)} - ${formatDate(end)}`;
+  }
+
+  // 計算日期範圍的天數
+  getDateRangeDays(): number {
+    if (!this.startDate || !this.endDate) return 0;
+    
+    const start = new Date(this.startDate);
+    const end = new Date(this.endDate);
+    
+    // 計算天數差異
+    const timeDiff = end.getTime() - start.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    
+    return Math.max(1, daysDiff); // 至少返回1天
+  }
   
   setQuickFilter(period: string): void {
     
@@ -1596,7 +1680,7 @@ export class PoliticiansAnalysisComponent {
   onWordCloudClick(clickedWord: CloudData): void {
     console.log('點擊了關鍵字:', clickedWord);
     
-    // 獲取當前立委名稱
+    // 獲取當前政治人物名稱
     const politicianName = this.politicianName || this.data?.name || '';
     
     // 構建解釋請求訊息
@@ -1621,72 +1705,12 @@ export class PoliticiansAnalysisComponent {
     });
   }
 
-  // 動態調整數據點密度 - 漸進式密度變化
-
-
+  // 返回主頁
   goToMainPage(): void {
     this.router.navigate(['/']);
   }
 
-  // 格式化日期範圍顯示
-  formatDateRange(startDate: string, endDate: string): string {
-    if (!startDate || !endDate) return '';
-    
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    
-    // 格式化為 YYYY/MM/DD 格式
-    const formatDate = (date: Date): string => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}/${month}/${day}`;
-    };
-    
-    return `${formatDate(start)} - ${formatDate(end)}`;
-  }
-
-  // 計算日期範圍的天數
-  getDateRangeDays(): number {
-    if (!this.startDate || !this.endDate) return 0;
-    
-    const start = new Date(this.startDate);
-    const end = new Date(this.endDate);
-    
-    // 計算天數差異
-    const timeDiff = end.getTime() - start.getTime();
-    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-    
-    return Math.max(1, daysDiff); // 至少返回1天
-  }
-
-  // 新增方法：日期範圍變更處理
-  onDateRangeChange(): void {
-    console.log('📅 日期範圍變更:', this.startDate, '到', this.endDate);
-    
-    if (this.startDate && this.endDate) {
-      // 計算天數差異
-      const days = this.getDaysDifference();
-      console.log(`📅 更新日期範圍: ${this.startDate} 到 ${this.endDate} (${days}天)`);
-      
-      // 重新載入數據
-      this.loadChartData(days);
-    }
-  }
-
-  // 新增方法：計算日期差異
-  getDaysDifference(): number {
-    if (!this.startDate || !this.endDate) {
-      return 0;
-    }
-    
-    const start = new Date(this.startDate);
-    const end = new Date(this.endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return diffDays;
-  }
+  // 動態調整數據點密度 - 漸進式密度變化
 
 
   // 時間範圍篩選方法

@@ -16,7 +16,7 @@ $spacing-md: 16px;
 $spacing-lg: 24px;
 
 /* 主容器 */
-.politician-detail-container {
+.legislators-detail-container {
   font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
   max-width: 1200px;
   margin: 0 auto;
@@ -163,7 +163,7 @@ $spacing-lg: 24px;
     display: flex;
     flex-direction: column;
     margin-bottom: $spacing-sm;
-}
+  }
 
   .info-label {
     font-weight: 600;
@@ -174,7 +174,7 @@ $spacing-lg: 24px;
 
     i {
       margin-right: $spacing-sm;
-}
+    }
   }
 
   .info-content {
@@ -185,7 +185,32 @@ $spacing-lg: 24px;
       margin: 0 0 $spacing-sm 0;
       line-height: 1.5;
     }
+  }
 }
+
+/* 平台統計樣式 */
+.platform-stats {
+  .platform-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: $spacing-sm 0;
+    border-bottom: 1px solid $border-light;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .platform-name {
+      font-weight: 500;
+      color: $text-dark;
+    }
+
+    .platform-count {
+      font-weight: 600;
+      color: $primary-color;
+    }
+  }
 }
 
 /* 罷免進度卡片 */
@@ -833,6 +858,18 @@ c-chart canvas {
       &.oppose {
         background-color: #4f8cff;
       }
+
+      &.positive {
+        background-color: #10b981;
+      }
+
+      &.negative {
+        background-color: #ef4444;
+      }
+
+      &.neutral {
+        background-color: #6b7280;
+      }
     }
 
     .stat-text {
@@ -872,7 +909,6 @@ c-chart canvas {
     
     /* 確保最小字體大小 */
     font-size: 14px !important;
-    min-font-size: 14px;
 
     &:hover {
       transform: translateY(-3px) scale(1.05);
@@ -919,7 +955,6 @@ c-chart canvas {
     transition: all 0.2s ease;
     cursor: pointer;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  min-font-size: 16px;
 
     &:hover {
       transform: scale(1.05);
@@ -947,18 +982,15 @@ c-chart canvas {
 /* 強制設置文字雲字體大小 */
 ::ng-deep .word-cloud-container .word-cloud-word {
   font-size: 16px !important;
-  min-font-size: 16px !important;
 }
 
 ::ng-deep .word-cloud-container .word-cloud-word[style*="font-size"] {
   font-size: 16px !important;
-  min-font-size: 16px !important;
 }
 
 /* 確保文字雲組件的最小字體大小 */
 ::ng-deep angular-tag-cloud .word-cloud-word {
   font-size: 16px !important;
-  min-font-size: 16px !important;
 }
 
 /* 圓餅圖標題樣式 - 確保完全顯示 */

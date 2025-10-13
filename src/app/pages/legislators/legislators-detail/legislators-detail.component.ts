@@ -80,6 +80,7 @@ export class LegislatorsDetailComponent {
   // 事件標記點相關屬性
   eventMarkers: EventMarker[] = [];
   showEventMarkers: boolean = true;
+  chartTitle: string = '近一年罷免支持度累計趨勢';
   
   @ViewChild('lineChart') lineChartComponent!: ChartjsComponent;
 
@@ -98,7 +99,7 @@ export class LegislatorsDetailComponent {
       // 獲取立委的所有事件標記點（顯示最近一年的所有事件）
       this.eventMarkers = getPoliticianEvents(this.data.name);
     } else {
-      this.eventMarkers = [];;
+      this.eventMarkers = [];
     }
   }
   
@@ -115,15 +116,69 @@ export class LegislatorsDetailComponent {
     return daysMap[timeRange] || 30;
   }
   
+  // 更新圖表標題
+  private updateChartTitle(timeRange: string): void {
+    const titleMap: { [key: string]: string } = {
+      '7_days': '近一週罷免支持度累計趨勢',
+      '14_days': '近兩週罷免支持度累計趨勢',
+      '30_days': '近一個月罷免支持度累計趨勢',
+      '90_days': '近三個月罷免支持度累計趨勢',
+      '180_days': '近半年罷免支持度累計趨勢',
+      '365_days': '近一年罷免支持度累計趨勢'
+    };
+    this.chartTitle = titleMap[timeRange] || '近一年罷免支持度累計趨勢';
+  }
+  
+  // 同步 selectedTimeRange 與 currentFilter
+  private syncSelectedTimeRangeWithFilter(period: string): void {
+    const timeRangeMap: { [key: string]: string } = {
+      'week': '7_days',
+      '2weeks': '14_days',
+      'month': '30_days',
+      '3months': '90_days',
+      '6months': '180_days',
+      '1year': '365_days',
+      'all': '365_days'
+    };
+    this.selectedTimeRange = timeRangeMap[period] || '365_days';
+  }
+  
   // 切換事件標記點顯示
   toggleEventMarkers(): void {
     this.showEventMarkers = !this.showEventMarkers;
-    this.updateLineChartWithEventMarkers();
+    
+    // 立即更新圖表選項
+    this.updateLineChartOptionsForEventMarkers();
+    
+    // 強制觸發變更檢測
+    setTimeout(() => {
+      // 如果圖表組件存在，強制重新渲染
+      if (this.lineChartComponent && this.lineChartComponent.chart) {
+        // 直接更新圖表配置
+        this.lineChartComponent.chart.options = this.lineChartOptions;
+        
+        // 強制重新繪製
+        this.lineChartComponent.chart.update('none');
+        
+        // 再次強制更新
+        setTimeout(() => {
+          if (this.lineChartComponent && this.lineChartComponent.chart) {
+            this.lineChartComponent.chart.update('none');
+          }
+        }, 50);
+      }
+    }, 0);
   }
   
   // 生成事件註釋
   getEventAnnotations(): any {
-    if (!this.showEventMarkers || !this.eventMarkers.length || !this.demoLineChartData) {
+    // 如果關閉事件標記，返回空對象
+    if (!this.showEventMarkers) {
+      return {};
+    }
+    
+    // 如果沒有事件標記數據或圖表數據，返回空對象
+    if (!this.eventMarkers.length || !this.demoLineChartData) {
       return {};
     }
 
@@ -151,8 +206,8 @@ export class LegislatorsDetailComponent {
         });
       }
 
-      // 如果找到匹配的日期（距離小於30天），則添加註釋
-      if (bestMatchIndex >= 0 && closestDistance < 30 * 24 * 60 * 60 * 1000) {
+      // 如果找到匹配的日期（距離小於90天），則添加註釋（放寬匹配條件）
+      if (bestMatchIndex >= 0 && closestDistance < 90 * 24 * 60 * 60 * 1000) {
         const annotationId = `event_${index}`;
         const xValue = this.demoLineChartData.labels![bestMatchIndex];
 
@@ -172,12 +227,30 @@ export class LegislatorsDetailComponent {
         const positionKey = String(xValue);
         let offsetY = 0;
         if (positionMap.has(positionKey)) {
-          offsetY = positionMap.get(positionKey)! +25; // 每次錯開200像素
+          offsetY = positionMap.get(positionKey)! + 60; // 增加錯開距離到60像素
         }
-        positionMap.set(positionKey, offsetY + 25);
+        positionMap.set(positionKey, offsetY + 60);
 
-        // 計算最終Y位置
-        const finalYValue = yValue + offsetY;
+        // 計算最終Y位置，確保不會超出圖表範圍
+        const maxY = Math.max(...this.demoLineChartData.datasets.flatMap(d => d.data as number[]));
+        const minY = Math.min(...this.demoLineChartData.datasets.flatMap(d => d.data as number[]));
+        const chartHeight = maxY - minY;
+        
+        // 🔥 更智能的Y位置計算，確保標籤不會超出邊界
+        let finalYValue = yValue + offsetY;
+        
+        // 如果標籤會超出上邊界，向下調整
+        if (finalYValue > maxY * 0.9) {
+          finalYValue = maxY * 0.7 - (offsetY / 2);
+        }
+        
+        // 如果標籤會超出下邊界，向上調整
+        if (finalYValue < minY * 1.1) {
+          finalYValue = minY * 1.3 + (offsetY / 2);
+        }
+        
+        // 最終邊界檢查
+        finalYValue = Math.max(minY * 0.8, Math.min(maxY * 1.2, finalYValue));
         
         annotations[annotationId] = {
           type: 'line',
@@ -194,14 +267,17 @@ export class LegislatorsDetailComponent {
             backgroundColor: marker.color || '#FF6B6B',
             color: 'white',
             font: {
-              size: 10,
+              size: 11,
               weight: 'bold'
             },
-            padding: 4,
-            cornerRadius: 4,
+            padding: 6,
+            cornerRadius: 6,
             display: true,
-            rotation: -45,
-            yAdjust: offsetY // 添加Y軸偏移
+            rotation: -40,
+            yAdjust: offsetY, // 添加Y軸偏移
+            xAdjust: 0,
+            borderColor: 'rgba(255, 255, 255, 0.3)',
+            borderWidth: 1
           }
         } as any;
       }
@@ -213,15 +289,23 @@ export class LegislatorsDetailComponent {
   // 更新線圖以包含事件標記點
   updateLineChartWithEventMarkers(): void {
     if (!this.demoLineChartData) {
-      console.log('📌 沒有圖表數據');
       return;
     }
+    
     // 重新生成圖表選項以更新註釋
     this.updateLineChartOptionsForEventMarkers();
+    
+    // 強制觸發變更檢測
+    setTimeout(() => {
+      // 這裡可以添加額外的邏輯來確保圖表重新渲染
+    }, 0);
   }
   
   // 更新圖表選項以包含事件標記點
   private updateLineChartOptionsForEventMarkers(): void {
+    // 獲取當前的事件註釋
+    const currentAnnotations = this.getEventAnnotations();
+    
     // 創建新的圖表選項，包含事件註釋
     const newOptions: any = {
       responsive: true,
@@ -270,7 +354,15 @@ export class LegislatorsDetailComponent {
         },
         // 添加註釋插件配置
         annotation: {
-          annotations: this.getEventAnnotations()
+          annotations: currentAnnotations,
+          // 確保註釋插件正確響應變更
+          drawTime: 'afterDatasetsDraw',
+          // 強制清除緩存
+          clip: false,
+          // 強制重新計算
+          animation: {
+            duration: 0
+          }
         }
       },
       scales: {
@@ -291,7 +383,8 @@ export class LegislatorsDetailComponent {
       }
     };
     
-    this.lineChartOptions = newOptions;
+    // 創建新的選項對象以觸發變更檢測
+    this.lineChartOptions = { ...newOptions };
   }
   
   // 添加事件標記點到圖表
@@ -316,10 +409,6 @@ export class LegislatorsDetailComponent {
     // 設置默認時間範圍為一年（因為初始應該載入365天）
     this.selectedTimeRange = '365_days';
     this.currentFilter = '1year'; // 設置對應的篩選器
-    
-    // 🔥 設定顯示日期範圍為最新（結束日期永遠是今天）
-    this.updateDisplayDateRange(365);
-    
     // 直接初始化圖表數據，不調用 onTimeRangeChange
     this.processTimeSeriesStats(this.data.time_series_stats);
   }
@@ -544,7 +633,7 @@ export class LegislatorsDetailComponent {
     this.initializeDateRange();
 
     this.route.paramMap.subscribe(params => {
-      this.politicianId = params.get('politicianId') || '';
+      this.politicianId = params.get('legislatorId') || '';
       if (this.politicianId) {
         // 使用統一API載入初始數據
         this.loadInitialData();
@@ -557,6 +646,10 @@ export class LegislatorsDetailComponent {
 
   // 新增方法：載入初始數據
   private loadInitialData(): void {
+    // 🔥 初始化圖表標題和篩選器同步
+    this.syncSelectedTimeRangeWithFilter(this.currentFilter);
+    this.updateChartTitle(this.selectedTimeRange);
+    
     // 載入立委基本信息
     this.dataService.getLegislatorDetail(this.politicianId).subscribe({
       next: (basicData: any) => {
@@ -645,12 +738,6 @@ export class LegislatorsDetailComponent {
           this.supportCount = support_count;
           this.opposeCount = oppose_count;
           
-          console.log(`✅ 使用新的 sentiment_analysis 數據:`, {
-            support_count,
-            oppose_count,
-            total_people,
-            time_period
-          });
         } else {
           // 如果沒有 sentiment_analysis，使用根級別數據作為備用
           this.updateSentimentChart({
@@ -662,10 +749,6 @@ export class LegislatorsDetailComponent {
           this.opposeCount = this.data.recall_oppose;
           this.supportCount = this.data.recall_support;
           
-          console.log('⚠️ 沒有 sentiment_analysis 數據，使用根級別數據:', { 
-            recall_support: this.data.recall_support, 
-            recall_oppose: this.data.recall_oppose 
-          });
         }
         
         // 處理情緒分析數據
@@ -798,7 +881,6 @@ export class LegislatorsDetailComponent {
                  item.text.length > 1; // 確保不是單字
         });
     } else {
-      console.log('legislators 中沒有文字雲數據');
     }
     
     // 4. 時間序列統計 - 使用time_series_stats
@@ -806,7 +888,6 @@ export class LegislatorsDetailComponent {
       // 直接處理時間序列數據，不區分新舊格式
       this.processTimeSeriesStats(data.time_series_stats);
     } else {
-      console.log('legislators 中沒有時間序列數據');
     }
   }
   
@@ -852,6 +933,15 @@ export class LegislatorsDetailComponent {
   private updateChartFromStats(selectedStats: any): void {
     const points = selectedStats.stats_points;
     
+    // 🔥 強制設置最後一個數據點的日期為今天
+    if (points.length > 0) {
+      const today = new Date().toISOString().split('T')[0];
+      const lastPoint = points[points.length - 1];
+      if (lastPoint && lastPoint.date !== today) {
+        lastPoint.date = today;
+      }
+    }
+    
     // 計算資料範圍，用於改善圖表可視性
     const supportData = points.map((p: any) => p.sentiment_counts?.NEGATIVE || p.sentiment_counts?.negative || 0);
     const opposeData = points.map((p: any) => p.sentiment_counts?.POSITIVE || p.sentiment_counts?.positive || 0);
@@ -894,7 +984,8 @@ export class LegislatorsDetailComponent {
     // 添加事件標記點
     this.addEventMarkersToChart();
     
-    // 不再從圖表數據更新日期範圍，因為日期範圍已在篩選器中設定為最新
+    // 只更新日期範圍，不更新圓餅圖數據
+    this.updateDateRangeFromChartData();
   }
 
   // 新增方法：更新圖表選項以改善可視性
@@ -1009,7 +1100,6 @@ export class LegislatorsDetailComponent {
       this.supportCount = totalSupport;
       this.opposeCount = totalOppose;
       
-      console.log(`✅ 圓餅圖使用 ${targetKey} 資料: 支持=${totalSupport}, 反對=${totalOppose}`);
     } else if (selectedStats?.stats_points && selectedStats.stats_points.length > 0) {
       // 如果沒有totals字段，手動計算該時段內的總和
       let totalSupport = 0;
@@ -1033,9 +1123,6 @@ export class LegislatorsDetailComponent {
       this.supportCount = totalSupport;
       this.opposeCount = totalOppose;
       
-      console.log(`✅ 圓餅圖手動計算 ${targetKey} 總和: 支持=${totalSupport}, 反對=${totalOppose}`);
-    } else {
-      console.log(`⚠️ 沒有找到 ${targetKey} 的daily資料，保持現有圓餅圖數據`);
     }
   }
 
@@ -1085,7 +1172,7 @@ export class LegislatorsDetailComponent {
     
     // 1. 詞雲 - 移除從 crawler_data 載入的邏輯，因為現在主要使用 legislators 集合
     if (shouldUpdateAll || chartTypes.includes('wordcloud')) {
-      console.log('跳過從 crawler_data 載入文字雲，使用 legislators 集合數據');
+      // 跳過從 crawler_data 載入文字雲，使用 legislators 集合數據
     }
 
     // 2. 時間序列圖表
@@ -1137,7 +1224,6 @@ export class LegislatorsDetailComponent {
           datasets: finalDatasets
         };
         
-        console.log(`時間序列包含今天的點: ${finalLabels[finalLabels.length - 1]}`);
         
       } else {
       }
@@ -1169,13 +1255,6 @@ export class LegislatorsDetailComponent {
       this.supportCount = support_count;
       this.opposeCount = oppose_count;
 
-      console.log(`✅ 使用新的 sentiment_analysis 數據更新圓餅圖:`, {
-        support_count,
-        oppose_count,
-        total_people,
-        time_period,
-        chartData: this.sentimentChartData.datasets[0].data
-      });
     } else {
       // 如果沒有 sentiment_analysis，使用舊的邏輯
       console.log('⚠️ 沒有 sentiment_analysis 數據，使用舊的邏輯');
@@ -1189,13 +1268,6 @@ export class LegislatorsDetailComponent {
       };
     }
 
-    // 調試：檢查圓餅圖數據
-    console.log('🔍 圓餅圖數據設置:', {
-      positiveCount: this.supportCount,
-      negativeCount: this.opposeCount,
-      chartData: this.sentimentChartData.datasets[0].data,
-      total: this.supportCount + this.opposeCount
-    });
 
     // 2. 更新雷達圖（使用 emotion_analysis_detailed，按照 before.ts 邏輯）
     if (data.emotion_analysis_detailed &&
@@ -1435,6 +1507,10 @@ export class LegislatorsDetailComponent {
     
     this.currentFilter = period; // 記錄當前篩選狀態
 
+    // 🔥 同步 selectedTimeRange 和更新圖表標題
+    this.syncSelectedTimeRangeWithFilter(period);
+    this.updateChartTitle(this.selectedTimeRange);
+
     // 顯示加載狀態
     this.isLoadingTimeData = true;
 
@@ -1444,41 +1520,29 @@ export class LegislatorsDetailComponent {
     switch (period) {
       case 'week':
         days = 7;
-        this.selectedTimeRange = '7_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       case '2weeks':
         days = 14;
-        this.selectedTimeRange = '14_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       case 'month':
         days = 30;
-        this.selectedTimeRange = '30_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       case '3months':
         days = 90;
-        this.selectedTimeRange = '90_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       case '6months':
         days = 180;
-        this.selectedTimeRange = '180_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       case '1year':
         days = 365;
-        this.selectedTimeRange = '365_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       case 'all':
         days = 365; // 預設一年
-        this.selectedTimeRange = '365_days'; // 🔥 同步下面的時間範圍選擇器
         break;
       default:
         days = 30;
-        this.selectedTimeRange = '30_days'; // 🔥 同步下面的時間範圍選擇器
     }
 
-    console.log(`🔍 映射的天數: ${days}, 同步 selectedTimeRange: ${this.selectedTimeRange}`);
-
-    // 🔥 更新顯示的日期範圍為最新（結束日期永遠是今天）
-    this.updateDisplayDateRange(days);
 
     // 首先嘗試使用本地的 time_series_stats 數據
     if (this.data?.time_series_stats) {
@@ -1487,11 +1551,13 @@ export class LegislatorsDetailComponent {
       // 🔥 調用圓餅圖 API 更新數據
       this.updatePieChartFromAPI();
       
+      // 根據實際圖表數據更新日期範圍
+      this.updateDateRangeFromChartData();
+      
       this.isLoadingTimeData = false;
       return;
     }
 
-    console.log(`🔍 沒有本地數據，從API獲取`);
     // 如果沒有本地數據，則從API獲取
     this.dataService.getLegislatorUnifiedData(this.politicianId, {
       days: days,
@@ -1506,7 +1572,8 @@ export class LegislatorsDetailComponent {
           if (data.time_series && data.time_series.labels && data.time_series.labels.length > 0) {
             this.demoLineChartData = data.time_series;
             
-            // 日期範圍已在篩選器中設定為最新，不需要再次更新
+            // 根據時間序列數據更新日期範圍
+            this.updateDateRangeFromChartData();
           }
           
           // 處理詞雲數據
@@ -1535,12 +1602,6 @@ export class LegislatorsDetailComponent {
             this.supportCount = support_count;
             this.opposeCount = oppose_count;
             
-            console.log(`✅ 使用新的 sentiment_analysis 數據:`, {
-              support_count,
-              oppose_count,
-              total_people,
-              time_period
-            });
           } else {
             // 如果沒有 sentiment_analysis，使用根級別數據作為備用
             this.updateSentimentChart({
@@ -1553,10 +1614,6 @@ export class LegislatorsDetailComponent {
             this.opposeCount = this.data.recall_oppose;  // 反對罷免
             this.supportCount = this.data.recall_support;  // 支持罷免
             
-            console.log('⚠️ 沒有 sentiment_analysis 數據，使用根級別數據:', { 
-              recall_support: this.data.recall_support, 
-              recall_oppose: this.data.recall_oppose 
-            });
           }
           
           // 處理情緒分析數據
@@ -1579,22 +1636,8 @@ export class LegislatorsDetailComponent {
 
 
 
-  // 🔥 新增方法：更新顯示的日期範圍為最新（結束日期永遠是今天）
-  private updateDisplayDateRange(days: number): void {
-    const today = new Date();
-    const startDate = new Date();
-    startDate.setDate(today.getDate() - days);
-    
-    this.endDate = today.toISOString().split('T')[0];
-    this.startDate = startDate.toISOString().split('T')[0];
-    
-    console.log(`📅 更新顯示日期範圍: ${this.startDate} - ${this.endDate} (${days}天)`);
-  }
-
-  // 簡化方法：根據圖表數據更新日期範圍（已棄用，改用 updateDisplayDateRange）
+  // 簡化方法：根據圖表數據更新日期範圍
   private updateDateRangeFromChartData(): void {
-    // 此方法已被 updateDisplayDateRange 取代，保留以避免破壞現有代碼
-    // 但不再主動調用
     if (!this.demoLineChartData?.labels?.length) return;
     
     const labels = this.demoLineChartData.labels as string[];
@@ -1618,7 +1661,8 @@ export class LegislatorsDetailComponent {
       
       if (!isNaN(firstDate.getTime()) && !isNaN(lastDate.getTime())) {
         this.startDate = firstDate.toISOString().split('T')[0];
-        this.endDate = lastDate.toISOString().split('T')[0];
+        // 🔥 強制設置結束日期為今天
+        this.endDate = new Date().toISOString().split('T')[0];
       }
     } catch (e) {
       console.warn('⚠️ 日期解析失敗:', e);
@@ -1642,7 +1686,6 @@ export class LegislatorsDetailComponent {
 
   // 文字雲點擊事件處理
   onWordCloudClick(clickedWord: CloudData): void {
-    console.log('點擊了關鍵字:', clickedWord);
     
     // 獲取當前立委名稱
     const legislatorName = this.politicianId || this.data?.name || '';
@@ -1656,9 +1699,7 @@ export class LegislatorsDetailComponent {
     this.aiAssistantService.sendMessage(explanationMessage).subscribe({
       next: (response) => {
         if (response.success) {
-          console.log('AI 詞彙解釋成功:', response);
           // 可以在這裡添加一些用戶反饋，比如顯示一個小提示
-          console.log(`詞彙「${clickedWord.text}」的解釋已發送到AI聊天窗口`);
         } else {
           console.error('AI 詞彙解釋失敗:', response.error);
         }
@@ -1710,12 +1751,10 @@ export class LegislatorsDetailComponent {
 
   // 新增方法：日期範圍變更處理
   onDateRangeChange(): void {
-    console.log('📅 日期範圍變更:', this.startDate, '到', this.endDate);
     
     if (this.startDate && this.endDate) {
       // 計算天數差異
       const days = this.getDaysDifference();
-      console.log(`📅 更新日期範圍: ${this.startDate} 到 ${this.endDate} (${days}天)`);
       
       // 重新載入數據
       this.loadChartData(days);
@@ -1747,35 +1786,8 @@ export class LegislatorsDetailComponent {
       return;
     }
 
-    // 🔥 根據選擇的時間範圍更新顯示日期為最新
-    const days = this.getDaysFromTimeRange(this.selectedTimeRange);
-    this.updateDisplayDateRange(days);
-
-    // 🔥 同步上面的快速篩選按鈕狀態
-    switch (this.selectedTimeRange) {
-      case '7_days':
-        this.currentFilter = 'week';
-        break;
-      case '14_days':
-        this.currentFilter = '2weeks';
-        break;
-      case '30_days':
-        this.currentFilter = 'month';
-        break;
-      case '90_days':
-        this.currentFilter = '3months';
-        break;
-      case '180_days':
-        this.currentFilter = '6months';
-        break;
-      case '365_days':
-        this.currentFilter = '1year';
-        break;
-      default:
-        this.currentFilter = '1year';
-    }
-
-    console.log(`🔍 時間範圍變更: ${this.selectedTimeRange}, 同步 currentFilter: ${this.currentFilter}`);
+    // 🔥 更新圖表標題
+    this.updateChartTitle(this.selectedTimeRange);
 
     // 🔥 調用新的圓餅圖 API 更新數據
     this.updatePieChartFromAPI();
@@ -1783,7 +1795,14 @@ export class LegislatorsDetailComponent {
     // 重新載入事件標記點
     this.loadEventMarkers();
 
-    // 處理時間範圍
+    // 直接使用 currentFilter 處理時間範圍
+    if (this.currentFilter && this.currentFilter !== 'all') {
+      this.processTimeSeriesStats(this.data.time_series_stats);
+      return;
+    }
+
+    // 如果沒有 currentFilter，使用預設的一年數據
+    this.currentFilter = '1year';
     this.processTimeSeriesStats(this.data.time_series_stats);
   }
   
@@ -1806,7 +1825,6 @@ export class LegislatorsDetailComponent {
         this.supportCount = pieData.support_count;
         this.opposeCount = pieData.oppose_count;
         
-        console.log(`🎯 圓餅圖載入完成: 支持=${pieData.support_count}, 反對=${pieData.oppose_count}, 總計=${pieData.total_people}人`);
       },
       error: (error: any) => {
         console.error('❌ 圓餅圖API調用失敗:', error);
@@ -1842,12 +1860,10 @@ export class LegislatorsDetailComponent {
         days = 365;
     }
     
-    console.log(`🔄 調用圓餅圖API: ${days}天`);
     
     // 調用新的圓餅圖 API
     this.dataService.getLegislatorPieChart(this.politicianId, days).subscribe({
       next: (pieData: any) => {
-        console.log('✅ 圓餅圖API返回數據:', pieData);
         
         // 更新圓餅圖數據
         this.sentimentChartData = {
@@ -1862,7 +1878,6 @@ export class LegislatorsDetailComponent {
         this.supportCount = pieData.support_count;
         this.opposeCount = pieData.oppose_count;
         
-        console.log(`🎯 圓餅圖更新完成: 支持=${pieData.support_count}, 反對=${pieData.oppose_count}, 總計=${pieData.total_people}人`);
       },
       error: (error: any) => {
         console.error('❌ 圓餅圖API調用失敗:', error);

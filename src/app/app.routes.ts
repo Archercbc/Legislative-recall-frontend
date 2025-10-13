@@ -11,6 +11,7 @@ export const routes: Routes = [
   { path: 'taiwan-map', component: TaiwanMapComponent },
   { path: 'politicians', component: PoliticiansComponent },
   { path: 'politicians-analysis/:politicianName', component: PoliticiansAnalysisComponent },
+  { path: 'politician/:politicianName', component: PoliticiansAnalysisComponent },
   { path: 'legislator/:legislatorId', component: LegislatorsDetailComponent },
   { path: 'policy-tracking', component: PolicyTrackingComponent },
   { path: 'election-analysis', component: ElectionAnalysisComponent }

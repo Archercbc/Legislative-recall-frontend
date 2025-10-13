@@ -25,7 +25,6 @@ import { TagCloudComponent, CloudData, CloudOptions } from 'angular-tag-cloud-mo
     FormsModule,
     HttpClientModule,
     NgChartsModule,
-    ChartjsComponent,
     TagCloudComponent,
     IconModule
   ],

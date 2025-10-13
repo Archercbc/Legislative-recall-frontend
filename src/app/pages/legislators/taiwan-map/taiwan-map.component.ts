@@ -482,8 +482,8 @@ export class TaiwanMapComponent implements OnInit {
       return;
     }
 
-    // 使用人名進行導航
-    this.router.navigate(['/politician', id]);
+    // 使用人名進行導航到立委詳細頁面
+    this.router.navigate(['/legislator', id]);
   }
 
   getCountyName(id: string): string {
