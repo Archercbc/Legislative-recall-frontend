@@ -32,11 +32,12 @@ import { TagCloudComponent, CloudData, CloudOptions } from 'angular-tag-cloud-mo
   styleUrl: './policy-tracking.component.scss'
 })
 export class PolicyTrackingComponent {
-  eventName = '普發10000:普發一萬';
+  eventName = '普發10000';
   data: any = null;
   currentFilter = '30_days';
   positiveCount = 0;  // 正面聲量 = 反對罷免人數
   negativeCount = 0;  // 負面聲量 = 支持罷免人數
+  isLoading = true;  // 主要載入狀態
 
   // 圖表選項
   doughnutOptions: any = {
@@ -51,10 +52,10 @@ export class PolicyTrackingComponent {
 
   // 圖表數據
   sentimentChartData: any = {
-    labels: ['正面', '負面', '中性'],
+    labels: ['正面', '負面'],
     datasets: [{
-      data: [0, 0, 0],
-      backgroundColor: ['#10b981', '#ef4444', '#6b7280']
+      data: [0, 0],
+      backgroundColor: ['#10b981', '#ef4444']
     }]
   };
 
@@ -509,7 +510,7 @@ export class PolicyTrackingComponent {
     this.initializeDateRange();
 
     this.route.paramMap.subscribe(params => {
-      this.eventName = params.get('eventName') || '普發10000:普發一萬';
+      this.eventName = params.get('eventName') || '普發10000';
       if (this.eventName) {
         // 使用事件API載入初始數據
         this.loadEventData();
@@ -520,28 +521,67 @@ export class PolicyTrackingComponent {
     });
   }
 
-  // 新增方法：載入初始數據
+  // 新增方法：載入初始數據（使用統一API）
   private loadEventData(): void {
-    // 載入事件基本信息
-    this.eventService.getEventDetail(this.eventName).subscribe({
-      next: (basicData: any) => {
-        // 更新基本數據
-        this.data = basicData;
+    // 設置載入狀態
+    this.isLoading = true;
+    
+    // 獲取天數
+    const days = this.getDaysFromTimeRange(this.selectedTimeRange);
+    
+    console.log(`🔄 載入事件數據: ${this.eventName}, 天數: ${days}`);
+    
+    // 使用統一的事件數據API
+    this.eventService.getEventDetailWithDays(this.eventName, days).subscribe({
+      next: (data: any) => {
+        console.log('✅ 成功載入事件統一數據:', data);
+        this.isLoading = false;
         
-        // 處理事件數據
-        this.processEventData(basicData);
+        // 儲存基本數據
+        this.data = {
+          name: data.event?.name || this.eventName,
+          total_posts: data.total_posts || 0,
+          total_comments: data.total_comments || 0,
+          sentiment_stats: data.sentiment_analysis,
+          platform_stats: data.platform_distribution,
+          word_cloud: data.word_cloud,
+          emotion_analysis: data.emotion_analysis,
+          time_series: data.time_series
+        };
         
-        // 檢查是否有時間序列統計數據，如果有則直接使用
-        if (basicData.time_series_stats) {
-          this.initializeTimeSeriesCharts();
-        } else {
-          // 如果沒有時間序列數據，則從API獲取
-          this.loadChartData(365);
+        // 更新情緒分析圓餅圖（只有正面和負面）
+        if (data.sentiment_analysis) {
+          this.sentimentChartData = {
+            labels: data.sentiment_analysis.labels || ['正面', '負面'],
+            datasets: [{
+              data: data.sentiment_analysis.data || [0, 0],
+              backgroundColor: ['#10b981', '#ef4444']
+            }]
+          };
         }
-        this.loadPieChartData(365);
+        
+        // 更新文字雲
+        if (data.word_cloud && Array.isArray(data.word_cloud)) {
+          this.wordCloudData = data.word_cloud.map((item: any, index: number) => ({
+            text: item.text || item.word || '',
+            weight: item.weight || 10,
+            color: this.getWordCloudColor(item.text || item.word || '', index)
+          })).filter((item: any) => item.text && item.weight > 0);
+        }
+        
+        // 更新時間序列圖表
+        if (data.time_series && data.time_series.labels) {
+          this.demoLineChartData = {
+            labels: data.time_series.labels,
+            datasets: data.time_series.datasets || []
+          };
+        }
+        
+        console.log('✅ 事件數據處理完成');
       },
       error: (error: any) => {
-        console.error('❌ 載入事件基本信息失敗:', error);
+        console.error('❌ 載入事件數據失敗:', error);
+        this.isLoading = false;
       }
     });
   }
@@ -591,17 +631,26 @@ export class PolicyTrackingComponent {
 
   // 獲取正面數量
   getPositiveCount(): number {
-    return this.data?.sentiment_stats?.positive_count || 0;
+    return this.data?.sentiment_stats?.positive || 0;
   }
 
   // 獲取負面數量
   getNegativeCount(): number {
-    return this.data?.sentiment_stats?.negative_count || 0;
+    return this.data?.sentiment_stats?.negative || 0;
   }
 
-  // 獲取中性數量
-  getNeutralCount(): number {
-    return this.data?.sentiment_stats?.neutral_count || 0;
+  // 獲取正面百分比
+  getPositivePercentage(): string {
+    const total = this.getPositiveCount() + this.getNegativeCount();
+    if (total === 0) return '0.0';
+    return ((this.getPositiveCount() / total) * 100).toFixed(1);
+  }
+
+  // 獲取負面百分比
+  getNegativePercentage(): string {
+    const total = this.getPositiveCount() + this.getNegativeCount();
+    if (total === 0) return '0.0';
+    return ((this.getNegativeCount() / total) * 100).toFixed(1);
   }
 
   // 新增方法：載入圖表數據
@@ -1394,9 +1443,9 @@ export class PolicyTrackingComponent {
   }
   
   setQuickFilter(period: string): void {
+    // 記錄當前篩選狀態
+    this.currentFilter = period;
     
-    this.currentFilter = period; // 記錄當前篩選狀態
-
     // 顯示加載狀態
     this.isLoadingTimeData = true;
 
@@ -1404,18 +1453,21 @@ export class PolicyTrackingComponent {
     let days: number;
     
     switch (period) {
+      case '7_days':
       case 'week':
         days = 7;
         break;
       case '2weeks':
         days = 14;
         break;
+      case '30_days':
       case 'month':
         days = 30;
         break;
       case '3months':
         days = 90;
         break;
+      case '90_days':
       case '6months':
         days = 180;
         break;
@@ -1429,24 +1481,9 @@ export class PolicyTrackingComponent {
         days = 30;
     }
 
-    console.log(`🔍 映射的天數: ${days}`);
+    console.log(`🔍 設定時間範圍: ${period}, 映射天數: ${days}`);
 
-    // 首先嘗試使用本地的 time_series_stats 數據
-    if (this.data?.time_series_stats) {
-      this.processTimeSeriesStats(this.data.time_series_stats);
-      
-      // 🔥 調用圓餅圖 API 更新數據
-      this.updatePieChartFromAPI();
-      
-      // 根據實際圖表數據更新日期範圍
-      this.updateDateRangeFromChartData();
-      
-      this.isLoadingTimeData = false;
-      return;
-    }
-
-    console.log(`🔍 沒有本地數據，從API獲取`);
-    // 如果沒有本地數據，則從API獲取
+    // 使用統一API重新載入數據
     this.eventService.getEventDetailWithDays(this.eventName, days).subscribe({
       next: (data) => {
         if (data) {
@@ -1467,43 +1504,18 @@ export class PolicyTrackingComponent {
             })).filter((item: any) => item.text && item.weight > 0);
           }
           
-          // 🔥 優先使用新的 sentiment_analysis 數據
+          // 更新情緒分析數據
           if (data.sentiment_analysis) {
-            const { negative_count, positive_count, total_people, time_period } = data.sentiment_analysis;
-            
-            // 更新圓餅圖數據
+            // 使用統一 API 返回的情緒分析數據
             this.sentimentChartData = {
-              labels: ['支持', '反對'],
+              labels: data.sentiment_analysis.labels || ['正面', '負面', '中性'],
               datasets: [{
-                data: [negative_count, positive_count],  // [支持, 反對]
-                backgroundColor: ['#f87171', '#4f8cff']  // 紅色=支持，藍色=反對
+                data: data.sentiment_analysis.data || [0, 0, 0],
+                backgroundColor: ['#10b981', '#ef4444', '#6b7280']
               }]
             };
             
-            // 更新統計數據
-            
-            console.log(`✅ 使用新的 sentiment_analysis 數據:`, {
-              negative_count,
-              positive_count,
-              total_people,
-              time_period
-            });
-          } else {
-            // 如果沒有 sentiment_analysis，使用根級別數據作為備用
-            this.updateSentimentChart({
-              '反對人數': this.data.positive || 0,  // 正面聲量 = 反對罷免
-              '支持人數': this.data.negative || 0,  // 負面聲量 = 支持罷免
-              '中性人數': 0
-            });
-            
-            // 更新統計數據 - 確保與updateSentimentChart中的邏輯一致
-            this.positiveCount = this.data.positive || 0;  // 正面聲量 = 反對罷免
-            this.negativeCount = this.data.negative || 0;  // 負面聲量 = 支持罷免
-            
-            console.log('⚠️ 沒有 sentiment_analysis 數據，使用根級別數據:', { 
-              positive: this.data.positive,  // 正面聲量 = 反對罷免
-              negative: this.data.negative   // 負面聲量 = 支持罷免
-            });
+            console.log(`✅ 使用統一 API sentiment_analysis 數據:`, data.sentiment_analysis);
           }
           
           // 處理情緒分析數據
