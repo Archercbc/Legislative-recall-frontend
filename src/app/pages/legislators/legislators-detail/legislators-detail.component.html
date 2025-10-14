@@ -73,13 +73,13 @@
                 <!-- 左側文字 (反對罷免) -->
                 <div class="bar-text-left">
                   {{ getOpposePercentage() }}% 反對罷免
-                  <div class="stat-value positive">{{ opposeCount.toLocaleString() }}人</div>
+                  <div class="stat-value positive">{{ positiveCount.toLocaleString() }}人</div>
                 </div>
 
                 <!-- 右側文字 (支持罷免) -->
                 <div class="bar-text-right">
                   {{ getSupportPercentage() }}% 支持罷免
-                  <div class="stat-value negative">{{ supportCount.toLocaleString() }}人</div>
+                  <div class="stat-value negative">{{ negativeCount.toLocaleString() }}人</div>
                 </div>
               </div>
 
@@ -219,7 +219,7 @@
             <div cCard class="chart-card">
               <div cCardHeader>
                 <i class="cil-chart-pie"></i>
-                <span class="chart-title">罷免民意分析 (總計: {{ opposeCount + supportCount }}人)</span>
+                <span class="chart-title">罷免民意分析 (總計: {{ positiveCount + negativeCount }}人)</span>
                 <span *ngIf="isLoadingTimeData" class="spinner-border spinner-border-sm ms-2"></span>
               </div>
               <div cCardBody style="overflow: visible; position: relative;">
@@ -232,12 +232,12 @@
                 <!-- 自定義百分比顯示 - 右下角 -->
                 <div class="custom-chart-stats">
                   <div class="stat-item">
-                    <span class="color-dot oppose"></span>
-                    <span class="stat-text">反對罷免 {{ opposeCount.toLocaleString() }}人 {{ getOpposePercentage() }}%</span>
+                    <span class="color-dot positive"></span>
+                    <span class="stat-text">反對罷免 {{ positiveCount.toLocaleString() }}人 {{ getOpposePercentage() }}%</span>
                   </div>
                   <div class="stat-item">
-                    <span class="color-dot support"></span>
-                    <span class="stat-text">支持罷免 {{ supportCount.toLocaleString() }}人 {{ getSupportPercentage() }}%</span>
+                    <span class="color-dot negative"></span>
+                    <span class="stat-text">支持罷免 {{ negativeCount.toLocaleString() }}人 {{ getSupportPercentage() }}%</span>
                   </div>
                 </div>
               </div>
