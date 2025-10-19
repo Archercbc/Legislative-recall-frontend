@@ -9,9 +9,7 @@
       <div class="card-content">
         <div class="politician-name">{{ politician.name }}</div>
         <div class="politician-type">
-          <span [class]="'badge ' + (politician.target_type === 'legislator' ? 'badge-primary' : 'badge-info')">
-            {{ politician.target_type === 'legislator' ? '立法委員' : '政治人物' }}
-          </span>
+          <span class="badge badge-info">政治人物</span>
         </div>
       </div>
     </div>

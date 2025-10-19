@@ -2,8 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
 import { IconModule } from '@coreui/icons-angular';
+import { PoliticianService } from '../../../services/politician.service';
 
 interface Politician {
   name: string;
@@ -31,8 +31,8 @@ export class PoliticiansComponent implements OnInit {
   filteredPoliticians: Politician[] = [];
 
   constructor(
-    private http: HttpClient,
-    private router: Router
+    private router: Router,
+    private politicianService: PoliticianService
   ) {}
 
   ngOnInit(): void {
@@ -42,27 +42,23 @@ export class PoliticiansComponent implements OnInit {
   loadPoliticians(): void {
     this.isLoading = true;
     
-    // 同時載入立委和政治人物數據
-    const legislatorsPromise = this.http.get<any>('http://localhost:5001/api/legislators/').toPromise();
-    const politiciansPromise = this.http.get<any>('http://localhost:5001/api/politicians/').toPromise();
-    
-    Promise.all([legislatorsPromise, politiciansPromise])
-      .then(([legislatorsResponse, politiciansResponse]) => {
-        const legislators = legislatorsResponse.politicians || [];
-        const politicians = Array.isArray(politiciansResponse) ? politiciansResponse : (politiciansResponse.politicians || []);
-        
-        // 合併數據並添加target_type
-        this.politicians = [
-          ...legislators.map((p: any) => ({ ...p, target_type: 'legislator' })),
-          ...politicians.map((p: any) => ({ ...p, target_type: 'politician' }))
-        ];
-        
-        this.filterPoliticians();
-        this.isLoading = false;
-      })
-      .catch(error => {
-        console.error('載入政治人物數據失敗:', error);
-        this.isLoading = false;
+    // 使用 Service 載入政治人物數據 - 參考 legislator 的實現
+    this.politicianService.getPoliticians()
+      .subscribe({
+        next: (politicians) => {
+          // 為每個政治人物添加target_type（如果沒有）
+          this.politicians = politicians.map((p: any) => ({
+            ...p,
+            target_type: p.target_type || 'politician'
+          }));
+          
+          this.filterPoliticians();
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('載入政治人物數據失敗:', error);
+          this.isLoading = false;
+        }
       });
   }
 
