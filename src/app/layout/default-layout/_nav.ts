@@ -17,7 +17,7 @@ export const navItems: NavItem[] = [
     isRecallAnalysis: true // 標識為罷免分析
   },
   {
-    name: '普發一萬議題分析',
+    name: '普發一萬議題分析(開發中)',
     url: '/policy-tracking',
     icon: 'fas fa-vote-yea'
   },
