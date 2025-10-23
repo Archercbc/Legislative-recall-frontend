@@ -78,7 +78,7 @@ export class ElectionAnalysisComponent implements OnInit {
   // 後端數據相關屬性
   timeSeriesStats: any = null;
   
-  // 圖表選項 - 縮小內部元素
+  // 圖表選項 - 動態調整標籤顯示
   lineChartOptions: any = {
     responsive: true,
     maintainAspectRatio: false,
@@ -126,7 +126,10 @@ export class ElectionAnalysisComponent implements OnInit {
           font: {
             size: 8
           },
-          maxTicksLimit: 6
+          maxTicksLimit: 20, // 增加最大標籤數量
+          autoSkip: false, // 禁用自動跳過標籤
+          maxRotation: 45, // 允許標籤旋轉45度
+          minRotation: 0
         },
         grid: {
           color: 'rgba(0, 0, 0, 0.1)'
@@ -349,76 +352,23 @@ export class ElectionAnalysisComponent implements OnInit {
       return;
     }
 
-    // 根據選擇的時間範圍生成標籤
-    const labels = this.generateTimeLabels();
-    const days = this.getDaysFromTimeRange();
-
-    let datasets: any[] = [];
-
     if (this.selectedCandidateForTimeChart) {
-      // 顯示特定候選人的正負面聲量時間圖
+      // 顯示特定候選人的正負面聲量時間圖 - 使用真實數據
       const candidate = visibleCandidates.find(c => c.id === this.selectedCandidateForTimeChart);
-      if (candidate) {
-        const positiveData = this.generateTimeSeriesDataForCandidate(candidate, days, 'positive');
-        const negativeData = this.generateTimeSeriesDataForCandidate(candidate, days, 'negative');
+      if (candidate && candidate.time_series_stats) {
+        this.lineChartData = candidate.time_series_stats;
         
-        datasets = [
-          {
-            label: `${candidate.name} - 正面聲量`,
-            data: positiveData,
-            borderColor: '#28a745',
-            backgroundColor: '#28a74520',
-            tension: 0.4,
-            fill: false,
-            pointBackgroundColor: '#28a745',
-            pointBorderColor: '#28a745',
-            pointRadius: 4,
-            pointHoverRadius: 6
-          },
-          {
-            label: `${candidate.name} - 負面聲量`,
-            data: negativeData,
-            borderColor: '#dc3545',
-            backgroundColor: '#dc354520',
-            tension: 0.4,
-            fill: false,
-            pointBackgroundColor: '#dc3545',
-            pointBorderColor: '#dc3545',
-            pointRadius: 4,
-            pointHoverRadius: 6
-          }
-        ];
+        // 為個人分析也動態調整圖表選項
+        if (candidate.time_series_stats.labels) {
+          this.updateChartOptionsForDataPoints(candidate.time_series_stats.labels.length);
+        }
+      } else {
+        this.lineChartData = { labels: [], datasets: [] };
       }
     } else {
-      // 顯示所有候選人的累計總聲量時間圖 - 參考立委頁面實現
-      datasets = visibleCandidates.map(candidate => {
-        const positiveData = this.generateTimeSeriesDataForCandidate(candidate, days, 'positive');
-        const negativeData = this.generateTimeSeriesDataForCandidate(candidate, days, 'negative');
-        const cumulativeData = this.generateCumulativeData(positiveData, negativeData);
-        
-        return {
-          label: candidate.name,
-          data: cumulativeData,
-          candidateName: candidate.name,
-          candidateId: candidate.id,
-          positiveData: positiveData,
-          negativeData: negativeData,
-          borderColor: candidate.color,
-          backgroundColor: candidate.color + '20',
-          tension: 0.3,
-          fill: true,
-          pointBackgroundColor: candidate.color,
-          pointBorderColor: candidate.color,
-          pointRadius: 4,
-          pointHoverRadius: 6
-        } as any;
-      });
+      // 顯示所有候選人的總聲量時間圖 - 使用真實數據
+      this.processCandidatesTimeSeriesData();
     }
-
-    this.lineChartData = {
-      labels,
-      datasets
-    };
   }
 
   updateBarChart(): void {
@@ -501,7 +451,46 @@ export class ElectionAnalysisComponent implements OnInit {
   // 點擊候選人切換時間圖表模式
   selectCandidateForTimeChart(candidateId: string | null): void {
     this.selectedCandidateForTimeChart = candidateId;
-    this.updateLineChart();
+    
+    // 如果選擇了特定候選人，載入該候選人的詳細時間序列數據
+    if (candidateId) {
+      this.loadCandidateTimeSeriesData(candidateId);
+    } else {
+      // 如果取消選擇，更新圖表顯示所有候選人
+      this.updateLineChart();
+    }
+  }
+
+  // 返回總覽 - 優化的UI/UX方法
+  returnToOverview(): void {
+    console.log('🔍 返回總覽：重新載入整體數據');
+    
+    // 清除個人分析選擇
+    this.selectedCandidateForTimeChart = null;
+    
+    // 重新載入整體數據以確保數據是最新的
+    const timeRangeMap: { [key: string]: string } = {
+      'week': '7',
+      '2weeks': '14',
+      'month': '30',
+      '3months': '90',
+      '6months': '180',
+      '1year': '365',
+      'all': '365'
+    };
+    
+    const timeRange = timeRangeMap[this.currentFilter] || '365';
+    
+    // 顯示載入狀態
+    this.isLoadingTimeData = true;
+    
+    // 重新載入所有候選人的數據
+    this.loadElectionAnalysisData(timeRange);
+    
+    // 模擬載入時間
+    setTimeout(() => {
+      this.isLoadingTimeData = false;
+    }, 500);
   }
 
   onTimeRangeChange(): void {
@@ -557,87 +546,67 @@ export class ElectionAnalysisComponent implements OnInit {
     this.router.navigate(['/election-analysis']);
   }
 
-  // 生成時間標籤
-  private generateTimeLabels(): string[] {
-    const days = this.getDaysFromTimeRange();
-    const labels = [];
-    const now = new Date();
-    
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      labels.push(date.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' }));
+  // 載入特定候選人的時間序列數據 - 參考政治人物頁面實現
+  private loadCandidateTimeSeriesData(candidateId: string): void {
+    const candidate = this.candidates.find(c => c.id === candidateId);
+    if (!candidate) {
+      console.error('找不到候選人:', candidateId);
+      return;
     }
+
+    // 顯示載入狀態
+    this.isLoadingTimeData = true;
+
+    // 獲取當前時間範圍的天數
+    const days = this.getDaysFromTimeRange();
     
-    return labels;
+    console.log('🔍 載入候選人個人數據:', {
+      candidateName: candidate.name,
+      days: days,
+      currentFilter: this.currentFilter
+    });
+    
+    // 調用後端 API 獲取該候選人的詳細時間序列數據
+    this.electionService.getCandidateTimeSeriesData(candidate.name, days).subscribe({
+      next: (data) => {
+        console.log('🔍 候選人時間序列數據載入:', candidate.name, data);
+        
+        if (data && data.time_series) {
+          // 更新候選人的時間序列數據
+          candidate.time_series_stats = data.time_series;
+          
+          // 更新圖表
+          this.updateLineChart();
+        } else {
+          console.warn('候選人時間序列數據為空:', candidate.name);
+          // 如果沒有數據，顯示空圖表
+          this.lineChartData = { labels: [], datasets: [] };
+        }
+        
+        this.isLoadingTimeData = false;
+      },
+      error: (error) => {
+        console.error('載入候選人時間序列數據失敗:', error);
+        // 出錯時顯示空圖表
+        this.lineChartData = { labels: [], datasets: [] };
+        this.isLoadingTimeData = false;
+      }
+    });
   }
 
   // 根據時間範圍獲取天數
   private getDaysFromTimeRange(): number {
-    switch (this.selectedTimeRange) {
-      case '7_days': return 7;
-      case '30_days': return 30;
-      case '90_days': return 90;
-      case '365_days': return 365;
-      default: return 30;
+    switch (this.currentFilter) {
+      case 'week': return 7;
+      case '2weeks': return 14;
+      case 'month': return 30;
+      case '3months': return 90;
+      case '6months': return 180;
+      case '1year': return 365;
+      default: return 365;
     }
   }
 
-  // 為特定候選人生成時間序列數據
-  private generateTimeSeriesDataForCandidate(candidate: any, days: number, type?: 'positive' | 'negative'): number[] {
-    const data = [];
-    
-    // 如果候選人有實際的時間序列數據，使用它
-    if (candidate.time_series_stats && Array.isArray(candidate.time_series_stats)) {
-      // 取最近 N 天的數據
-      const recentData = candidate.time_series_stats.slice(-days);
-      if (type) {
-        // 如果有指定類型，嘗試從數據中提取對應的值
-        return recentData.map((item: any) => {
-          if (type === 'positive') return item.positive || item.value * 0.6 || 0;
-          if (type === 'negative') return item.negative || item.value * 0.4 || 0;
-          return item.value || item.total || 0;
-        });
-      }
-      return recentData.map((item: any) => item.value || item.total || 0);
-    }
-    
-    // 否則生成基於候選人基礎聲量的模擬數據
-    let baseValue: number;
-    if (type === 'positive') {
-      baseValue = candidate.positive ?? 0;
-    } else if (type === 'negative') {
-      baseValue = candidate.negative ?? 0;
-    } else {
-      baseValue = (candidate.positive ?? 0) + (candidate.negative ?? 0);
-    }
-    
-    // 確保有合理的基礎值
-    const dailyBase = Math.max(20, Math.floor(baseValue / days));
-    
-    for (let i = 0; i < days; i++) {
-      // 生成更真實的變化模式
-      const trend = Math.sin(i / days * Math.PI) * 0.3; // 正弦波趨勢
-      const randomVariation = (Math.random() - 0.5) * 0.4; // 隨機變化
-      const value = Math.max(5, Math.floor(dailyBase * (0.7 + trend + randomVariation)));
-      data.push(value);
-    }
-    
-    return data;
-  }
-
-  // 生成累計數據
-  private generateCumulativeData(positiveData: number[], negativeData: number[]): number[] {
-    const cumulativeData = [];
-    let cumulative = 0;
-    
-    for (let i = 0; i < positiveData.length; i++) {
-      cumulative += positiveData[i] + negativeData[i];
-      cumulativeData.push(cumulative);
-    }
-    
-    return cumulativeData;
-  }
 
 
   // 從候選人數據構建時間序列統計
@@ -656,132 +625,25 @@ export class ElectionAnalysisComponent implements OnInit {
     return firstCandidate.time_series_stats;
   }
 
-  // 直接處理候選人的時間序列數據
+  // 直接處理候選人的時間序列數據 - 使用真實後端數據
   private processCandidatesTimeSeriesData(): void {
     if (!this.candidates || this.candidates.length === 0) {
+      this.lineChartData = { labels: [], datasets: [] };
       return;
     }
 
     console.log('🔍 處理候選人時間序列數據:', this.candidates.length);
 
-    // 為每個候選人創建數據集
-    const datasets = this.candidates.map(candidate => {
-      console.log(`🔍 處理候選人 ${candidate.name}:`, candidate.time_series_stats ? '有數據' : '無數據');
-      
-      if (!candidate.time_series_stats) {
-        return {
-          label: candidate.name,
-          data: [],
-          borderColor: candidate.color,
-          backgroundColor: candidate.color + '20',
-          tension: 0.3,
-          fill: false
-        };
-      }
-
-      // 根據當前篩選器選擇對應的數據
-      const keyMap: { [key: string]: string } = {
-        'week': 'recent_7_days_cumulative',
-        '2weeks': 'recent_14_days_cumulative',
-        'month': 'recent_30_days_cumulative',
-        '3months': 'recent_90_days_cumulative',
-        '6months': 'recent_180_days_cumulative',
-        '1year': 'recent_365_days_cumulative'
-      };
-
-      const targetKey = keyMap[this.currentFilter] || 'recent_365_days_cumulative';
-      const candidateStats = candidate.time_series_stats[targetKey];
-
-      console.log(`🔍 ${candidate.name} 使用 ${targetKey}:`, candidateStats ? '有數據' : '無數據');
-
-      if (!candidateStats || !candidateStats.stats_points) {
-        return {
-          label: candidate.name,
-          data: [],
-          borderColor: candidate.color,
-          backgroundColor: candidate.color + '20',
-          tension: 0.3,
-          fill: false
-        };
-      }
-
-      // 提取數據點
-      const candidateData = candidateStats.stats_points.map((point: any) => {
-        const sentiment = point.sentiment_counts || {};
-        const total = (sentiment.positive || 0) + (sentiment.negative || 0);
-        console.log(`🔍 ${candidate.name} 數據點:`, point.date, 'total:', total);
-        return total;
-      });
-
-      console.log(`🔍 ${candidate.name} 最終數據:`, candidateData.slice(0, 5), '...');
-
-      return {
-        label: candidate.name,
-        data: candidateData,
-        borderColor: candidate.color,
-        backgroundColor: candidate.color + '20',
-        tension: 0.3,
-        fill: false
-      };
-    });
-
-    // 使用第一個候選人的日期作為標籤
-    const firstCandidate = this.candidates[0];
-    if (firstCandidate && firstCandidate.time_series_stats) {
-      const keyMap: { [key: string]: string } = {
-        'week': 'recent_7_days_cumulative',
-        '2weeks': 'recent_14_days_cumulative',
-        'month': 'recent_30_days_cumulative',
-        '3months': 'recent_90_days_cumulative',
-        '6months': 'recent_180_days_cumulative',
-        '1year': 'recent_365_days_cumulative'
-      };
-
-      const targetKey = keyMap[this.currentFilter] || 'recent_365_days_cumulative';
-      const firstCandidateStats = firstCandidate.time_series_stats[targetKey];
-
-      if (firstCandidateStats && firstCandidateStats.stats_points) {
-        const labels = firstCandidateStats.stats_points.map((point: any) => {
-          if (point.date) {
-            try {
-              const date = new Date(point.date);
-              return date.toLocaleDateString('zh-TW', { 
-                year: 'numeric', 
-                month: '2-digit', 
-                day: '2-digit' 
-              });
-            } catch (e) {
-              return point.date;
-            }
-          }
-          return '';
-        });
-
-        console.log('🔍 圖表標籤:', labels.slice(0, 5), '...');
-        console.log('🔍 數據集數量:', datasets.length);
-
-        // 更新圖表數據
-        this.lineChartData = {
-          labels: labels,
-          datasets: datasets
-        };
-      }
-    }
-  }
-
-  // 處理時間序列統計數據 - 完全參考立委頁面實現
-  private processTimeSeriesStats(): void {
-    if (!this.timeSeriesStats) {
-      console.warn('沒有時間序列統計數據，使用模擬數據');
+    // 檢查是否有候選人有時間序列數據（使用正確的數據結構）
+    const candidatesWithData = this.candidates.filter(c => c.time_series_stats && Object.keys(c.time_series_stats).length > 0);
+    
+    if (candidatesWithData.length === 0) {
+      console.warn('沒有候選人有時間序列數據');
+      this.lineChartData = { labels: [], datasets: [] };
       return;
     }
-    
-    console.log('🔍 處理時間序列統計數據:', {
-      currentFilter: this.currentFilter,
-      timeSeriesStatsKeys: Object.keys(this.timeSeriesStats)
-    });
-    
-    // 根據篩選器選擇對應的數據 - 與立委頁面完全一致
+
+    // 根據當前篩選器選擇對應的數據鍵
     const keyMap: { [key: string]: string } = {
       'week': 'recent_7_days_cumulative',
       '2weeks': 'recent_14_days_cumulative',
@@ -790,122 +652,138 @@ export class ElectionAnalysisComponent implements OnInit {
       '6months': 'recent_180_days_cumulative',
       '1year': 'recent_365_days_cumulative'
     };
+
+    const targetKey = keyMap[this.currentFilter] || 'recent_365_days_cumulative';
+    console.log('🔍 使用時間範圍鍵:', targetKey);
+
+    // 使用第一個有數據的候選人作為基礎
+    const firstCandidate = candidatesWithData[0];
+    const firstCandidateStats = firstCandidate.time_series_stats[targetKey];
     
-    const targetKey = keyMap[this.currentFilter] || 'recent_14_days_cumulative';
-    const selectedStats = this.timeSeriesStats[targetKey];
-    
-    console.log('🔍 選擇的統計數據:', {
-      targetKey,
-      hasSelectedStats: !!selectedStats,
-      hasStatsPoints: selectedStats?.stats_points ? selectedStats.stats_points.length : 0
-    });
-    
-    if (!selectedStats?.stats_points) {
-      // 嘗試找到最接近的替代數據
-      const fallbackKeys = Object.keys(this.timeSeriesStats).filter(key => 
-        key.includes('cumulative') && key.includes('days')
-      );
-      
-      if (fallbackKeys.length > 0) {
-        const fallbackKey = fallbackKeys[0];
-        const fallbackStats = this.timeSeriesStats[fallbackKey];
-        if (fallbackStats?.stats_points) {
-          this.updateChartFromStats(fallbackStats);
-          return;
+    if (!firstCandidateStats || !firstCandidateStats.stats_points) {
+      console.warn('沒有找到對應的時間序列數據:', targetKey);
+      this.lineChartData = { labels: [], datasets: [] };
+      return;
+    }
+
+    // 提取日期標籤
+    const labels = firstCandidateStats.stats_points.map((point: any) => {
+      if (point.date) {
+        try {
+          const date = new Date(point.date);
+          return date.toLocaleDateString('zh-TW', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          });
+        } catch (e) {
+          return point.date;
         }
       }
-      
-      console.error('❌ 沒有找到任何可用的時間序列數據');
-      return;
-    }
-    this.updateChartFromStats(selectedStats);
-  }
+      return '';
+    });
 
-  // 初始化時間序列圖表 - 與立委頁面完全一致
-  private initializeTimeSeriesCharts(): void {
-    if (!this.timeSeriesStats) {
-      console.warn('⚠️ 沒有時間序列統計數據');
-      return;
-    }
-    
-    
-    // 設置默認時間範圍為一年（因為初始應該載入365天）
-    this.selectedTimeRange = '365_days';
-    this.currentFilter = '1year'; // 設置對應的篩選器
-    // 直接初始化圖表數據，不調用 onTimeRangeChange
-    this.processTimeSeriesStats();
-  }
-
-  // 從統計數據更新圖表 - 完全參考立委頁面實現
-  private updateChartFromStats(selectedStats: any): void {
-    const points = selectedStats.stats_points;
-    
-    if (!points || points.length === 0) {
-      console.warn('沒有時間序列數據點');
-      return;
-    }
-    
-    // 為每個候選人創建數據集
-    const datasets = this.candidates.map(candidate => {
-      const candidateData = points.map((p: any) => {
-        const candidatePoint = p.candidates?.find((c: any) => c.candidate_id === candidate.id);
-        if (candidatePoint) {
+    // 為每個可見的候選人創建數據集
+    const datasets = this.candidates
+      .filter(c => c.visible)
+      .map(candidate => {
+        const candidateStats = candidate.time_series_stats[targetKey];
+        
+        if (!candidateStats || !candidateStats.stats_points) {
           return {
-            positive: candidatePoint.sentiment_counts?.positive || 0,
-            negative: candidatePoint.sentiment_counts?.negative || 0,
-            total: (candidatePoint.sentiment_counts?.positive || 0) + (candidatePoint.sentiment_counts?.negative || 0)
+            label: candidate.name,
+            data: [],
+            borderColor: candidate.color,
+            backgroundColor: candidate.color + '20',
+            tension: 0.3,
+            fill: false
           };
         }
-        return { positive: 0, negative: 0, total: 0 };
+
+        // 提取候選人的累計數據
+        const candidateData = candidateStats.stats_points.map((point: any) => {
+          const sentiment = point.sentiment_counts || {};
+          return (sentiment.positive || 0) + (sentiment.negative || 0);
+        });
+
+        return {
+          label: candidate.name,
+          data: candidateData,
+          borderColor: candidate.color,
+          backgroundColor: candidate.color + '20',
+          tension: 0.3,
+          fill: false,
+          pointBackgroundColor: candidate.color,
+          pointBorderColor: candidate.color,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        };
       });
-      
-      // 計算累計數據 - 與立委頁面完全一致
-      const cumulativeData = [];
-      let cumulative = 0;
-      for (const point of candidateData) {
-        cumulative += point.total;
-        cumulativeData.push(cumulative);
-      }
-      
-      return {
-        label: candidate.name,
-        data: cumulativeData,
-        candidateName: candidate.name,
-        candidateId: candidate.id,
-        positiveData: candidateData.map((p: any) => p.positive),
-        negativeData: candidateData.map((p: any) => p.negative),
-        borderColor: candidate.color,
-        backgroundColor: candidate.color + '20',
-        tension: 0.3,
-        fill: true,
-        pointBackgroundColor: candidate.color,
-        pointBorderColor: candidate.color,
-        pointRadius: 4,
-        pointHoverRadius: 6
-      } as any;
-    });
-    
-    // 格式化日期標籤 - 與立委頁面一致
-    const labels = points.map((p: any) => {
-      try {
-        const date = new Date(p.date);
-        return date.toLocaleDateString('zh-TW', { 
-          year: 'numeric', 
-          month: '2-digit', 
-          day: '2-digit' 
-        }).replace(/\//g, '/');
-      } catch (e) {
-        return p.date;
-      }
-    });
-    
+
     this.lineChartData = {
-      labels,
-      datasets
+      labels: labels,
+      datasets: datasets
     };
+
+    // 根據數據點數量動態調整圖表選項
+    this.updateChartOptionsForDataPoints(labels.length);
+
+    console.log('🔍 總覽圖表數據更新:', {
+      labelsCount: labels.length,
+      datasetsCount: datasets.length,
+      targetKey: targetKey
+    });
   }
 
-  // 時間篩選方法 - 參考立委頁面實現
+  // 根據數據點數量動態調整圖表選項
+  private updateChartOptionsForDataPoints(dataPointCount: number): void {
+    // 根據數據點數量調整 X 軸標籤顯示策略
+    let maxTicksLimit: number;
+    let autoSkip: boolean;
+    let maxRotation: number;
+
+    if (dataPointCount <= 7) {
+      // 7天內：顯示所有標籤
+      maxTicksLimit = dataPointCount;
+      autoSkip = false;
+      maxRotation = 0;
+    } else if (dataPointCount <= 14) {
+      // 14天內：顯示所有標籤，允許輕微旋轉
+      maxTicksLimit = dataPointCount;
+      autoSkip = false;
+      maxRotation = 15;
+    } else if (dataPointCount <= 30) {
+      // 30天內：顯示所有標籤，允許旋轉
+      maxTicksLimit = dataPointCount;
+      autoSkip = false;
+      maxRotation = 30;
+    } else if (dataPointCount <= 90) {
+      // 90天內：顯示大部分標籤，允許旋轉
+      maxTicksLimit = Math.min(dataPointCount, 30);
+      autoSkip = false;
+      maxRotation = 45;
+    } else {
+      // 超過90天：智能跳過標籤
+      maxTicksLimit = 20;
+      autoSkip = true;
+      maxRotation = 45;
+    }
+
+    // 更新圖表選項
+    this.lineChartOptions.scales.x.ticks.maxTicksLimit = maxTicksLimit;
+    this.lineChartOptions.scales.x.ticks.autoSkip = autoSkip;
+    this.lineChartOptions.scales.x.ticks.maxRotation = maxRotation;
+
+    console.log('🔍 圖表選項更新:', {
+      dataPointCount,
+      maxTicksLimit,
+      autoSkip,
+      maxRotation
+    });
+  }
+
+
+  // 時間篩選方法 - 保持當前選擇狀態
   setQuickFilter(period: string): void {
     this.currentFilter = period;
     this.isLoadingTimeData = true;
@@ -923,8 +801,15 @@ export class ElectionAnalysisComponent implements OnInit {
     
     const timeRange = timeRangeMap[period] || '365';
     
-    // 重新載入數據
-    this.loadElectionAnalysisData(timeRange);
+    if (this.selectedCandidateForTimeChart) {
+      // 如果當前選擇了特定候選人，只重新載入該候選人的數據
+      console.log('🔍 時間篩選：保持個人分析模式，重新載入候選人數據');
+      this.loadCandidateTimeSeriesData(this.selectedCandidateForTimeChart);
+    } else {
+      // 如果沒有選擇特定候選人，重新載入所有候選人的數據
+      console.log('🔍 時間篩選：總覽模式，重新載入所有候選人數據');
+      this.loadElectionAnalysisData(timeRange);
+    }
     
     // 模擬載入時間
     setTimeout(() => {

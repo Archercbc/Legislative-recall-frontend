@@ -25,6 +25,63 @@ $spacing-lg: 24px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* 開發中提示 */
+.development-notice {
+  margin-bottom: 2rem;
+  
+  .development-card {
+    background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(255, 107, 107, 0.3);
+
+    
+    .development-content {
+      display: flex;
+      align-items: center;
+      padding: 1.5rem;
+      color: white;
+      
+      .development-icon {
+        margin-right: 1rem;
+        
+        i {
+          font-size: 2.5rem;
+          color: white;
+        }
+      }
+      
+      .development-text {
+        h4 {
+          margin: 0 0 0.5rem 0;
+          font-size: 1.3rem;
+          font-weight: 600;
+          color: white;
+        }
+        
+        p {
+          margin: 0;
+          font-size: 1rem;
+          opacity: 0.9;
+          color: white;
+        }
+      }
+    }
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 4px 20px rgba(255, 107, 107, 0.3);
+  }
+  50% {
+    box-shadow: 0 6px 30px rgba(255, 107, 107, 0.5);
+  }
+  100% {
+    box-shadow: 0 4px 20px rgba(255, 107, 107, 0.3);
+  }
+}
+
 // 簡潔頁首
 .modern-header {
   background: white;

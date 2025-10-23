@@ -1,6 +1,21 @@
 <div class="policy-tracking-container">
+  <!-- 開發中提示 -->
+  <div *ngIf="true" class="development-notice">
+    <div class="development-card">
+      <div class="development-content">
+        <div class="development-icon">
+          <i class="fas fa-tools"></i>
+        </div>
+        <div class="development-text">
+          <h4>政策追蹤分析功能開發中</h4>
+          <p>此功能正在開發中，敬請期待完整版本</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 現代化頁面標題 -->
-  <div class="modern-header">
+  <div class="modern-header" *ngIf="false">
     <div class="header-background"></div>
     <div class="header-content">
       <div class="header-icon-wrapper">
@@ -16,7 +31,7 @@
   </div>
 
   <!-- 統計卡片區 -->
-  <div class="stats-grid">
+  <div class="stats-grid" *ngIf="false">
     <div class="stat-card total">
       <div class="stat-icon">
         <i class="fas fa-comments"></i>
@@ -51,7 +66,7 @@
   </div>
 
   <!-- 時間篩選器 -->
-  <div class="modern-filter-section">
+  <div class="modern-filter-section" *ngIf="false">
     <div class="filter-label">時間範圍</div>
     <div class="filter-buttons">
       <button 
@@ -65,7 +80,7 @@
   </div>
 
   <!-- 圖表網格 -->
-  <div class="charts-grid">
+  <div class="charts-grid" *ngIf="false">
     <!-- 情感分析 -->
     <div class="modern-chart-card sentiment-card">
       <div class="card-header">
@@ -141,7 +156,7 @@
   </div>
 
   <!-- 載入狀態 -->
-  <div *ngIf="isLoading" class="modern-loading">
+  <div *ngIf="isLoading && false" class="modern-loading">
     <div class="loading-spinner"></div>
     <p>正在載入資料...</p>
   </div>

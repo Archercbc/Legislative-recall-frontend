@@ -195,8 +195,11 @@
           
             
             <div class="chart-controls" *ngIf="selectedCandidateForTimeChart">
-              <button class="btn btn-sm btn-outline-secondary" (click)="selectCandidateForTimeChart(null)">
-                <i class="cil-arrow-left"></i>
+              <button 
+                class="btn btn-sm btn-outline-primary return-to-overview-btn" 
+                (click)="returnToOverview()"
+                title="返回總覽比較">
+                <i class="cil-arrow-left me-1"></i>
                 返回總覽
               </button>
             </div>

@@ -1,6 +1,21 @@
 <div class="legislators-detail-container">
+  <!-- 開發中提示 -->
+  <div *ngIf="true" class="development-notice">
+    <div cCard class="development-card">
+      <div cCardBody class="development-content">
+        <div class="development-icon">
+          <i class="cil-tools"></i>
+        </div>
+        <div class="development-text">
+          <h4>政治人物分析功能開發中</h4>
+          <p>此功能正在開發中，敬請期待完整版本</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 標題區 -->
-  <div class="profile-header-wrapper">
+  <div class="profile-header-wrapper" *ngIf="false">
     <div class="profile-header">
       <div class="avatar-container">
         <img *ngIf="data?.image_url" [src]="data.image_url" cAvatar>
@@ -17,7 +32,7 @@
   </div>
 
   <!-- 主要內容區 -->
-  <div class="content-container">
+  <div class="content-container" *ngIf="false">
     <!-- 左側基本資料 -->
     <div class="sidebar-container">
       <div cCard class="info-card">
@@ -345,7 +360,7 @@
   </div>
 </div>
 
-<ng-template #loading>
+<ng-template #loading *ngIf="false">
   <div class="loading-container">
     <div cSpinner color="primary" size="lg"></div>
     <p>資料載入中...</p>
