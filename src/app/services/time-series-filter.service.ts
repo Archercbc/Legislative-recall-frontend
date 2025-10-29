@@ -185,12 +185,12 @@ export class TimeSeriesFilterService {
   private getOptimalTimeInterval(startDate: string, endDate: string): string {
     const daysDiff = this.calculateDaysDifference(startDate, endDate);
     
-    if (daysDiff <= 7) return '7';
-    if (daysDiff <= 14) return '14';
-    if (daysDiff <= 30) return '30';
-    if (daysDiff <= 90) return '90';
-    if (daysDiff <= 180) return '180';
-    return '365';
+    if (daysDiff <= 7) return '7_days';
+    if (daysDiff <= 14) return '14_days';
+    if (daysDiff <= 30) return '30_days';
+    if (daysDiff <= 90) return '90_days';
+    if (daysDiff <= 180) return '180_days';
+    return '365_days';
   }
   
   /**
