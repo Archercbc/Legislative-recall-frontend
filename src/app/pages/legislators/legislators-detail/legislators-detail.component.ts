@@ -409,6 +409,10 @@ export class LegislatorsDetailComponent {
     // 設置默認時間範圍為一年（因為初始應該載入365天）
     this.selectedTimeRange = '365_days';
     this.currentFilter = '1year'; // 設置對應的篩選器
+    
+    // 🔥 立即更新日期範圍顯示
+    this.updateDateRangeForPeriod('1year');
+    
     // 直接初始化圖表數據，不調用 onTimeRangeChange
     this.processTimeSeriesStats(this.data.time_series_stats);
   }
@@ -931,18 +935,26 @@ export class LegislatorsDetailComponent {
   private updateChartFromStats(selectedStats: any): void {
     const points = selectedStats.stats_points;
     
+    // 🔥 根據用戶選擇的時間範圍篩選數據點
+    const filteredPoints = this.filterPointsByTimeRange(points);
+    
+    if (filteredPoints.length === 0) {
+      console.warn('⚠️ 篩選後沒有數據點');
+      return;
+    }
+    
     // 🔥 強制設置最後一個數據點的日期為今天
-    if (points.length > 0) {
+    if (filteredPoints.length > 0) {
       const today = new Date().toISOString().split('T')[0];
-      const lastPoint = points[points.length - 1];
+      const lastPoint = filteredPoints[filteredPoints.length - 1];
       if (lastPoint && lastPoint.date !== today) {
         lastPoint.date = today;
       }
     }
     
     // 計算資料範圍，用於改善圖表可視性
-    const negativeData = points.map((p: any) => p.sentiment_counts?.NEGATIVE || p.sentiment_counts?.negative || 0);  // 負面聲量 = 支持罷免
-    const positiveData = points.map((p: any) => p.sentiment_counts?.POSITIVE || p.sentiment_counts?.positive || 0);  // 正面聲量 = 反對罷免
+    const negativeData = filteredPoints.map((p: any) => p.sentiment_counts?.NEGATIVE || p.sentiment_counts?.negative || 0);  // 負面聲量 = 支持罷免
+    const positiveData = filteredPoints.map((p: any) => p.sentiment_counts?.POSITIVE || p.sentiment_counts?.positive || 0);  // 正面聲量 = 反對罷免
     
     const allData = [...negativeData, ...positiveData];
     const minValue = Math.min(...allData);
@@ -955,7 +967,7 @@ export class LegislatorsDetailComponent {
     const yAxisMax = maxValue + minRange * 0.1;
     
     this.demoLineChartData = {
-      labels: points.map((p: any) => p.date),
+      labels: filteredPoints.map((p: any) => p.date),
       datasets: [
         {
           label: '支持罷免',
@@ -976,14 +988,60 @@ export class LegislatorsDetailComponent {
       ]
     };
     
+    console.log('📊 圖表數據更新:', {
+      totalPoints: points.length,
+      filteredPoints: filteredPoints.length,
+      dateRange: `${filteredPoints[0]?.date} - ${filteredPoints[filteredPoints.length - 1]?.date}`,
+      currentFilter: this.currentFilter
+    });
+    
     // 更新圖表選項以改善可視性
     this.updateLineChartOptionsForVisibility(yAxisMin, yAxisMax, dataRange);
     
     // 添加事件標記點
     this.addEventMarkersToChart();
     
-    // 只更新日期範圍，不更新圓餅圖數據
-    this.updateDateRangeFromChartData();
+    // 🔥 不要覆蓋手動設置的日期範圍
+    // this.updateDateRangeFromChartData();
+  }
+
+  // 新增方法：根據時間範圍篩選數據點
+  private filterPointsByTimeRange(points: any[]): any[] {
+    if (!points || points.length === 0) {
+      return [];
+    }
+    
+    // 如果沒有設置日期範圍，返回所有數據點
+    if (!this.startDate || !this.endDate) {
+      console.log('⚠️ 沒有設置日期範圍，返回所有數據點');
+      return points;
+    }
+    
+    const filteredPoints = points.filter((point: any) => {
+      if (!point.date) {
+        return false;
+      }
+      
+      const pointDate = point.date;
+      const inRange = pointDate >= this.startDate && pointDate <= this.endDate;
+      
+      if (inRange) {
+        console.log(`✅ 數據點 ${pointDate} 在範圍內 (${this.startDate} - ${this.endDate})`);
+      } else {
+        console.log(`❌ 數據點 ${pointDate} 超出範圍 (${this.startDate} - ${this.endDate})`);
+      }
+      
+      return inRange;
+    });
+    
+    console.log('📊 數據點篩選結果:', {
+      totalPoints: points.length,
+      filteredPoints: filteredPoints.length,
+      dateRange: `${this.startDate} - ${this.endDate}`,
+      currentFilter: this.currentFilter
+    });
+    
+    return filteredPoints;
   }
 
   // 新增方法：更新圖表選項以改善可視性
@@ -1501,6 +1559,49 @@ export class LegislatorsDetailComponent {
     this.endDate = '';
   }
   
+  // 新增方法：根據時間範圍更新日期範圍
+  private updateDateRangeForPeriod(period: string): void {
+    const today = new Date();
+    const endDate = today.toISOString().split('T')[0];
+    let startDate = new Date();
+    
+    switch (period) {
+      case 'week':
+        startDate.setDate(today.getDate() - 7);
+        break;
+      case '2weeks':
+        startDate.setDate(today.getDate() - 14);
+        break;
+      case 'month':
+        startDate.setDate(today.getDate() - 30);
+        break;
+      case '3months':
+        startDate.setDate(today.getDate() - 90);
+        break;
+      case '6months':
+        startDate.setDate(today.getDate() - 180);
+        break;
+      case '1year':
+        startDate.setDate(today.getDate() - 365);
+        break;
+      case 'all':
+        startDate.setDate(today.getDate() - 365);
+        break;
+      default:
+        startDate.setDate(today.getDate() - 30);
+    }
+    
+    this.startDate = startDate.toISOString().split('T')[0];
+    this.endDate = endDate;
+    
+    console.log('📅 更新時間範圍:', {
+      period,
+      startDate: this.startDate,
+      endDate: this.endDate,
+      daysDiff: this.getDaysDifference()
+    });
+  }
+  
   setQuickFilter(period: string): void {
     
     this.currentFilter = period; // 記錄當前篩選狀態
@@ -1541,6 +1642,9 @@ export class LegislatorsDetailComponent {
         days = 30;
     }
 
+    // 🔥 立即更新日期範圍顯示
+    this.updateDateRangeForPeriod(period);
+
 
     // 首先嘗試使用本地的 time_series_stats 數據
     if (this.data?.time_series_stats) {
@@ -1549,8 +1653,8 @@ export class LegislatorsDetailComponent {
       // 🔥 調用圓餅圖 API 更新數據
       this.updatePieChartFromAPI();
       
-      // 根據實際圖表數據更新日期範圍
-      this.updateDateRangeFromChartData();
+      // 🔥 不要覆蓋手動設置的日期範圍
+      // this.updateDateRangeFromChartData();
       
       this.isLoadingTimeData = false;
       return;
@@ -1564,8 +1668,8 @@ export class LegislatorsDetailComponent {
           if (data.time_series && data.time_series.labels && data.time_series.labels.length > 0) {
             this.demoLineChartData = data.time_series;
             
-            // 根據時間序列數據更新日期範圍
-            this.updateDateRangeFromChartData();
+            // 🔥 不要覆蓋手動設置的日期範圍
+            // this.updateDateRangeFromChartData();
           }
           
           // 處理詞雲數據
@@ -1630,6 +1734,16 @@ export class LegislatorsDetailComponent {
 
   // 簡化方法：根據圖表數據更新日期範圍
   private updateDateRangeFromChartData(): void {
+    // 🔥 如果已經有手動設置的日期範圍，不要覆蓋
+    if (this.startDate && this.endDate) {
+      console.log('📅 保持手動設置的日期範圍:', {
+        startDate: this.startDate,
+        endDate: this.endDate,
+        daysDiff: this.getDaysDifference()
+      });
+      return;
+    }
+    
     if (!this.demoLineChartData?.labels?.length) return;
     
     const labels = this.demoLineChartData.labels as string[];
@@ -1655,6 +1769,12 @@ export class LegislatorsDetailComponent {
         this.startDate = firstDate.toISOString().split('T')[0];
         // 🔥 強制設置結束日期為今天
         this.endDate = new Date().toISOString().split('T')[0];
+        
+        console.log('📅 從圖表數據更新日期範圍:', {
+          startDate: this.startDate,
+          endDate: this.endDate,
+          daysDiff: this.getDaysDifference()
+        });
       }
     } catch (e) {
       console.warn('⚠️ 日期解析失敗:', e);
