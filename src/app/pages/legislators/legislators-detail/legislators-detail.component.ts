@@ -1157,27 +1157,24 @@ export class LegislatorsDetailComponent {
       this.positiveCount = totalPositive;  // 正面聲量 = 反對罷免
       
     } else if (selectedStats?.stats_points && selectedStats.stats_points.length > 0) {
-      // 如果沒有totals字段，手動計算該時段內的總和
-      let totalPositive = 0;  // 正面聲量 = 反對罷免
-      let totalNegative = 0;  // 負面聲量 = 支持罷免
-      
-      for (const point of selectedStats.stats_points) {
-        if (point.sentiment_counts) {
-          totalNegative += point.sentiment_counts.negative || 0;  // 負面聲量 = 支持罷免
-          totalPositive += point.sentiment_counts.positive || 0;  // 正面聲量 = 反對罷免
-        }
+      // Daily 數據的 stats_points 已經是期間總和，不需要累加
+      // 直接使用第一個（也是唯一一個）統計點的數據
+      const point = selectedStats.stats_points[0];
+      if (point.sentiment_counts) {
+        const totalPositive = point.sentiment_counts.positive || 0;  // 正面聲量 = 反對罷免
+        const totalNegative = point.sentiment_counts.negative || 0;  // 負面聲量 = 支持罷免
+        
+        this.sentimentChartData = {
+          labels: ['支持罷免', '反對罷免'],
+          datasets: [{
+            data: [totalNegative, totalPositive],  // [負面聲量=支持罷免, 正面聲量=反對罷免]
+            backgroundColor: ['#f87171', '#4f8cff']
+          }]
+        };
+        
+        this.negativeCount = totalNegative;  // 負面聲量 = 支持罷免
+        this.positiveCount = totalPositive;  // 正面聲量 = 反對罷免
       }
-      
-      this.sentimentChartData = {
-        labels: ['支持罷免', '反對罷免'],
-        datasets: [{
-          data: [totalNegative, totalPositive],  // [負面聲量=支持罷免, 正面聲量=反對罷免]
-          backgroundColor: ['#f87171', '#4f8cff']
-        }]
-      };
-      
-      this.negativeCount = totalNegative;  // 負面聲量 = 支持罷免
-      this.positiveCount = totalPositive;  // 正面聲量 = 反對罷免
       
     }
   }
@@ -1881,6 +1878,63 @@ export class LegislatorsDetailComponent {
     
     const start = new Date(this.startDate);
     const end = new Date(this.endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
+  }
+
+  // 新增方法：動態計算顯示期間（基於 currentFilter，不依賴後端數據）
+  getDisplayPeriod(): string {
+    const today = new Date();
+    const endDate = today.toISOString().split('T')[0];
+    let startDate = new Date();
+    let days = 0;
+    
+    // 根據當前篩選器計算日期範圍（與 setQuickFilter 保持一致）
+    switch (this.currentFilter) {
+      case 'week':
+        days = 7;
+        startDate.setDate(today.getDate() - 6); // 包含今天，所以減6天
+        break;
+      case '2weeks':
+        days = 14;
+        startDate.setDate(today.getDate() - 13); // 包含今天，所以減13天
+        break;
+      case 'month':
+        days = 30;
+        startDate.setDate(today.getDate() - 29); // 包含今天，所以減29天
+        break;
+      case '3months':
+        days = 90;
+        startDate.setDate(today.getDate() - 89); // 包含今天，所以減89天
+        break;
+      case '6months':
+        days = 180;
+        startDate.setDate(today.getDate() - 179); // 包含今天，所以減179天
+        break;
+      case '1year':
+        days = 365;
+        startDate.setDate(today.getDate() - 364); // 包含今天，所以減364天
+        break;
+      case 'all':
+        days = 365;
+        startDate.setDate(today.getDate() - 364);
+        break;
+      default:
+        days = 30;
+        startDate.setDate(today.getDate() - 29);
+    }
+    
+    const startDateStr = startDate.toISOString().split('T')[0];
+    
+    return `${startDateStr} - ${endDate} (${days}天)`;
+  }
+
+  // 計算兩個日期之間的天數差異
+  private calculateDaysDifference(startDate: string, endDate: string): number {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     

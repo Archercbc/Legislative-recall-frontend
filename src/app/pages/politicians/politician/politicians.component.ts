@@ -3,18 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IconModule } from '@coreui/icons-angular';
-import { PoliticianService } from '../../../services/politician.service';
-
-interface Politician {
-  name: string;
-  target_type: string;
-  total_posts: number;
-  platform_stats: { [key: string]: number };
-  sentiment_stats: { [key: string]: number };
-  wordcloud_data: Array<{ word: string; weight: number }>;
-  last_updated: string;
-  image_url?: string;
-}
+import { politicians_config_list, getPoliticianTypeText, getPartyColor } from '../politicians-config';
 
 @Component({
   selector: 'app-politicians',
@@ -26,13 +15,32 @@ interface Politician {
 export class PoliticiansComponent implements OnInit {
   isLoading = false;
   searchTerm = '';
-  selectedFilter = 'all';
-  politicians: Politician[] = [];
-  filteredPoliticians: Politician[] = [];
+  selectedType: string = 'all';
+  selectedParty: string = 'all';
+  politicians: any[] = [];
+  filteredPoliticians: any[] = [];
+
+  politicianTypes = [
+    { value: 'all', label: '全部類型' },
+    { value: 'legislator', label: '立法委員' },
+    { value: 'mayor', label: '縣市長' },
+    { value: 'councilor', label: '議員' },
+    { value: 'minister', label: '部長' },
+    { value: 'party_leader', label: '政黨領袖' },
+    { value: 'other', label: '其他' }
+  ];
+
+  parties = [
+    { value: 'all', label: '全部政黨' },
+    { value: '國民黨', label: '國民黨' },
+    { value: '民進黨', label: '民進黨' },
+    { value: '民眾黨', label: '民眾黨' },
+    { value: '時代力量', label: '時代力量' },
+    { value: '無黨籍', label: '無黨籍' }
+  ];
 
   constructor(
-    private router: Router,
-    private politicianService: PoliticianService
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -42,44 +50,36 @@ export class PoliticiansComponent implements OnInit {
   loadPoliticians(): void {
     this.isLoading = true;
     
-    // 使用 Service 載入政治人物數據 - 參考 legislator 的實現
-    this.politicianService.getPoliticians()
-      .subscribe({
-        next: (politicians) => {
-          // 為每個政治人物添加target_type（如果沒有）
-          this.politicians = politicians.map((p: any) => ({
-            ...p,
-            target_type: p.target_type || 'politician'
-          }));
-          
-          this.filterPoliticians();
-          this.isLoading = false;
-        },
-        error: (error) => {
-          console.error('載入政治人物數據失敗:', error);
-          this.isLoading = false;
-        }
-      });
+    this.politicians = politicians_config_list;
+    this.filterPoliticians();
+    this.isLoading = false;
   }
 
   onSearchChange(): void {
     this.filterPoliticians();
   }
 
-  setFilter(filter: string): void {
-    this.selectedFilter = filter;
+  setTypeFilter(type: string): void {
+    this.selectedType = type;
+    this.filterPoliticians();
+  }
+
+  setPartyFilter(party: string): void {
+    this.selectedParty = party;
     this.filterPoliticians();
   }
 
   filterPoliticians(): void {
     let filtered = this.politicians;
     
-    // 按類型篩選
-    if (this.selectedFilter !== 'all') {
-      filtered = filtered.filter(p => p.target_type === this.selectedFilter);
+    if (this.selectedType !== 'all') {
+      filtered = filtered.filter(p => p.target_type === this.selectedType);
     }
     
-    // 按搜索詞篩選
+    if (this.selectedParty !== 'all') {
+      filtered = filtered.filter(p => p.party === this.selectedParty);
+    }
+    
     if (this.searchTerm.trim()) {
       const searchLower = this.searchTerm.toLowerCase();
       filtered = filtered.filter(p => 
@@ -90,48 +90,29 @@ export class PoliticiansComponent implements OnInit {
     this.filteredPoliticians = filtered;
   }
 
-  getTypeIcon(targetType: string): string {
-    switch (targetType) {
-      case 'legislator':
-        return 'fas fa-landmark';
-      case 'politician':
-        return 'fas fa-user-tie';
-      default:
-        return 'fas fa-user';
-    }
-  }
-
   getTypeLabel(targetType: string): string {
-    switch (targetType) {
-      case 'legislator':
-        return '立法委員';
-      case 'politician':
-        return '政治人物';
-      default:
-        return '未知類型';
-    }
+    return getPoliticianTypeText(targetType);
   }
 
-  getTopPlatforms(platformStats: { [key: string]: number }): Array<{key: string, value: number}> {
-    if (!platformStats) return [];
+  getPartyColor(party: string): string {
+    return getPartyColor(party);
+  }
+
+  viewPoliticianDetail(politician: any, targetType: string): void {
+    // 使用政治人物的名稱而不是 ID，因為後端 API 期望接收名稱
+    const politicianName = politician.name || politician.politician_id;
     
-    return Object.entries(platformStats)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 3)
-      .map(([key, value]) => ({ key, value }));
-  }
-
-  viewPoliticianDetail(name: string, targetType: string): void {
-    // 根據類型導航到不同的詳細頁面
     if (targetType === 'legislator') {
-      this.router.navigate(['/legislator', name]);
+      // 立委路由使用 legislatorId 參數，但傳遞的是名稱（後端 API 使用名稱查詢）
+      this.router.navigate(['/legislator', politicianName]);
     } else {
-      this.router.navigate(['/politician', name]);
+      // 其他政治人物路由使用 /politicians-analysis/:politicianName
+      this.router.navigate(['/politicians-analysis', politicianName]);
     }
   }
 
   onImageError(event: any): void {
-    // 當圖片載入失敗時，使用預設圖片
     event.target.src = '/assets/default-avatar.png';
   }
 }
+

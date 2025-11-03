@@ -816,4 +816,61 @@ export class ElectionAnalysisComponent implements OnInit {
       this.isLoadingTimeData = false;
     }, 500);
   }
+
+  // 新增方法：動態計算顯示期間（基於 currentFilter，不依賴後端數據）
+  getDisplayPeriod(): string {
+    const today = new Date();
+    const endDate = today.toISOString().split('T')[0];
+    let startDate = new Date();
+    let days = 0;
+    
+    // 根據當前篩選器計算日期範圍（與 setQuickFilter 保持一致）
+    switch (this.currentFilter) {
+      case 'week':
+        days = 7;
+        startDate.setDate(today.getDate() - 6); // 包含今天，所以減6天
+        break;
+      case '2weeks':
+        days = 14;
+        startDate.setDate(today.getDate() - 13); // 包含今天，所以減13天
+        break;
+      case 'month':
+        days = 30;
+        startDate.setDate(today.getDate() - 29); // 包含今天，所以減29天
+        break;
+      case '3months':
+        days = 90;
+        startDate.setDate(today.getDate() - 89); // 包含今天，所以減89天
+        break;
+      case '6months':
+        days = 180;
+        startDate.setDate(today.getDate() - 179); // 包含今天，所以減179天
+        break;
+      case '1year':
+        days = 365;
+        startDate.setDate(today.getDate() - 364); // 包含今天，所以減364天
+        break;
+      case 'all':
+        days = 365;
+        startDate.setDate(today.getDate() - 364);
+        break;
+      default:
+        days = 365;
+        startDate.setDate(today.getDate() - 364);
+    }
+    
+    const startDateStr = startDate.toISOString().split('T')[0];
+    
+    return `${startDateStr} - ${endDate} (${days}天)`;
+  }
+
+  // 計算兩個日期之間的天數差異
+  private calculateDaysDifference(startDate: string, endDate: string): number {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
+  }
 }

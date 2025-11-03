@@ -1,0 +1,140 @@
+<div class="policy-list-container">
+  <!-- 頁面標題 -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <i class="cil-file"></i>
+        政策議題追蹤中心
+      </h1>
+      <p class="page-subtitle">Policy Issue Tracking Center</p>
+    </div>
+  </div>
+
+  <!-- 載入狀態 -->
+  <div class="loading-container" *ngIf="isLoading">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">載入中...</span>
+    </div>
+    <p class="loading-text">載入政策資料中...</p>
+  </div>
+
+  <!-- 篩選器 -->
+  <div class="filters-container" *ngIf="!isLoading">
+    <div class="filters-row">
+      <div class="filter-group">
+        <label for="typeFilter" class="filter-label">政策類型</label>
+        <select 
+          id="typeFilter" 
+          class="form-select filter-select"
+          [(ngModel)]="selectedType"
+          (change)="onTypeChange()">
+          <option *ngFor="let type of policyTypes" [value]="type.value">
+            {{ type.label }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="statusFilter" class="filter-label">政策狀態</label>
+        <select 
+          id="statusFilter" 
+          class="form-select filter-select"
+          [(ngModel)]="selectedStatus"
+          (change)="onStatusChange()">
+          <option *ngFor="let status of policyStatuses" [value]="status.value">
+            {{ status.label }}
+          </option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 政策列表 -->
+  <div class="policies-grid" *ngIf="!isLoading">
+    <div 
+      class="policy-card" 
+      *ngFor="let policy of filteredPolicies"
+      (click)="viewPolicyDetails(policy.policy_id)">
+      
+      <!-- 政策標題 -->
+      <div class="policy-header">
+        <h3 class="policy-title">{{ policy.title }}</h3>
+        <p class="policy-subtitle">{{ policy.subtitle }}</p>
+        <div class="policy-badges">
+          <span class="badge badge-type">{{ getTypeText(policy.type) }}</span>
+          <span class="badge" [style.background-color]="getStatusClass(policy.status)">
+            {{ getStatusText(policy.status) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- 政策描述 -->
+      <div class="policy-description">
+        <p>{{ policy.description }}</p>
+      </div>
+
+      <!-- 政策資訊 -->
+      <div class="policy-info">
+        <div class="info-item" *ngIf="policy.budget">
+          <i class="cil-dollar"></i>
+          <span>預算：{{ policy.budget }}</span>
+        </div>
+        <div class="info-item" *ngIf="policy.beneficiaries">
+          <i class="cil-people"></i>
+          <span>受惠對象：{{ policy.beneficiaries }}</span>
+        </div>
+        <div class="info-item" *ngIf="policy.start_date && policy.end_date">
+          <i class="cil-calendar"></i>
+          <span>{{ getDateRange(policy) }}</span>
+        </div>
+      </div>
+
+      <!-- 關鍵議題 -->
+      <div class="key-issues" *ngIf="policy.key_issues && policy.key_issues.length > 0">
+        <h4>關鍵議題</h4>
+        <div class="issues-tags">
+          <span 
+            class="issue-tag" 
+            *ngFor="let issue of policy.key_issues.slice(0, 3)">
+            {{ issue }}
+          </span>
+          <span 
+            class="more-issues" 
+            *ngIf="policy.key_issues && policy.key_issues.length > 3">
+            +{{ policy.key_issues.length - 3 }} 個議題
+          </span>
+        </div>
+      </div>
+
+      <!-- 相關部門 -->
+      <div class="related-departments" *ngIf="policy.related_departments && policy.related_departments.length > 0">
+        <div class="departments-list">
+          <span 
+            class="department-tag" 
+            *ngFor="let dept of policy.related_departments">
+            <i class="cil-building"></i>
+            {{ dept }}
+          </span>
+        </div>
+      </div>
+
+      <!-- 操作按鈕 -->
+      <div class="policy-actions">
+        <button class="btn btn-primary btn-view">
+          <i class="cil-chart-line"></i>
+          查看分析
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 無資料狀態 -->
+  <div class="no-data" *ngIf="!isLoading && filteredPolicies.length === 0">
+    <div class="no-data-content">
+      <i class="cil-search"></i>
+      <h3>沒有找到符合條件的政策</h3>
+      <p>請嘗試調整篩選條件或稍後再試</p>
+    </div>
+  </div>
+</div>
+

@@ -38,7 +38,7 @@
         </div>
         <div class="stat-content">
           <h3>{{ totalSentiment | number }}</h3>
-          <p>總聲量</p>
+          <p>總網友聲量</p>
         </div>
       </div>
       <div class="stat-card">
@@ -47,7 +47,7 @@
         </div>
         <div class="stat-content">
           <h3>{{ averageSentiment | number }}</h3>
-          <p>平均聲量</p>
+          <p>平均網友聲量</p>
         </div>
       </div>
     </div>
@@ -179,6 +179,9 @@
                 最近一年
               </button>
             </div>
+          </div>
+          <div class="date-display">
+            <span>顯示期間：{{ getDisplayPeriod() }}</span>
           </div>
         </div>
       </div>
