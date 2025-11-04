@@ -40,8 +40,8 @@ export class PolicyTrackingComponent {
   eventName = '普發10000';
   data: any = null;
   currentFilter = 'all';  // 與legislators頁面一致
-  positiveCount = 0;  // 正面聲量 = 反對罷免人數
-  negativeCount = 0;  // 負面聲量 = 支持罷免人數
+  positiveCount = 0;  // positive = 支持
+  negativeCount = 0;  // negative = 反對
   isLoading = true;  // 主要載入狀態
 
   // 圖表選項
@@ -60,7 +60,7 @@ export class PolicyTrackingComponent {
     labels: ['支持', '反對'],
     datasets: [{
       data: [0, 0],
-      backgroundColor: ['#f87171', '#4f8cff']  // 統一顏色：紅色=支持，藍色=反對
+      backgroundColor: ['#4f8cff', '#f87171']  // 統一顏色：藍色=正面/支持，紅色=負面/反對
     }]
   };
 
@@ -185,12 +185,12 @@ export class PolicyTrackingComponent {
         // 計算Y軸位置
         let yValue = 0;
         if (this.demoLineChartData.datasets && this.demoLineChartData.datasets.length >= 2) {
-          const negativeData = this.demoLineChartData.datasets[0].data as number[];  // 負面聲量 = 支持罷免
-          const positiveData = this.demoLineChartData.datasets[1].data as number[];  // 正面聲量 = 反對罷免
-          if (negativeData && positiveData &&
-              negativeData[bestMatchIndex] !== undefined &&
-              positiveData[bestMatchIndex] !== undefined) {
-            yValue = Math.max(negativeData[bestMatchIndex], positiveData[bestMatchIndex]);
+          const supportData = this.demoLineChartData.datasets[0].data as number[];  // positive = 支持
+          const opposeData = this.demoLineChartData.datasets[1].data as number[];  // negative = 反對
+          if (supportData && opposeData &&
+              supportData[bestMatchIndex] !== undefined &&
+              opposeData[bestMatchIndex] !== undefined) {
+            yValue = Math.max(supportData[bestMatchIndex], opposeData[bestMatchIndex]);
           }
         }
 
@@ -595,22 +595,23 @@ export class PolicyTrackingComponent {
     this.data = data;
     
     // 1. 情感分析圓餅圖 - 使用統一的 positive/negative 欄位
-    let positiveCount = 0;  // 正面聲量 = 反對
-    let negativeCount = 0;  // 負面聲量 = 支持
+    // 🔥 統一標籤：positive = 支持，negative = 反對
+    let positiveCount = 0;  // positive = 支持
+    let negativeCount = 0;  // negative = 反對
     
     // 優先使用簡化的 stats 欄位
     if (data.stats) {
-      positiveCount = data.stats.positive || 0;
-      negativeCount = data.stats.negative || 0;
+      positiveCount = data.stats.positive || 0;  // positive = 支持
+      negativeCount = data.stats.negative || 0;  // negative = 反對
     } else if (data.positive !== undefined && data.negative !== undefined) {
       // 備用：使用根級別的 positive/negative 欄位
-      positiveCount = data.positive || 0;
-      negativeCount = data.negative || 0;
+      positiveCount = data.positive || 0;  // positive = 支持
+      negativeCount = data.negative || 0;  // negative = 反對
     }
     
     // 更新計數
-    this.positiveCount = positiveCount;  // 正面聲量 = 反對
-    this.negativeCount = negativeCount;  // 負面聲量 = 支持
+    this.positiveCount = positiveCount;  // positive = 支持
+    this.negativeCount = negativeCount;  // negative = 反對
     
     console.log('📊 事件情感數據:', { positiveCount, negativeCount });
     
@@ -619,8 +620,8 @@ export class PolicyTrackingComponent {
       this.sentimentChartData = {
         labels: ['支持', '反對'],
         datasets: [{
-          data: [negativeCount, positiveCount],  // [支持, 反對] negativeCount=支持，positiveCount=反對
-          backgroundColor: ['#f87171', '#4f8cff']  // 統一顏色：紅色=支持，藍色=反對
+          data: [positiveCount, negativeCount],  // [支持, 反對] positive=支持，negative=反對
+          backgroundColor: ['#4f8cff', '#f87171']  // 統一顏色：藍色=正面/支持，紅色=負面/反對
         }]
       };
     }
@@ -709,21 +710,21 @@ export class PolicyTrackingComponent {
         if (chartData.time_series) {
           // 確保數據格式正確並統一顏色
           if (chartData.time_series.labels && chartData.time_series.datasets) {
-            // 統一顏色：支持=紅色，反對=藍色
+            // 統一顏色：支持=藍色（正面），反對=紅色（負面）
             const datasets = chartData.time_series.datasets.map((dataset: any, index: number) => {
               if (dataset.label === '支持' || index === 0) {
                 return {
                   ...dataset,
                   label: '支持',
-                  borderColor: '#f87171',
-                  backgroundColor: 'rgba(248, 113, 113, 0.1)'
+                  borderColor: '#4f8cff',
+                  backgroundColor: 'rgba(79, 140, 255, 0.1)'
                 };
               } else if (dataset.label === '反對' || index === 1) {
                 return {
                   ...dataset,
                   label: '反對',
-                  borderColor: '#4f8cff',
-                  backgroundColor: 'rgba(79, 140, 255, 0.1)'
+                  borderColor: '#f87171',
+                  backgroundColor: 'rgba(248, 113, 113, 0.1)'
                 };
               }
               return dataset;
@@ -752,20 +753,21 @@ export class PolicyTrackingComponent {
         // 🔥 優先使用新的 sentiment_analysis 數據
         if (chartData.sentiment_analysis) {
           // 後端可能返回 positive/negative 或 positive_count/negative_count
-          const negative_count = chartData.sentiment_analysis.negative_count || chartData.sentiment_analysis.negative || 0;
-          const positive_count = chartData.sentiment_analysis.positive_count || chartData.sentiment_analysis.positive || 0;
-          const total_people = chartData.sentiment_analysis.total_people || chartData.sentiment_analysis.total || (negative_count + positive_count);
+          // 🔥 統一標籤：positive = 支持，negative = 反對
+          const positive_count = chartData.sentiment_analysis.positive_count || chartData.sentiment_analysis.positive || 0;  // positive = 支持
+          const negative_count = chartData.sentiment_analysis.negative_count || chartData.sentiment_analysis.negative || 0;  // negative = 反對
+          const total_people = chartData.sentiment_analysis.total_people || chartData.sentiment_analysis.total || (positive_count + negative_count);
           
           // 🔥 重要：更新組件內部的計數變量
-          this.negativeCount = negative_count;  // 負面聲量 = 支持
-          this.positiveCount = positive_count;  // 正面聲量 = 反對
+          this.positiveCount = positive_count;  // positive = 支持
+          this.negativeCount = negative_count;  // negative = 反對
           
           // 更新圓餅圖數據
           this.sentimentChartData = {
             labels: ['支持', '反對'],
             datasets: [{
-              data: [negative_count, positive_count],  // [支持, 反對]
-              backgroundColor: ['#f87171', '#4f8cff']  // 紅色=支持，藍色=反對
+              data: [positive_count, negative_count],  // [支持, 反對]
+              backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持，紅色=負面/反對
             }]
           };
           
@@ -777,16 +779,20 @@ export class PolicyTrackingComponent {
           console.log(`📊 更新組件計數: negativeCount=${this.negativeCount}, positiveCount=${this.positiveCount}`);
         } else {
           // 如果沒有 sentiment_analysis，使用根級別數據作為備用
+          // 🔥 統一標籤：positive = 支持，negative = 反對
+          this.positiveCount = this.data.positive || 0;  // positive = 支持
+          this.negativeCount = this.data.negative || 0;  // negative = 反對
+          
           this.updateSentimentChart({
-            '反對人數': this.data.positive || 0,  // 正面聲量 = 反對罷免
-            '支持人數': this.data.negative || 0,  // 負面聲量 = 支持罷免
+            '支持人數': this.data.positive || 0,  // positive = 支持
+            '反對人數': this.data.negative || 0,  // negative = 反對
             '中性人數': 0
           });
           
           
           console.log('⚠️ 沒有 sentiment_analysis 數據，使用根級別數據:', { 
-            positive: this.data.positive,  // 正面聲量 = 反對罷免
-            negative: this.data.negative   // 負面聲量 = 支持罷免
+            positive: this.data.positive,  // positive = 支持
+            negative: this.data.negative   // negative = 反對
           });
         }
         
@@ -821,9 +827,13 @@ export class PolicyTrackingComponent {
         console.error('❌ 載入圖表數據失敗:', error);
         
         // 如果API調用失敗，使用根級別數據
+        // 🔥 統一標籤：positive = 支持，negative = 反對
+        this.positiveCount = this.data.positive || 0;  // positive = 支持
+        this.negativeCount = this.data.negative || 0;  // negative = 反對
+        
         this.updateSentimentChart({
-          '反對人數': this.data.positive || 0,  // 正面聲量 = 反對罷免
-          '支持人數': this.data.negative || 0,  // 負面聲量 = 支持罷免
+          '支持人數': this.data.positive || 0,  // positive = 支持
+          '反對人數': this.data.negative || 0,  // negative = 反對
           '中性人數': 0
         });
         
@@ -989,8 +999,9 @@ export class PolicyTrackingComponent {
     console.log('🔍 檢查前3個數據點結構:', filteredPoints.slice(0, 3));
     
     // 計算資料範圍，用於改善圖表可視性（與legislators一致）
-    const negativeData = filteredPoints.map((p: any, index: number) => {
-      const value = p.sentiment_counts?.NEGATIVE || p.sentiment_counts?.negative || 0;  // 負面聲量 = 支持
+    // 🔥 統一標籤：positive = 支持，negative = 反對
+    const supportData = filteredPoints.map((p: any, index: number) => {
+      const value = p.sentiment_counts?.POSITIVE || p.sentiment_counts?.positive || 0;  // positive = 支持
       // 調試前3個點
       if (index < 3) {
         console.log(`🔍 數據點 ${index} (${p.date}):`, {
@@ -1002,23 +1013,23 @@ export class PolicyTrackingComponent {
       return value;
     });
     
-    const positiveData = filteredPoints.map((p: any, index: number) => {
-      const value = p.sentiment_counts?.POSITIVE || p.sentiment_counts?.positive || 0;  // 正面聲量 = 反對
+    const opposeData = filteredPoints.map((p: any, index: number) => {
+      const value = p.sentiment_counts?.NEGATIVE || p.sentiment_counts?.negative || 0;  // negative = 反對
       // 調試前3個點
       if (index < 3) {
-        console.log(`🔍 正面數據點 ${index}:`, value);
+        console.log(`🔍 反對數據點 ${index}:`, value);
       }
       return value;
     });
     
     console.log('📊 數據提取結果:', {
-      negativeDataSample: negativeData.slice(0, 5),
-      positiveDataSample: positiveData.slice(0, 5),
-      negativeDataSum: negativeData.reduce((a, b) => a + b, 0),
-      positiveDataSum: positiveData.reduce((a, b) => a + b, 0)
+      supportDataSample: supportData.slice(0, 5),
+      opposeDataSample: opposeData.slice(0, 5),
+      supportDataSum: supportData.reduce((a: number, b: number) => a + b, 0),
+      opposeDataSum: opposeData.reduce((a: number, b: number) => a + b, 0)
     });
     
-    const allData = [...negativeData, ...positiveData];
+    const allData = [...supportData, ...opposeData];
     const minValue = allData.length > 0 ? Math.min(...allData) : 0;
     const maxValue = allData.length > 0 ? Math.max(...allData) : 0;
     const dataRange = maxValue - minValue;
@@ -1040,17 +1051,17 @@ export class PolicyTrackingComponent {
       datasets: [
         {
           label: '支持',
-          data: negativeData,  // 負面聲量 = 支持
-          borderColor: '#f87171',
-          backgroundColor: 'rgba(248, 113, 113, 0.1)',
+          data: supportData,  // positive = 支持
+          borderColor: '#4f8cff',
+          backgroundColor: 'rgba(79, 140, 255, 0.1)',
           tension: 0.3,
           fill: true
         },
         {
           label: '反對',
-          data: positiveData,  // 正面聲量 = 反對
-          borderColor: '#4f8cff',
-          backgroundColor: 'rgba(79, 140, 255, 0.1)',
+          data: opposeData,  // negative = 反對
+          borderColor: '#f87171',
+          backgroundColor: 'rgba(248, 113, 113, 0.1)',
           tension: 0.3,
           fill: true
         }
@@ -1205,41 +1216,43 @@ export class PolicyTrackingComponent {
     
     if (selectedStats?.stats) {
       // 使用簡化的stats字段（該時段內的實際資料總和）
-      const totalPositive = selectedStats.stats.positive || 0;  // 正面聲量 = 反對罷免
-      const totalNegative = selectedStats.stats.negative || 0;  // 負面聲量 = 支持罷免
+      // 🔥 統一標籤：positive = 支持，negative = 反對
+      const totalPositive = selectedStats.stats.positive || 0;  // positive = 支持
+      const totalNegative = selectedStats.stats.negative || 0;  // negative = 反對
       
       this.sentimentChartData = {
         labels: ['支持', '反對'],
         datasets: [{
-          data: [totalNegative, totalPositive],  // [負面聲量=支持罷免, 正面聲量=反對罷免]
-          backgroundColor: ['#f87171', '#4f8cff']
+          data: [totalPositive, totalNegative],  // [支持, 反對] positive=支持，negative=反對
+          backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持，紅色=負面/反對
         }]
       };
       
       
-      console.log(`✅ 圓餅圖使用 ${targetKey} 資料: 支持=${totalNegative}, 反對=${totalPositive}`);
+      console.log(`✅ 圓餅圖使用 ${targetKey} 資料: 支持=${totalPositive}, 反對=${totalNegative}`);
     } else if (selectedStats?.stats_points && selectedStats.stats_points.length > 0) {
       // 如果沒有totals字段，手動計算該時段內的總和
-      let totalPositive = 0;  // 正面聲量 = 反對罷免
-      let totalNegative = 0;  // 負面聲量 = 支持罷免
+      // 🔥 統一標籤：positive = 支持，negative = 反對
+      let totalPositive = 0;  // positive = 支持
+      let totalNegative = 0;  // negative = 反對
       
       for (const point of selectedStats.stats_points) {
         if (point.sentiment_counts) {
-          totalNegative += point.sentiment_counts.negative || 0;  // 負面聲量 = 支持罷免
-          totalPositive += point.sentiment_counts.positive || 0;  // 正面聲量 = 反對罷免
+          totalPositive += point.sentiment_counts.POSITIVE || point.sentiment_counts.positive || 0;  // positive = 支持
+          totalNegative += point.sentiment_counts.NEGATIVE || point.sentiment_counts.negative || 0;  // negative = 反對
         }
       }
       
       this.sentimentChartData = {
         labels: ['支持', '反對'],
         datasets: [{
-          data: [totalNegative, totalPositive],  // [負面聲量=支持罷免, 正面聲量=反對罷免]
-          backgroundColor: ['#f87171', '#4f8cff']
+          data: [totalPositive, totalNegative],  // [支持, 反對] positive=支持，negative=反對
+          backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持，紅色=負面/反對
         }]
       };
       
       
-      console.log(`✅ 圓餅圖手動計算 ${targetKey} 總和: 支持=${totalNegative}, 反對=${totalPositive}`);
+      console.log(`✅ 圓餅圖手動計算 ${targetKey} 總和: 支持=${totalPositive}, 反對=${totalNegative}`);
     } else {
       console.log(`⚠️ 沒有找到 ${targetKey} 的daily資料，保持現有圓餅圖數據`);
     }
@@ -1360,22 +1373,30 @@ export class PolicyTrackingComponent {
 
     // 優先使用新的 sentiment_analysis 數據
     if (data.sentiment_analysis) {
-      const { negative_count, positive_count, total_people, time_period } = data.sentiment_analysis;
+      // 🔥 統一標籤：positive = 支持，negative = 反對
+      const positive_count = data.sentiment_analysis.positive_count || data.sentiment_analysis.positive || 0;  // positive = 支持
+      const negative_count = data.sentiment_analysis.negative_count || data.sentiment_analysis.negative || 0;  // negative = 反對
+      const total_people = data.sentiment_analysis.total_people || data.sentiment_analysis.total || (positive_count + negative_count);
+      const time_period = data.sentiment_analysis.time_period;
       
       // 更新圓餅圖數據
       this.sentimentChartData = {
         labels: ['支持', '反對'],
         datasets: [{
-          data: [negative_count, positive_count],  // [支持, 反對]
-          backgroundColor: ['#f87171', '#4f8cff']  // 紅色=支持，藍色=反對
+          data: [positive_count, negative_count],  // [支持, 反對] positive=支持，negative=反對
+          backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持，紅色=負面/反對
         }]
       };
+      
+      // 更新組件計數
+      this.positiveCount = positive_count;  // positive = 支持
+      this.negativeCount = negative_count;  // negative = 反對
 
       // 更新統計數據
 
       console.log(`✅ 使用新的 sentiment_analysis 數據更新圓餅圖:`, {
-        negative_count,
         positive_count,
+        negative_count,
         total_people,
         time_period,
         chartData: this.sentimentChartData.datasets[0].data
@@ -1418,7 +1439,7 @@ export class PolicyTrackingComponent {
         labels: standardEmotions,
         datasets: [
           {
-            label: '反對情緒',
+            label: '支持情緒',
             data: positiveData,
             backgroundColor: 'rgba(79, 140, 255, 0.2)',
             borderColor: '#4f8cff',
@@ -1429,7 +1450,7 @@ export class PolicyTrackingComponent {
             borderWidth: 2
           },
           {
-            label: '支持情緒',
+            label: '反對情緒',
             data: negativeData,
             backgroundColor: 'rgba(248, 113, 113, 0.2)',
             borderColor: '#f87171',
@@ -2014,38 +2035,39 @@ export class PolicyTrackingComponent {
       next: (pieData: any) => {
         console.log('✅ 圓餅圖API返回數據:', pieData);
         
-        let negative_count = 0;
-        let positive_count = 0;
+        // 🔥 統一標籤：positive = 支持，negative = 反對
+        let positive_count = 0;  // positive = 支持
+        let negative_count = 0;  // negative = 反對
         let total_people = 0;
         
         // 優先使用 sentiment_analysis 數據
         if (pieData.sentiment_analysis) {
           // 後端可能返回 positive/negative 或 positive_count/negative_count
-          negative_count = pieData.sentiment_analysis.negative_count || pieData.sentiment_analysis.negative || 0;
-          positive_count = pieData.sentiment_analysis.positive_count || pieData.sentiment_analysis.positive || 0;
-          total_people = pieData.sentiment_analysis.total_people || pieData.sentiment_analysis.total || (negative_count + positive_count);
+          positive_count = pieData.sentiment_analysis.positive_count || pieData.sentiment_analysis.positive || 0;  // positive = 支持
+          negative_count = pieData.sentiment_analysis.negative_count || pieData.sentiment_analysis.negative || 0;  // negative = 反對
+          total_people = pieData.sentiment_analysis.total_people || pieData.sentiment_analysis.total || (positive_count + negative_count);
         } else if (pieData.positive_count !== undefined || pieData.negative_count !== undefined || pieData.positive !== undefined || pieData.negative !== undefined) {
           // 備用：使用根級別數據（支持多種字段名稱）
-          negative_count = pieData.negative_count || pieData.negative || 0;
-          positive_count = pieData.positive_count || pieData.positive || 0;
-          total_people = negative_count + positive_count;
+          positive_count = pieData.positive_count || pieData.positive || 0;  // positive = 支持
+          negative_count = pieData.negative_count || pieData.negative || 0;  // negative = 反對
+          total_people = positive_count + negative_count;
         }
         
         // 🔥 重要：更新組件內部的計數變量（與其他頁面一致）
-        this.negativeCount = negative_count;  // 負面聲量 = 支持
-        this.positiveCount = positive_count;  // 正面聲量 = 反對
+        this.positiveCount = positive_count;  // positive = 支持
+        this.negativeCount = negative_count;  // negative = 反對
         
         // 更新圓餅圖數據（政策頁面使用支持/反對）
         this.sentimentChartData = {
           labels: ['支持', '反對'],
           datasets: [{
-            data: [negative_count, positive_count],  // [支持, 反對]
-            backgroundColor: ['#f87171', '#4f8cff']  // 紅色=支持，藍色=反對
+            data: [positive_count, negative_count],  // [支持, 反對] positive=支持，negative=反對
+            backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持，紅色=負面/反對
           }]
         };
         
-        console.log(`🎯 情感分析圓餅圖載入完成: 支持=${negative_count}, 反對=${positive_count}, 總計=${total_people}人`);
-        console.log(`📊 更新組件計數: negativeCount=${this.negativeCount}, positiveCount=${this.positiveCount}`);
+        console.log(`🎯 情感分析圓餅圖載入完成: 支持=${positive_count}, 反對=${negative_count}, 總計=${total_people}人`);
+        console.log(`📊 更新組件計數: positiveCount=${this.positiveCount}, negativeCount=${this.negativeCount}`);
       },
       error: (error: any) => {
         console.error('❌ 情感分析圓餅圖API調用失敗:', error);
@@ -2094,38 +2116,39 @@ export class PolicyTrackingComponent {
       next: (pieData: any) => {
         console.log('✅ 圓餅圖API返回數據:', pieData);
         
-        let negative_count = 0;
-        let positive_count = 0;
+        // 🔥 統一標籤：positive = 支持，negative = 反對
+        let positive_count = 0;  // positive = 支持
+        let negative_count = 0;  // negative = 反對
         let total_people = 0;
         
         // 優先使用 sentiment_analysis 數據
         if (pieData.sentiment_analysis) {
           // 後端可能返回 positive/negative 或 positive_count/negative_count
-          negative_count = pieData.sentiment_analysis.negative_count || pieData.sentiment_analysis.negative || 0;
-          positive_count = pieData.sentiment_analysis.positive_count || pieData.sentiment_analysis.positive || 0;
-          total_people = pieData.sentiment_analysis.total_people || pieData.sentiment_analysis.total || (negative_count + positive_count);
+          positive_count = pieData.sentiment_analysis.positive_count || pieData.sentiment_analysis.positive || 0;  // positive = 支持
+          negative_count = pieData.sentiment_analysis.negative_count || pieData.sentiment_analysis.negative || 0;  // negative = 反對
+          total_people = pieData.sentiment_analysis.total_people || pieData.sentiment_analysis.total || (positive_count + negative_count);
         } else {
           // 備用：使用根級別數據（支持多種字段名稱）
-          negative_count = pieData.negative_count || pieData.negative || 0;
-          positive_count = pieData.positive_count || pieData.positive || 0;
-          total_people = negative_count + positive_count;
+          positive_count = pieData.positive_count || pieData.positive || 0;  // positive = 支持
+          negative_count = pieData.negative_count || pieData.negative || 0;  // negative = 反對
+          total_people = positive_count + negative_count;
         }
         
         // 🔥 重要：更新組件內部的計數變量（與其他頁面一致）
-        this.negativeCount = negative_count;  // 負面聲量 = 支持
-        this.positiveCount = positive_count;  // 正面聲量 = 反對
+        this.positiveCount = positive_count;  // positive = 支持
+        this.negativeCount = negative_count;  // negative = 反對
         
         // 更新圓餅圖數據
         this.sentimentChartData = {
           labels: ['支持', '反對'],
           datasets: [{
-            data: [negative_count, positive_count],  // [支持, 反對]
-            backgroundColor: ['#f87171', '#4f8cff']  // 紅色=支持，藍色=反對
+            data: [positive_count, negative_count],  // [支持, 反對] positive=支持，negative=反對
+            backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持，紅色=負面/反對
           }]
         };
         
-        console.log(`🎯 圓餅圖更新完成: 支持=${negative_count}, 反對=${positive_count}, 總計=${total_people}人`);
-        console.log(`📊 更新組件計數: negativeCount=${this.negativeCount}, positiveCount=${this.positiveCount}`);
+        console.log(`🎯 圓餅圖更新完成: 支持=${positive_count}, 反對=${negative_count}, 總計=${total_people}人`);
+        console.log(`📊 更新組件計數: positiveCount=${this.positiveCount}, negativeCount=${this.negativeCount}`);
       },
       error: (error: any) => {
         console.error('❌ 圓餅圖API調用失敗:', error);

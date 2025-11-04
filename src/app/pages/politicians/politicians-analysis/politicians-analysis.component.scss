@@ -908,20 +908,12 @@ c-chart canvas {
       border-radius: 50%;
       flex-shrink: 0;
 
-      &.negative {
-        background-color: #f87171;  // 負面聲量 = 支持罷免
-      }
-
       &.positive {
-        background-color: #4f8cff;  // 正面聲量 = 反對罷免
-      }
-
-      &.positive {
-        background-color: #10b981;
+        background-color: #4f8cff;  // 支持 = 藍色（正面）
       }
 
       &.negative {
-        background-color: #ef4444;
+        background-color: #f87171;  // 反對 = 紅色（負面）
       }
 
       &.neutral {

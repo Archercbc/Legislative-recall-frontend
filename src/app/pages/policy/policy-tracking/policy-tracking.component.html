@@ -156,11 +156,11 @@
               <div class="custom-chart-stats">
                 <div class="stat-item">
                   <span class="color-dot positive"></span>
-                  <span class="stat-text">支持 {{ (negativeCount || 0).toLocaleString() }}人 {{ getSupportPercentage() }}%</span>
+                  <span class="stat-text">支持 {{ (positiveCount || 0).toLocaleString() }}人 {{ getPositivePercentage() }}%</span>
                 </div>
                 <div class="stat-item">
                   <span class="color-dot negative"></span>
-                  <span class="stat-text">反對 {{ (positiveCount || 0).toLocaleString() }}人 {{ getPositivePercentage() }}%</span>
+                  <span class="stat-text">反對 {{ (negativeCount || 0).toLocaleString() }}人 {{ getSupportPercentage() }}%</span>
                 </div>
               </div>
             </div>

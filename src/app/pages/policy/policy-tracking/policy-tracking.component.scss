@@ -202,13 +202,13 @@ $spacing-lg: 24px;
 
   &.positive {
     .stat-icon {
-      background: #10b981;
+      background: #4f8cff;  // 支持 = 藍色（正面）
     }
   }
 
   &.negative {
     .stat-icon {
-      background: #ef4444;
+      background: #f87171;  // 反對 = 紅色（負面）
     }
   }
 }
@@ -994,12 +994,12 @@ $spacing-lg: 24px;
       border-radius: 50%;
       margin-right: 0.5rem;
 
-      &.negative {
-        background-color: #f87171;  // 負面聲量 = 支持罷免
+      &.positive {
+        background-color: #4f8cff;  // 支持 = 藍色（正面）
       }
 
-      &.positive {
-        background-color: #4f8cff;  // 正面聲量 = 反對罷免
+      &.negative {
+        background-color: #f87171;  // 反對 = 紅色（負面）
       }
     }
   }
@@ -1037,12 +1037,12 @@ $spacing-lg: 24px;
       margin-right: 0.75rem;
       flex-shrink: 0;
 
-      &.negative {
-        background-color: #f87171;  // 負面聲量 = 支持罷免
+      &.positive {
+        background-color: #4f8cff;  // 支持 = 藍色（正面）
       }
 
-      &.positive {
-        background-color: #4f8cff;  // 正面聲量 = 反對罷免
+      &.negative {
+        background-color: #f87171;  // 反對 = 紅色（負面）
       }
     }
 
@@ -1096,12 +1096,12 @@ $spacing-lg: 24px;
       margin-right: 0.75rem;
       flex-shrink: 0;
 
-      &.negative {
-        background-color: #f87171;  // 負面聲量 = 支持罷免
+      &.positive {
+        background-color: #4f8cff;  // 支持 = 藍色（正面）
       }
 
-      &.positive {
-        background-color: #4f8cff;  // 正面聲量 = 反對罷免
+      &.negative {
+        background-color: #f87171;  // 反對 = 紅色（負面）
       }
     }
 
@@ -1344,11 +1344,11 @@ c-chart canvas {
       flex-shrink: 0;
 
       &.positive {
-        background-color: #f87171;  // 支持 = 紅色（對應 negativeCount）
+        background-color: #4f8cff;  // 支持 = 藍色（正面）
       }
 
       &.negative {
-        background-color: #4f8cff;  // 反對 = 藍色（對應 positiveCount）
+        background-color: #f87171;  // 反對 = 紅色（負面）
       }
     }
 
