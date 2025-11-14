@@ -69,7 +69,7 @@ export class ElectionAnalysisComponent implements OnInit {
   barChartData: ChartData<'bar'> = { labels: [], datasets: [] };
   
   // 時間圖表模式控制
-  selectedCandidateForTimeChart: string | null = null; // null = 顯示所有候選人總聲量
+  selectedCandidateForTimeChart: string | null = null; // null = 顯示所有候選人總網友數
   
   // 時間篩選相關屬性 - 參考立委頁面
   currentFilter: string = '1year';
@@ -140,7 +140,7 @@ export class ElectionAnalysisComponent implements OnInit {
         beginAtZero: true,
         title: {
           display: true,
-          text: '累計聲量',
+          text: '累計網友數',
           font: {
             size: 10
           }
@@ -202,7 +202,7 @@ export class ElectionAnalysisComponent implements OnInit {
         },
         title: {
           display: true,
-          text: '聲量',
+          text: '網友數',
           font: {
             size: 14,
             weight: 'bold'
@@ -270,6 +270,12 @@ export class ElectionAnalysisComponent implements OnInit {
 
       this.totalCandidates = electionConfig.candidates.length;
       this.selectedCandidates = this.candidates.map(c => c.id);
+
+      // 如果沒有候選人，不載入分析數據，直接顯示「敬請期待」
+      if (electionConfig.candidates.length === 0) {
+        this.isLoading = false;
+        return;
+      }
 
       // 載入完整的分析數據（包含時間序列）
       this.loadElectionAnalysisData();
@@ -353,7 +359,7 @@ export class ElectionAnalysisComponent implements OnInit {
     }
 
     if (this.selectedCandidateForTimeChart) {
-      // 顯示特定候選人的正負面聲量時間圖 - 使用真實數據
+      // 顯示特定候選人的正負面網友數時間圖 - 使用真實數據
       const candidate = visibleCandidates.find(c => c.id === this.selectedCandidateForTimeChart);
       if (candidate && candidate.time_series_stats) {
         this.lineChartData = candidate.time_series_stats;
@@ -366,7 +372,7 @@ export class ElectionAnalysisComponent implements OnInit {
         this.lineChartData = { labels: [], datasets: [] };
       }
     } else {
-      // 顯示所有候選人的總聲量時間圖 - 使用真實數據
+      // 顯示所有候選人的總網友數時間圖 - 使用真實數據
       this.processCandidatesTimeSeriesData();
     }
   }
@@ -387,13 +393,13 @@ export class ElectionAnalysisComponent implements OnInit {
       labels,
       datasets: [
         {
-          label: '正面聲量',
+          label: '正面網友數',
           data: positiveData,
           backgroundColor: '#28a745',
           borderColor: '#28a745'
         },
         {
-          label: '負面聲量',
+          label: '負面網友數',
           data: negativeData,
           backgroundColor: '#dc3545',
           borderColor: '#dc3545'
@@ -404,7 +410,7 @@ export class ElectionAnalysisComponent implements OnInit {
 
 
 
-  // 處理後端回傳的 time_series 數據 - 合併兩條線為總聲量（累計趨勢）
+  // 處理後端回傳的 time_series 數據 - 合併兩條線為總網友數（累計趨勢）
   private processTimeSeriesData(timeSeriesData: any): void {
     if (!timeSeriesData.labels || !timeSeriesData.datasets || timeSeriesData.datasets.length < 2) {
       console.warn('時間序列數據格式不正確');
@@ -412,10 +418,10 @@ export class ElectionAnalysisComponent implements OnInit {
     }
 
     const labels = timeSeriesData.labels;
-    const negativeData = timeSeriesData.datasets[0].data; // 負面聲量（累計）
-    const positiveData = timeSeriesData.datasets[1].data; // 正面聲量（累計）
+    const negativeData = timeSeriesData.datasets[0].data; // 負面網友數（累計）
+    const positiveData = timeSeriesData.datasets[1].data; // 正面網友數（累計）
 
-    // 計算總聲量（正負面聲量相加）- 都是累計數據，只會上漲或持平
+    // 計算總網友數（正負面網友數相加）- 都是累計數據，只會上漲或持平
     const totalData = [];
     for (let i = 0; i < labels.length; i++) {
       totalData.push((negativeData[i] || 0) + (positiveData[i] || 0));
@@ -426,11 +432,11 @@ export class ElectionAnalysisComponent implements OnInit {
       labels: labels,
       datasets: [
         {
-          label: '總聲量',
-          data: totalData,  // 累計總聲量，只會上漲或持平
-          positiveData: positiveData,  // 累計正面聲量
-          negativeData: negativeData,  // 累計負面聲量
-          candidateName: '總聲量',
+          label: '總網友數',
+          data: totalData,  // 累計總網友數，只會上漲或持平
+          positiveData: positiveData,  // 累計正面網友數
+          negativeData: negativeData,  // 累計負面網友數
+          candidateName: '總網友數',
           borderColor: '#3b82f6',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
           tension: 0.3,

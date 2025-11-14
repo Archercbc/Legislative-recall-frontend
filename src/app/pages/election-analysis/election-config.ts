@@ -30,53 +30,10 @@ export const election_config_list = [
     "status": "completed",
     "start_date": "2025-07-31",
     "end_date": "2025-10-18",
-    "description": "分析比對2025年國民黨主席選舉的候選人聲量與情緒趨勢，並進行網路聲量分析。",
+    "description": "分析比對2025年國民黨主席選舉的候選人網友數與情緒趨勢，並進行網路網友數分析。",
     "tags": ["國民黨", "主席選舉", "2025"],
     "key_issues": [],
-        "candidates": [
-          {
-            "id": "zheng_li_wen",
-            "name": "鄭麗文",
-            "party": "國民黨",
-            "partyColor": "#000080",
-            "photo": "assets/鄭麗文.jpg"
-          },
-          {
-            "id": "luo_zhi_qiang",
-            "name": "羅智強",
-            "party": "國民黨",
-            "partyColor": "#000080",
-            "photo": "assets/羅智強.jpg"
-          },
-          {
-            "id": "zhang_ya_zhong",
-            "name": "張亞中",
-            "party": "國民黨",
-            "partyColor": "#000080",
-            "photo": "assets/張亞中.jpg"
-          },
-          {
-            "id": "hao_long_bin",
-            "name": "郝龍斌",
-            "party": "國民黨",
-            "partyColor": "#000080",
-            "photo": "assets/郝龍斌.jpg"
-          },
-          {
-            "id": "zhuo_bo_yuan",
-            "name": "卓伯源",
-            "party": "國民黨",
-            "partyColor": "#000080",
-            "photo": "assets/卓伯源.jpg"
-          },
-          {
-            "id": "cai_zhi_hong",
-            "name": "蔡志弘",
-            "party": "國民黨",
-            "partyColor": "#000080",
-            "photo": "assets/蔡志弘.jpg"
-          }
-        ]
+    "candidates": []
       }
     ]
 

@@ -38,7 +38,7 @@
         </div>
         <div class="stat-content">
           <h3>{{ totalSentiment | number }}</h3>
-          <p>總網友聲量</p>
+          <p>總網友數</p>
         </div>
       </div>
       <div class="stat-card">
@@ -47,7 +47,7 @@
         </div>
         <div class="stat-content">
           <h3>{{ averageSentiment | number }}</h3>
-          <p>平均網友聲量</p>
+          <p>平均網友數</p>
         </div>
       </div>
     </div>
@@ -55,8 +55,8 @@
     <!-- 候選人列表 - 3個一列 -->
     <div class="candidates-section">
       <h3 class="section-title">候選人列表</h3>
-      <p>點選候選人姓名可查看其聲量趨勢</p>
-      <div class="candidates-grid-3col">
+      <p>點選候選人姓名可查看其網友數趨勢</p>
+      <div class="candidates-grid-3col" *ngIf="candidates.length > 0">
         <div 
           class="candidate-card" 
           *ngFor="let candidate of candidates"
@@ -98,10 +98,17 @@
           </div>
         </div>
       </div>
+      <div *ngIf="candidates.length === 0" class="coming-soon-message">
+        <div class="coming-soon-content">
+          <i class="cil-calendar-check" style="font-size: 48px; color: #6c757d; margin-bottom: 20px;"></i>
+          <h2>敬請期待縣市長選舉</h2>
+          <p>相關分析資料即將推出</p>
+        </div>
+      </div>
     </div>
 
     <!-- 圖表區域 - 參考立委頁面實現 -->
-    <div class="charts-container">
+    <div class="charts-container" *ngIf="candidates.length > 0">
       <!-- 時間範圍選擇器 - 移到圖表區域 -->
       <div cCard class="time-filter-card-modern mb-4">
         <div cCardBody class="modern-body">
@@ -192,7 +199,7 @@
           <div class="chart-header-content">
             <div class="chart-title-section">
               <i class="cil-chart-line"></i>
-              <span>{{ selectedCandidateForTimeChart ? '候選人正負面聲量趨勢' : '各候選人總聲量趨勢' }}</span>
+              <span>{{ selectedCandidateForTimeChart ? '候選人正負面網友數趨勢' : '各候選人總網友數趨勢' }}</span>
             </div>
             
           
@@ -230,7 +237,7 @@
           <div class="chart-header-content">
             <div class="chart-title-section">
               <i class="cil-chart-bar"></i>
-              <span>聲量比較分析</span>
+              <span>網友數比較分析</span>
             </div>
           </div>
         </div>

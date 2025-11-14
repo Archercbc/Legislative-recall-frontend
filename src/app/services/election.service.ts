@@ -130,7 +130,7 @@ export class ElectionService {
 
     return [
       {
-        label: `${candidateName} - 正面聲量`,
+        label: `${candidateName} - 正面網友數`,
         data: positiveData,
         borderColor: '#28a745',
         backgroundColor: '#28a74520',
@@ -142,7 +142,7 @@ export class ElectionService {
         pointHoverRadius: 6
       },
       {
-        label: `${candidateName} - 負面聲量`,
+        label: `${candidateName} - 負面網友數`,
         data: negativeData,
         borderColor: '#dc3545',
         backgroundColor: '#dc354520',

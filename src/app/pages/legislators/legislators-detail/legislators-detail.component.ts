@@ -72,6 +72,45 @@ export class LegislatorsDetailComponent {
   // 被封關的立委列表
   private readonly BLOCKED_LEGISLATORS = [''];
 
+  // 罷免投票日期對應表
+  // 第一波投票：2025年7月26日
+  // 第二波投票：2025年8月23日
+  private readonly RECALL_VOTE_DATES: { [key: string]: string } = {
+    // 第一波投票（2025-07-26）
+    '羅智強': '2025-07-26',
+    '徐巧芯': '2025-07-26',
+    '賴士葆': '2025-07-26',
+    '王鴻薇': '2025-07-26',
+    '李彥秀': '2025-07-26',
+    '洪孟楷': '2025-07-26',
+    '張智倫': '2025-07-26',
+    '林德福': '2025-07-26',
+    '廖先翔': '2025-07-26',
+    '葉元之': '2025-07-26',
+    '牛煦庭': '2025-07-26',
+    '涂權吉': '2025-07-26',
+    '魯明哲': '2025-07-26',
+    '萬美玲': '2025-07-26',
+    '呂玉玲': '2025-07-26',
+    '邱若華': '2025-07-26',
+    '徐欣瑩': '2025-07-26',
+    '鄭正鈐': '2025-07-26',
+    '廖偉翔': '2025-07-26',
+    '黃健豪': '2025-07-26',
+    '羅廷瑋': '2025-07-26',
+    '丁學忠': '2025-07-26',
+    '傅崐萁': '2025-07-26',
+    '黃建賓': '2025-07-26',
+    // 第二波投票（2025-08-23）
+    '羅明才': '2025-08-23',
+    '楊瓊瓔': '2025-08-23',
+    '江啟臣': '2025-08-23',
+    '顏寬恒': '2025-08-23',
+    '馬文君': '2025-08-23',
+    '游顥': '2025-08-23',
+    '林思銘': '2025-08-23'
+  };
+
   // 時間範圍篩選相關屬性
   selectedTimeRange: string = '30_days';
   filteredTimeSeriesData: FilteredTimeSeriesData | null = null;
@@ -924,6 +963,11 @@ export class LegislatorsDetailComponent {
   private updateChartFromStats(selectedStats: any): void {
     const points = selectedStats.stats_points;
     
+    // 🔥 確保日期範圍已設置（根據投票日期和時間範圍計算）
+    if (!this.startDate || !this.endDate) {
+      this.updateDateRangeForPeriod(this.currentFilter);
+    }
+    
     // 🔥 根據用戶選擇的時間範圍篩選數據點
     const filteredPoints = this.filterPointsByTimeRange(points);
     
@@ -931,19 +975,51 @@ export class LegislatorsDetailComponent {
       return;
     }
     
-    // 🔥 強制設置最後一個數據點的日期為今天
-    if (filteredPoints.length > 0) {
-      const today = new Date().toISOString().split('T')[0];
-      const lastPoint = filteredPoints[filteredPoints.length - 1];
-      if (lastPoint && lastPoint.date !== today) {
-        lastPoint.date = today;
-      }
-    }
-    
     // 計算資料範圍，用於改善圖表可視性
     // 🔥 統一標籤：positive = 支持（反對罷免），negative = 反對（支持罷免）
-    const opposeRecallData = filteredPoints.map((p: any) => p.sentiment_counts?.POSITIVE || p.sentiment_counts?.positive || 0);  // positive = 支持（反對罷免）
-    const supportRecallData = filteredPoints.map((p: any) => p.sentiment_counts?.NEGATIVE || p.sentiment_counts?.negative || 0);  // negative = 反對（支持罷免）
+    let opposeRecallData = filteredPoints.map((p: any) => p.sentiment_counts?.POSITIVE || p.sentiment_counts?.positive || 0);  // positive = 支持（反對罷免）
+    let supportRecallData = filteredPoints.map((p: any) => p.sentiment_counts?.NEGATIVE || p.sentiment_counts?.negative || 0);  // negative = 反對（支持罷免）
+    
+    // 🔥 確保最後一個點的數據等於圓餅圖的總計，但保持累計特性（不小於前一個點）
+    // 獲取對應的 daily 數據來修正最後一個點
+    if (this.data?.time_series_stats && opposeRecallData.length > 0 && supportRecallData.length > 0) {
+      const dailyKeyMap: { [key: string]: string } = {
+        'week': 'recent_7_days_daily',
+        '2weeks': 'recent_14_days_daily',
+        'month': 'recent_30_days_daily',
+        '3months': 'recent_90_days_daily',
+        '6months': 'recent_180_days_daily',
+        '1year': 'recent_365_days_daily'
+      };
+      
+      const dailyKey = dailyKeyMap[this.currentFilter] || 'recent_365_days_daily';
+      const dailyStats = this.data.time_series_stats[dailyKey];
+      
+      let totalPositive = 0;
+      let totalNegative = 0;
+      
+      if (dailyStats?.stats) {
+        // 使用 daily 的總和作為目標值
+        totalPositive = dailyStats.stats.positive || 0;
+        totalNegative = dailyStats.stats.negative || 0;
+      } else if (dailyStats?.stats_points && dailyStats.stats_points.length > 0) {
+        // 如果沒有 stats 字段，使用 stats_points 的第一個點（daily 數據只有一個點）
+        const point = dailyStats.stats_points[0];
+        if (point.sentiment_counts) {
+          totalPositive = point.sentiment_counts.POSITIVE || point.sentiment_counts.positive || 0;
+          totalNegative = point.sentiment_counts.NEGATIVE || point.sentiment_counts.negative || 0;
+        }
+      }
+      
+      // 🔥 確保最後一個點的值不小於前一個點（保持累計特性）
+      const lastIndex = opposeRecallData.length - 1;
+      const prevPositive = lastIndex > 0 ? opposeRecallData[lastIndex - 1] : 0;
+      const prevNegative = lastIndex > 0 ? supportRecallData[lastIndex - 1] : 0;
+      
+      // 使用較大值（總計或前一個點），確保累計趨勢不下降
+      opposeRecallData[lastIndex] = Math.max(totalPositive, prevPositive);
+      supportRecallData[lastIndex] = Math.max(totalNegative, prevNegative);
+    }
     
     const allData = [...opposeRecallData, ...supportRecallData];
     const minValue = Math.min(...allData);
@@ -955,8 +1031,12 @@ export class LegislatorsDetailComponent {
     const yAxisMin = Math.max(0, minValue - minRange * 0.1);
     const yAxisMax = maxValue + minRange * 0.1;
     
+    // 🔥 前端生成 X 軸時間標籤（根據數據點數量和時間範圍），只替換 labels，數據保持不變
+    const originalLabels = filteredPoints.map((p: any) => p.date);
+    const newLabels = this.generateTimeAxisLabels(filteredPoints.length, this.currentFilter);
+    
     this.demoLineChartData = {
-      labels: filteredPoints.map((p: any) => p.date),
+      labels: newLabels, // 使用新生成的時間標籤
       datasets: [
         {
           label: '反對罷免',
@@ -988,17 +1068,259 @@ export class LegislatorsDetailComponent {
     // this.updateDateRangeFromChartData();
   }
 
+  // 新增方法：根據數據點數量和時間範圍生成 X 軸時間標籤
+  private generateTimeAxisLabels(pointCount: number, filter: string): string[] {
+    // 🔥 使用已計算的開始和結束日期（與顯示期間一致）
+    // 確保日期範圍已設置
+    if (!this.startDate || !this.endDate) {
+      this.updateDateRangeForPeriod(this.currentFilter);
+    }
+    
+    // 如果還是沒有日期範圍，使用投票日期計算
+    let startDate: Date;
+    let endDate: Date;
+    
+    if (this.startDate && this.endDate) {
+      startDate = new Date(this.startDate);
+      endDate = new Date(this.endDate);
+    } else {
+      // 備用方案：取得投票日期
+      let voteDate: Date | null = null;
+      const legislatorName = this.data?.name;
+      if (legislatorName && this.RECALL_VOTE_DATES[legislatorName]) {
+        try {
+          voteDate = new Date(this.RECALL_VOTE_DATES[legislatorName]);
+          if (isNaN(voteDate.getTime())) {
+            voteDate = null;
+          }
+        } catch (e) {
+          voteDate = null;
+        }
+      }
+      
+      if (!voteDate && this.recallData) {
+        const voteDateStr = this.recallData.recall_data?.罷免投票日 || this.recallData.recallVoteDate || '';
+        if (voteDateStr) {
+          try {
+            voteDate = new Date(voteDateStr);
+            if (isNaN(voteDate.getTime())) {
+              voteDate = null;
+            }
+          } catch (e) {
+            voteDate = null;
+          }
+        }
+      }
+      
+      endDate = voteDate || new Date();
+      startDate = new Date(endDate);
+      
+      // 根據時間範圍計算開始日期
+      switch (filter) {
+        case 'week':
+          startDate.setDate(endDate.getDate() - 6);
+          break;
+        case '2weeks':
+          startDate.setDate(endDate.getDate() - 13);
+          break;
+        case 'month':
+          startDate.setDate(endDate.getDate() - 29);
+          break;
+        case '3months':
+          startDate.setDate(endDate.getDate() - 89);
+          break;
+        case '6months':
+          startDate.setDate(endDate.getDate() - 179);
+          break;
+        case '1year':
+        case 'all':
+          startDate.setDate(endDate.getDate() - 364);
+          break;
+        default:
+          startDate.setDate(endDate.getDate() - 29);
+      }
+    }
+    
+    const labels: string[] = [];
+    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    
+    // 🔥 根據開始日期、結束日期和數據點數量生成標籤
+    // 計算每個點代表的時間間隔
+    const daysPerPoint = totalDays / pointCount;
+    
+    // 根據時間範圍決定生成策略
+    switch (filter) {
+      case 'week':
+        // 最近一周：7個點 = 每天一點
+        if (pointCount === 7) {
+          for (let i = 0; i < pointCount; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + i);
+            labels.push(date.toLocaleDateString('zh-TW', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit' 
+            }));
+          }
+        } else {
+          // 如果點數不是7，按比例分配
+          for (let i = 0; i < pointCount; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + (i * daysPerPoint));
+            labels.push(date.toLocaleDateString('zh-TW', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit' 
+            }));
+          }
+        }
+        break;
+        
+      case '2weeks':
+        // 最近兩周：14個點 = 每天一點
+        if (pointCount === 14) {
+          for (let i = 0; i < pointCount; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + i);
+            labels.push(date.toLocaleDateString('zh-TW', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit' 
+            }));
+          }
+        } else {
+          for (let i = 0; i < pointCount; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + (i * daysPerPoint));
+            labels.push(date.toLocaleDateString('zh-TW', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit' 
+            }));
+          }
+        }
+        break;
+        
+      case 'month':
+        // 最近一個月：30個點 = 每天一點
+        if (pointCount === 30) {
+          for (let i = 0; i < pointCount; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + i);
+            labels.push(date.toLocaleDateString('zh-TW', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit' 
+            }));
+          }
+        } else {
+          for (let i = 0; i < pointCount; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + (i * daysPerPoint));
+            labels.push(date.toLocaleDateString('zh-TW', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit' 
+            }));
+          }
+        }
+        break;
+        
+      case '3months':
+        // 最近三個月：按比例分配
+        for (let i = 0; i < pointCount; i++) {
+          const date = new Date(startDate);
+          date.setDate(startDate.getDate() + (i * daysPerPoint));
+          labels.push(date.toLocaleDateString('zh-TW', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          }));
+        }
+        break;
+        
+      case '6months':
+        // 最近六個月：按比例分配
+        for (let i = 0; i < pointCount; i++) {
+          const date = new Date(startDate);
+          date.setDate(startDate.getDate() + (i * daysPerPoint));
+          labels.push(date.toLocaleDateString('zh-TW', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          }));
+        }
+        break;
+        
+      case '1year':
+      case 'all':
+        // 最近一年：12個點 = 每個月一點
+        if (pointCount === 12) {
+          for (let i = 0; i < pointCount; i++) {
+            const date = new Date(startDate);
+            date.setMonth(startDate.getMonth() + i);
+            labels.push(date.toLocaleDateString('zh-TW', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit' 
+            }));
+          }
+        } else {
+          // 如果點數不是12，按比例分配（每個點代表的天數）
+          for (let i = 0; i < pointCount; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + (i * daysPerPoint));
+            labels.push(date.toLocaleDateString('zh-TW', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit' 
+            }));
+          }
+        }
+        break;
+        
+      default:
+        // 預設：按比例分配
+        for (let i = 0; i < pointCount; i++) {
+          const date = new Date(startDate);
+          date.setDate(startDate.getDate() + (i * daysPerPoint));
+          labels.push(date.toLocaleDateString('zh-TW', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          }));
+        }
+    }
+    
+    // 🔥 確保最後一個標籤是結束日期
+    if (labels.length > 0) {
+      labels[labels.length - 1] = endDate.toLocaleDateString('zh-TW', { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit' 
+      });
+    }
+    
+    return labels;
+  }
+
   // 新增方法：根據時間範圍篩選數據點
   private filterPointsByTimeRange(points: any[]): any[] {
     if (!points || points.length === 0) {
       return [];
     }
     
-    // 如果沒有設置日期範圍，返回所有數據點
+    // 如果沒有設置日期範圍，先計算日期範圍
+    if (!this.startDate || !this.endDate) {
+      this.updateDateRangeForPeriod(this.currentFilter);
+    }
+    
+    // 如果還是沒有日期範圍，返回所有數據點
     if (!this.startDate || !this.endDate) {
       return points;
     }
     
+    // 根據日期範圍過濾數據點
     const filteredPoints = points.filter((point: any) => {
       if (!point.date) {
         return false;
@@ -1008,6 +1330,10 @@ export class LegislatorsDetailComponent {
       return pointDate >= this.startDate && pointDate <= this.endDate;
     });
     
+    // 🔥 如果過濾後沒有點，但原始數據有點，返回所有點（避免空圖表）
+    if (filteredPoints.length === 0 && points.length > 0) {
+      return points;
+    }
     
     return filteredPoints;
   }
@@ -1523,34 +1849,68 @@ export class LegislatorsDetailComponent {
   
   // 新增方法：根據時間範圍更新日期範圍
   private updateDateRangeForPeriod(period: string): void {
-    const today = new Date();
-    const endDate = today.toISOString().split('T')[0];
-    let startDate = new Date();
+    // 取得投票日期（優先使用對應表，其次使用 recallData 中的投票日期）
+    let voteDate: Date | null = null;
+    
+    // 先從對應表中取得投票日期
+    const legislatorName = this.data?.name;
+    if (legislatorName && this.RECALL_VOTE_DATES[legislatorName]) {
+      try {
+        voteDate = new Date(this.RECALL_VOTE_DATES[legislatorName]);
+        // 驗證日期是否有效
+        if (isNaN(voteDate.getTime())) {
+          voteDate = null;
+        }
+      } catch (e) {
+        voteDate = null;
+      }
+    }
+    
+    // 如果對應表中沒有，則嘗試從 recallData 中取得
+    if (!voteDate && this.recallData) {
+      const voteDateStr = this.recallData.recall_data?.罷免投票日 || this.recallData.recallVoteDate || '';
+      if (voteDateStr) {
+        try {
+          voteDate = new Date(voteDateStr);
+          // 驗證日期是否有效
+          if (isNaN(voteDate.getTime())) {
+            voteDate = null;
+          }
+        } catch (e) {
+          voteDate = null;
+        }
+      }
+    }
+    
+    // 使用投票日期作為結束日期，如果沒有投票日期則使用今天
+    const endDateObj = voteDate || new Date();
+    const endDate = endDateObj.toISOString().split('T')[0];
+    let startDate = new Date(endDateObj);
     
     switch (period) {
       case 'week':
-        startDate.setDate(today.getDate() - 7);
+        startDate.setDate(endDateObj.getDate() - 6); // 包含投票日，所以減6天
         break;
       case '2weeks':
-        startDate.setDate(today.getDate() - 14);
+        startDate.setDate(endDateObj.getDate() - 13); // 包含投票日，所以減13天
         break;
       case 'month':
-        startDate.setDate(today.getDate() - 30);
+        startDate.setDate(endDateObj.getDate() - 29); // 包含投票日，所以減29天
         break;
       case '3months':
-        startDate.setDate(today.getDate() - 90);
+        startDate.setDate(endDateObj.getDate() - 89); // 包含投票日，所以減89天
         break;
       case '6months':
-        startDate.setDate(today.getDate() - 180);
+        startDate.setDate(endDateObj.getDate() - 179); // 包含投票日，所以減179天
         break;
       case '1year':
-        startDate.setDate(today.getDate() - 365);
+        startDate.setDate(endDateObj.getDate() - 364); // 包含投票日，所以減364天
         break;
       case 'all':
-        startDate.setDate(today.getDate() - 365);
+        startDate.setDate(endDateObj.getDate() - 364);
         break;
       default:
-        startDate.setDate(today.getDate() - 30);
+        startDate.setDate(endDateObj.getDate() - 29);
     }
     
     this.startDate = startDate.toISOString().split('T')[0];
@@ -1830,44 +2190,79 @@ export class LegislatorsDetailComponent {
 
   // 新增方法：動態計算顯示期間（基於 currentFilter，不依賴後端數據）
   getDisplayPeriod(): string {
-    const today = new Date();
-    const endDate = today.toISOString().split('T')[0];
-    let startDate = new Date();
+    // 取得投票日期（優先使用對應表，其次使用 recallData 中的投票日期）
+    let voteDate: Date | null = null;
+    
+    // 先從對應表中取得投票日期
+    const legislatorName = this.data?.name;
+    if (legislatorName && this.RECALL_VOTE_DATES[legislatorName]) {
+      try {
+        voteDate = new Date(this.RECALL_VOTE_DATES[legislatorName]);
+        // 驗證日期是否有效
+        if (isNaN(voteDate.getTime())) {
+          voteDate = null;
+        }
+      } catch (e) {
+        voteDate = null;
+      }
+    }
+    
+    // 如果對應表中沒有，則嘗試從 recallData 中取得
+    if (!voteDate && this.recallData) {
+      const voteDateStr = this.recallData.recall_data?.罷免投票日 || this.recallData.recallVoteDate || '';
+      if (voteDateStr) {
+        try {
+          voteDate = new Date(voteDateStr);
+          // 驗證日期是否有效
+          if (isNaN(voteDate.getTime())) {
+            voteDate = null;
+          }
+        } catch (e) {
+          voteDate = null;
+        }
+      }
+    }
+    
+    // 使用投票日期作為結束日期，如果沒有投票日期則使用今天
+    const endDateObj = voteDate || new Date();
+    const endDate = endDateObj.toISOString().split('T')[0];
+    
+    let startDate = new Date(endDateObj);
     let days = 0;
     
-    // 根據當前篩選器計算日期範圍（與 setQuickFilter 保持一致）
+    // 根據當前篩選器計算日期範圍（以投票日期為基準）
     switch (this.currentFilter) {
       case 'week':
         days = 7;
-        startDate.setDate(today.getDate() - 6); // 包含今天，所以減6天
+        startDate.setDate(endDateObj.getDate() - 6); // 包含投票日，所以減6天
         break;
       case '2weeks':
         days = 14;
-        startDate.setDate(today.getDate() - 13); // 包含今天，所以減13天
+        startDate.setDate(endDateObj.getDate() - 13); // 包含投票日，所以減13天
         break;
       case 'month':
         days = 30;
-        startDate.setDate(today.getDate() - 29); // 包含今天，所以減29天
+        startDate.setDate(endDateObj.getDate() - 29); // 包含投票日，所以減29天
         break;
       case '3months':
         days = 90;
-        startDate.setDate(today.getDate() - 89); // 包含今天，所以減89天
+        startDate.setDate(endDateObj.getDate() - 89); // 包含投票日，所以減89天
         break;
       case '6months':
         days = 180;
-        startDate.setDate(today.getDate() - 179); // 包含今天，所以減179天
+        startDate.setDate(endDateObj.getDate() - 179); // 包含投票日，所以減179天
         break;
       case '1year':
         days = 365;
-        startDate.setDate(today.getDate() - 364); // 包含今天，所以減364天
+        startDate.setDate(endDateObj.getDate() - 364); // 包含投票日，所以減364天
         break;
       case 'all':
         days = 365;
-        startDate.setDate(today.getDate() - 364);
+        startDate.setDate(endDateObj.getDate() - 364);
         break;
       default:
         days = 30;
-        startDate.setDate(today.getDate() - 29);
+        startDate.setDate(endDateObj.getDate() - 29);
     }
     
     const startDateStr = startDate.toISOString().split('T')[0];
