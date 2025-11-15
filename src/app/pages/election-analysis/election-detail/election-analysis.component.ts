@@ -75,6 +75,10 @@ export class ElectionAnalysisComponent implements OnInit {
   currentFilter: string = '1year';
   isLoadingTimeData: boolean = false;
   
+  // 日期範圍相關屬性
+  startDate: string = '';
+  endDate: string = '';
+  
   // 後端數據相關屬性
   timeSeriesStats: any = null;
   
@@ -271,6 +275,9 @@ export class ElectionAnalysisComponent implements OnInit {
       this.totalCandidates = electionConfig.candidates.length;
       this.selectedCandidates = this.candidates.map(c => c.id);
 
+      // 初始化日期範圍
+      this.updateDateRangeForPeriod(this.currentFilter);
+
       // 載入完整的分析數據（包含時間序列）
       this.loadElectionAnalysisData();
     } else {
@@ -356,12 +363,19 @@ export class ElectionAnalysisComponent implements OnInit {
       // 顯示特定候選人的正負面網友數時間圖 - 使用真實數據
       const candidate = visibleCandidates.find(c => c.id === this.selectedCandidateForTimeChart);
       if (candidate && candidate.time_series_stats) {
-        this.lineChartData = candidate.time_series_stats;
+        // 使用動態生成的 X 軸標籤（與立委頁面邏輯一致）
+        const originalData = candidate.time_series_stats;
+        const pointCount = originalData.labels ? originalData.labels.length : 0;
+        const labels = this.generateTimeAxisLabels(pointCount, this.currentFilter);
+        
+        // 創建新的圖表數據，使用動態生成的標籤
+        this.lineChartData = {
+          labels: labels,
+          datasets: originalData.datasets || []
+        };
         
         // 為個人分析也動態調整圖表選項
-        if (candidate.time_series_stats.labels) {
-          this.updateChartOptionsForDataPoints(candidate.time_series_stats.labels.length);
-        }
+        this.updateChartOptionsForDataPoints(labels.length);
       } else {
         this.lineChartData = { labels: [], datasets: [] };
       }
@@ -666,22 +680,9 @@ export class ElectionAnalysisComponent implements OnInit {
       return;
     }
 
-    // 提取日期標籤
-    const labels = firstCandidateStats.stats_points.map((point: any) => {
-      if (point.date) {
-        try {
-          const date = new Date(point.date);
-          return date.toLocaleDateString('zh-TW', { 
-            year: 'numeric', 
-            month: '2-digit', 
-            day: '2-digit' 
-          });
-        } catch (e) {
-          return point.date;
-        }
-      }
-      return '';
-    });
+    // 使用動態生成的 X 軸標籤（與立委頁面邏輯一致）
+    const pointCount = firstCandidateStats.stats_points.length;
+    const labels = this.generateTimeAxisLabels(pointCount, this.currentFilter);
 
     // 為每個可見的候選人創建數據集
     const datasets = this.candidates
@@ -788,6 +789,9 @@ export class ElectionAnalysisComponent implements OnInit {
     this.currentFilter = period;
     this.isLoadingTimeData = true;
     
+    // 更新日期範圍
+    this.updateDateRangeForPeriod(period);
+    
     // 映射前端篩選器到後端時間範圍參數
     const timeRangeMap: { [key: string]: string } = {
       'week': '7',
@@ -817,51 +821,63 @@ export class ElectionAnalysisComponent implements OnInit {
     }, 500);
   }
 
-  // 新增方法：動態計算顯示期間（基於 currentFilter，不依賴後端數據）
-  getDisplayPeriod(): string {
-    const today = new Date();
-    const endDate = today.toISOString().split('T')[0];
-    let startDate = new Date();
-    let days = 0;
-    
-    // 根據當前篩選器計算日期範圍（與 setQuickFilter 保持一致）
-    switch (this.currentFilter) {
-      case 'week':
-        days = 7;
-        startDate.setDate(today.getDate() - 6); // 包含今天，所以減6天
-        break;
-      case '2weeks':
-        days = 14;
-        startDate.setDate(today.getDate() - 13); // 包含今天，所以減13天
-        break;
-      case 'month':
-        days = 30;
-        startDate.setDate(today.getDate() - 29); // 包含今天，所以減29天
-        break;
-      case '3months':
-        days = 90;
-        startDate.setDate(today.getDate() - 89); // 包含今天，所以減89天
-        break;
-      case '6months':
-        days = 180;
-        startDate.setDate(today.getDate() - 179); // 包含今天，所以減179天
-        break;
-      case '1year':
-        days = 365;
-        startDate.setDate(today.getDate() - 364); // 包含今天，所以減364天
-        break;
-      case 'all':
-        days = 365;
-        startDate.setDate(today.getDate() - 364);
-        break;
-      default:
-        days = 365;
-        startDate.setDate(today.getDate() - 364);
+  // 根據時間範圍更新日期範圍 - 使用選舉的 end_date
+  private updateDateRangeForPeriod(period: string): void {
+    if (!this.election || !this.election.end_date) {
+      // 如果沒有選舉配置或結束日期，使用今天作為結束日期
+      const today = new Date();
+      this.endDate = today.toISOString().split('T')[0];
+    } else {
+      this.endDate = this.election.end_date;
     }
     
-    const startDateStr = startDate.toISOString().split('T')[0];
+    const endDateObj = new Date(this.endDate);
+    let startDate = new Date(endDateObj);
     
-    return `${startDateStr} - ${endDate} (${days}天)`;
+    switch (period) {
+      case 'week':
+        startDate.setDate(endDateObj.getDate() - 6); // 包含結束日，所以減6天
+        break;
+      case '2weeks':
+        startDate.setDate(endDateObj.getDate() - 13); // 包含結束日，所以減13天
+        break;
+      case 'month':
+        startDate.setDate(endDateObj.getDate() - 29); // 包含結束日，所以減29天
+        break;
+      case '3months':
+        startDate.setDate(endDateObj.getDate() - 89); // 包含結束日，所以減89天
+        break;
+      case '6months':
+        startDate.setDate(endDateObj.getDate() - 179); // 包含結束日，所以減179天
+        break;
+      case '1year':
+        startDate.setDate(endDateObj.getDate() - 364); // 包含結束日，所以減364天
+        break;
+      case 'all':
+        // 如果有 start_date，使用它；否則從結束日往前推一年
+        if (this.election && this.election.start_date) {
+          startDate = new Date(this.election.start_date);
+        } else {
+          startDate.setDate(endDateObj.getDate() - 364);
+        }
+        break;
+      default:
+        startDate.setDate(endDateObj.getDate() - 364);
+    }
+    
+    this.startDate = startDate.toISOString().split('T')[0];
+  }
+
+  // 新增方法：動態計算顯示期間（基於 currentFilter 和選舉的 end_date）
+  getDisplayPeriod(): string {
+    // 確保日期範圍已更新
+    if (!this.startDate || !this.endDate) {
+      this.updateDateRangeForPeriod(this.currentFilter);
+    }
+    
+    const days = this.calculateDaysDifference(this.startDate, this.endDate);
+    
+    return `${this.startDate} - ${this.endDate} (${days}天)`;
   }
 
   // 計算兩個日期之間的天數差異
@@ -872,5 +888,222 @@ export class ElectionAnalysisComponent implements OnInit {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     return diffDays;
+  }
+
+  // 新增方法：根據數據點數量和時間範圍生成 X 軸時間標籤（與立委頁面邏輯一致）
+  private generateTimeAxisLabels(pointCount: number, filter: string): string[] {
+    // 確保日期範圍已設置
+    if (!this.startDate || !this.endDate) {
+      this.updateDateRangeForPeriod(this.currentFilter);
+    }
+    
+    // 如果還是沒有日期範圍，使用選舉配置的日期
+    let startDate: Date;
+    let endDate: Date;
+    
+    if (this.startDate && this.endDate) {
+      startDate = new Date(this.startDate);
+      endDate = new Date(this.endDate);
+    } else {
+      // 備用方案：使用選舉配置的日期
+      if (this.election && this.election.end_date) {
+        endDate = new Date(this.election.end_date);
+      } else {
+        endDate = new Date();
+      }
+      
+      startDate = new Date(endDate);
+      
+      // 根據時間範圍計算開始日期
+      switch (filter) {
+        case 'week':
+          startDate.setDate(endDate.getDate() - 6);
+          break;
+        case '2weeks':
+          startDate.setDate(endDate.getDate() - 13);
+          break;
+        case 'month':
+          startDate.setDate(endDate.getDate() - 29);
+          break;
+        case '3months':
+          startDate.setDate(endDate.getDate() - 89);
+          break;
+        case '6months':
+          startDate.setDate(endDate.getDate() - 179);
+          break;
+        case '1year':
+        case 'all':
+          if (this.election && this.election.start_date) {
+            startDate = new Date(this.election.start_date);
+          } else {
+            startDate.setDate(endDate.getDate() - 364);
+          }
+          break;
+        default:
+          startDate.setDate(endDate.getDate() - 29);
+      }
+    }
+    
+    const labels: string[] = [];
+    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    
+    // 根據開始日期、結束日期和數據點數量生成標籤
+    // 計算每個點代表的時間間隔
+    const daysPerPoint = totalDays / pointCount;
+    
+    // 根據時間範圍決定生成策略
+    switch (filter) {
+      case 'week':
+        // 最近一周：7個點 = 每天一點
+        if (pointCount === 7) {
+          for (let i = 0; i < pointCount; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + i);
+            labels.push(date.toLocaleDateString('zh-TW', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit' 
+            }));
+          }
+        } else {
+          // 如果點數不是7，按比例分配
+          for (let i = 0; i < pointCount; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + (i * daysPerPoint));
+            labels.push(date.toLocaleDateString('zh-TW', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit' 
+            }));
+          }
+        }
+        break;
+        
+      case '2weeks':
+        // 最近兩周：14個點 = 每天一點
+        if (pointCount === 14) {
+          for (let i = 0; i < pointCount; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + i);
+            labels.push(date.toLocaleDateString('zh-TW', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit' 
+            }));
+          }
+        } else {
+          for (let i = 0; i < pointCount; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + (i * daysPerPoint));
+            labels.push(date.toLocaleDateString('zh-TW', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit' 
+            }));
+          }
+        }
+        break;
+        
+      case 'month':
+        // 最近一個月：30個點 = 每天一點
+        if (pointCount === 30) {
+          for (let i = 0; i < pointCount; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + i);
+            labels.push(date.toLocaleDateString('zh-TW', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit' 
+            }));
+          }
+        } else {
+          for (let i = 0; i < pointCount; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + (i * daysPerPoint));
+            labels.push(date.toLocaleDateString('zh-TW', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit' 
+            }));
+          }
+        }
+        break;
+        
+      case '3months':
+        // 最近三個月：按比例分配
+        for (let i = 0; i < pointCount; i++) {
+          const date = new Date(startDate);
+          date.setDate(startDate.getDate() + (i * daysPerPoint));
+          labels.push(date.toLocaleDateString('zh-TW', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          }));
+        }
+        break;
+        
+      case '6months':
+        // 最近六個月：按比例分配
+        for (let i = 0; i < pointCount; i++) {
+          const date = new Date(startDate);
+          date.setDate(startDate.getDate() + (i * daysPerPoint));
+          labels.push(date.toLocaleDateString('zh-TW', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          }));
+        }
+        break;
+        
+      case '1year':
+      case 'all':
+        // 最近一年：12個點 = 每個月一點
+        if (pointCount === 12) {
+          for (let i = 0; i < pointCount; i++) {
+            const date = new Date(startDate);
+            date.setMonth(startDate.getMonth() + i);
+            labels.push(date.toLocaleDateString('zh-TW', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit' 
+            }));
+          }
+        } else {
+          // 如果點數不是12，按比例分配（每個點代表的天數）
+          for (let i = 0; i < pointCount; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + (i * daysPerPoint));
+            labels.push(date.toLocaleDateString('zh-TW', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit' 
+            }));
+          }
+        }
+        break;
+        
+      default:
+        // 預設：按比例分配
+        for (let i = 0; i < pointCount; i++) {
+          const date = new Date(startDate);
+          date.setDate(startDate.getDate() + (i * daysPerPoint));
+          labels.push(date.toLocaleDateString('zh-TW', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          }));
+        }
+    }
+    
+    // 確保最後一個標籤是結束日期
+    if (labels.length > 0) {
+      labels[labels.length - 1] = endDate.toLocaleDateString('zh-TW', { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit' 
+      });
+    }
+    
+    return labels;
   }
 }
