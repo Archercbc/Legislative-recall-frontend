@@ -271,12 +271,6 @@ export class ElectionAnalysisComponent implements OnInit {
       this.totalCandidates = electionConfig.candidates.length;
       this.selectedCandidates = this.candidates.map(c => c.id);
 
-      // 如果沒有候選人，不載入分析數據，直接顯示「敬請期待」
-      if (electionConfig.candidates.length === 0) {
-        this.isLoading = false;
-        return;
-      }
-
       // 載入完整的分析數據（包含時間序列）
       this.loadElectionAnalysisData();
     } else {

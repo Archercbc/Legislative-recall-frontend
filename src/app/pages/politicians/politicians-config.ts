@@ -19,56 +19,7 @@ export const PARTY_COLORS: Record<string, string> = {
 };
 
 // 政治人物配置列表
-export const politicians_config_list = [
-  {
-    "politician_id": "蔡志弘",
-    "name": "蔡志弘",
-    "target_type": "politician",
-    "party": "國民黨",
-    "partyColor": "#000080",
-    "photo": "assets/蔡志弘.jpg",
-  },
-  {
-    "politician_id": "卓伯源",
-    "name": "卓伯源",
-    "target_type": "politician",
-    "party": "國民黨",
-    "partyColor": "#000080",
-    "photo": "assets/卓伯源.jpg",
-  },
-  {
-    "politician_id": "張亞中",
-    "name": "張亞中",
-    "target_type": "politician",
-    "party": "國民黨",
-    "partyColor": "#000080",
-    "photo": "assets/張亞中.jpg",
-  },
-  {
-    "politician_id": "郝龍斌",
-    "name": "郝龍斌",
-    "target_type": "politician",
-    "party": "國民黨",
-    "partyColor": "#000080",
-    "photo": "assets/郝龍斌.jpg",
-  },
-  {
-    "politician_id": "羅智強",
-    "name": "羅智強",
-    "target_type": "politician",
-    "party": "國民黨",
-    "partyColor": "#000080",
-    "photo": "assets/羅智強.jpg",
-  },
-  {
-    "politician_id": "鄭麗文",
-    "name": "鄭麗文",
-    "target_type": "politician",
-    "party": "國民黨",
-    "partyColor": "#000080",
-    "photo": "assets/鄭麗文.jpg",
-  },
-];
+export const politicians_config_list: any[] = [];
 
 // 獲取政黨顏色
 export function getPartyColor(party: string): string {

@@ -61,7 +61,7 @@
   </div>
 
   <!-- 政治人物列表 -->
-  <div class="politicians-grid" *ngIf="!isLoading">
+  <div class="politicians-grid" *ngIf="!isLoading && filteredPoliticians.length > 0">
     <div 
       class="politician-card" 
       *ngFor="let politician of filteredPoliticians"
@@ -127,12 +127,12 @@
     </div>
   </div>
 
-  <!-- 無資料狀態 -->
-  <div class="no-data" *ngIf="!isLoading && filteredPoliticians.length === 0">
-    <div class="no-data-content">
-      <i class="cil-search"></i>
-      <h3>沒有找到符合條件的政治人物</h3>
-      <p>請嘗試調整篩選條件或稍後再試</p>
+  <!-- 敬請期待縣市長選舉 -->
+  <div class="coming-soon-message" *ngIf="!isLoading && filteredPoliticians.length === 0">
+    <div class="coming-soon-content">
+      <i class="cil-calendar-check" style="font-size: 48px; color: #6c757d; margin-bottom: 20px;"></i>
+      <h2>敬請期待縣市長選舉</h2>
+      <p>相關分析資料即將推出</p>
     </div>
   </div>
 </div>
