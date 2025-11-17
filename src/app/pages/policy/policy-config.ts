@@ -22,13 +22,13 @@ export const policy_config_list = [
     "eventName": "普發10000",  // 後端資料庫中的實際事件名稱
     "type": "economy",
     "status": "completed",
-    "start_date": "2023-01-01",
-    "end_date": "2023-12-31",
+    "start_date": "2025-11-05",
+    "end_date": "2026-04-30",
     "description": "全民普發現金新台幣 10,000 元政策，分析網路討論聲量、情緒分布與關鍵議題。",
     "tags": ["經濟", "現金發放", "2023"],
     "key_issues": ["發放方式", "資格認定", "財政負擔", "經濟效益"],
-    "related_departments": ["財政部", "行政院"],
-    "budget": "1400億",
+    "related_departments": [],
+    "budget": "5,900億元",
     "beneficiaries": "全體國民"
   },
 ];

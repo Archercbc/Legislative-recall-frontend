@@ -53,8 +53,11 @@
   <div class="elections-grid" *ngIf="!isLoading">
     <div 
       class="election-card" 
+      [class.coming-soon-card]="election.coming_soon || election.disabled"
+      [class.disabled-card]="election.disabled"
       *ngFor="let election of filteredElections"
-      (click)="viewElectionDetails(election.election_id)">
+      [style.pointer-events]="election.disabled ? 'none' : 'auto'"
+      (click)="!election.disabled && viewElectionDetails(election.election_id)">
       
       <!-- 選舉標題 -->
       <div class="election-header">
@@ -75,13 +78,17 @@
 
       <!-- 選舉資訊 -->
       <div class="election-info">
-        <div class="info-item">
+        <div class="info-item" *ngIf="!election.disabled && getCandidateCount(election) > 0">
           <i class="cil-people"></i>
           <span>{{ getCandidateCount(election) }} 位候選人</span>
         </div>
-        <div class="info-item">
+        <div class="info-item" *ngIf="election.start_date && election.end_date">
           <i class="cil-calendar"></i>
           <span>{{ getDateRange(election) }}</span>
+        </div>
+        <div class="info-item" *ngIf="election.disabled">
+          <i class="cil-calendar-check"></i>
+          <span>2026年</span>
         </div>
         <div class="info-item" *ngIf="election.analysis_period">
           <i class="cil-clock"></i>
@@ -90,7 +97,7 @@
       </div>
 
       <!-- 候選人預覽 -->
-      <div class="candidates-preview">
+      <div class="candidates-preview" *ngIf="!election.disabled && election.candidates && election.candidates.length > 0">
         <div class="candidates-header">
           <h4>候選人</h4>
           <span class="candidate-count">{{ getCandidateCount(election) }} 人</span>
@@ -148,9 +155,13 @@
 
       <!-- 操作按鈕 -->
       <div class="election-actions">
-        <button class="btn btn-primary btn-view">
-          <i class="cil-chart-line"></i>
-          查看分析
+        <button 
+          class="btn btn-primary btn-view"
+          [disabled]="election.disabled"
+          [style.opacity]="election.disabled ? '0.6' : '1'"
+          [style.cursor]="election.disabled ? 'not-allowed' : 'pointer'">
+          <i [class]="election.disabled ? 'cil-calendar-check' : 'cil-chart-line'"></i>
+          {{ election.disabled ? '敬請期待' : '查看分析' }}
         </button>
       </div>
     </div>

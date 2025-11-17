@@ -67,7 +67,7 @@ export class PolicyTrackingComponent {
   demoLineChartData: any = {
     labels: [],
     datasets: [{
-      label: '討論熱度',
+      label: '網友數',
       data: [],
       borderColor: '#3b82f6',
       backgroundColor: 'rgba(59, 130, 246, 0.1)',

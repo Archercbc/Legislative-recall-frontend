@@ -2,10 +2,7 @@
 export const POLITICIAN_TYPES = {
   legislator: '立法委員',
   mayor: '縣市長',
-  councilor: '議員',
-  minister: '部長',
-  party_leader: '政黨領袖',
-  politician: '政治人物',
+  president: '總統',
   other: '其他'
 };
 

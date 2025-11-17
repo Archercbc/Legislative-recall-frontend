@@ -20,24 +20,10 @@ export class PolicyListComponent implements OnInit {
 
   policyTypes = [
     { value: 'all', label: '全部類型' },
-    { value: 'economy', label: '經濟政策' },
-    { value: 'social', label: '社會福利' },
-    { value: 'education', label: '教育政策' },
-    { value: 'healthcare', label: '醫療衛生' },
-    { value: 'environment', label: '環境保護' },
-    { value: 'infrastructure', label: '基礎建設' },
-    { value: 'technology', label: '科技政策' },
-    { value: 'other', label: '其他' }
+    { value: 'economy', label: '經濟政策' }
   ];
 
-  policyStatuses = [
-    { value: 'all', label: '全部狀態' },
-    { value: 'planning', label: '規劃中' },
-    { value: 'in_process', label: '執行中' },
-    { value: 'completed', label: '已完成' },
-    { value: 'suspended', label: '暫停' },
-    { value: 'canceled', label: '取消' }
-  ];
+  policyStatuses: { value: string; label: string }[] = [];
 
   constructor(
     private router: Router
@@ -51,6 +37,17 @@ export class PolicyListComponent implements OnInit {
     this.isLoading = true;
     
     this.policies = policy_config_list;
+    
+    // 動態生成政策狀態選項（只包含實際存在的狀態）
+    const existingStatuses = new Set(this.policies.map(p => p.status));
+    this.policyStatuses = [
+      { value: 'all', label: '全部狀態' },
+      ...Array.from(existingStatuses).map(status => ({
+        value: status,
+        label: this.getStatusText(status)
+      }))
+    ];
+    
     this.isLoading = false;
   }
 

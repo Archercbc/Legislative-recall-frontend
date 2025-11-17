@@ -77,8 +77,23 @@ export const election_config_list = [
         "photo": "assets/蔡志弘.jpg"
       }
     ]
-      }
-    ]
+  },
+  {
+    "election_id": "local-2026-coming-soon",
+    "title": "敬請期待2026縣市長",
+    "subtitle": "Coming Soon - 2026 Local Elections",
+    "type": "local",
+    "status": "upcoming",
+    "start_date": "2026-01-01",
+    "end_date": "2026-12-31",
+    "description": "相關分析資料即將推出",
+    "tags": ["地方選舉", "2026"],
+    "key_issues": [],
+    "candidates": [],
+    "coming_soon": true,
+    "disabled": true
+  }
+]
 
 // 獲取狀態顏色
 export function getStatusClass(status?: string): string {

@@ -19,7 +19,7 @@
   </div>
 
   <!-- 篩選器 -->
-  <div class="filters-container" *ngIf="!isLoading">
+  <div class="filters-container" *ngIf="!isLoading && filteredPoliticians.length > 0">
     <div class="filters-row">
       <div class="filter-group">
         <label for="typeFilter" class="filter-label">類型</label>
@@ -131,7 +131,6 @@
   <div class="coming-soon-message" *ngIf="!isLoading && filteredPoliticians.length === 0">
     <div class="coming-soon-content">
       <i class="cil-calendar-check" style="font-size: 48px; color: #6c757d; margin-bottom: 20px;"></i>
-      <h2>敬請期待縣市長選舉</h2>
       <p>相關分析資料即將推出</p>
     </div>
   </div>

@@ -815,6 +815,9 @@ export class ElectionAnalysisComponent implements OnInit {
       this.loadElectionAnalysisData(timeRange);
     }
     
+    // 更新長條圖（確保與時間篩選連結）
+    this.updateBarChart();
+    
     // 模擬載入時間
     setTimeout(() => {
       this.isLoadingTimeData = false;

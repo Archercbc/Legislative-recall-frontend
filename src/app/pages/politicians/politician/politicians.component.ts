@@ -24,9 +24,7 @@ export class PoliticiansComponent implements OnInit {
     { value: 'all', label: '全部類型' },
     { value: 'legislator', label: '立法委員' },
     { value: 'mayor', label: '縣市長' },
-    { value: 'councilor', label: '議員' },
-    { value: 'minister', label: '部長' },
-    { value: 'party_leader', label: '政黨領袖' },
+    { value: 'president', label: '總統' },
     { value: 'other', label: '其他' }
   ];
 

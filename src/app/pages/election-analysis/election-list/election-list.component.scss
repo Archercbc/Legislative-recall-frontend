@@ -398,6 +398,47 @@
   }
 }
 
+.coming-soon-card,
+.disabled-card {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+  
+  .election-title,
+  .election-subtitle {
+    color: #6c757d;
+  }
+  
+  .election-description {
+    text-align: center;
+    padding: 1rem 0;
+    
+    p {
+      color: #6c757d;
+      font-style: italic;
+    }
+  }
+  
+  .election-info {
+    opacity: 0.7;
+  }
+  
+  .election-actions {
+    .btn-view {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.disabled-card {
+  &:hover {
+    transform: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: transparent;
+  }
+}
+
 // 響應式設計
 @media (max-width: 768px) {
   .election-list-container {
@@ -421,5 +462,17 @@
   .coverage-stats {
     flex-direction: column;
     gap: 0.5rem;
+  }
+  
+  .coming-soon-section {
+    .coming-soon-card {
+      padding: 2rem 1.5rem;
+      
+      .coming-soon-content {
+        h2 {
+          font-size: 1.5rem;
+        }
+      }
+    }
   }
 }

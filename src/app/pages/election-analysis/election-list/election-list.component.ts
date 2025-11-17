@@ -18,14 +18,7 @@ export class ElectionListComponent implements OnInit {
   selectedType: string = 'all';
   selectedStatus: string = 'all';
 
-  electionTypes = [
-    { value: 'all', label: '全部選舉' },
-    { value: 'presidential', label: '總統選舉' },
-    { value: 'legislative', label: '立委選舉' },
-    { value: 'local', label: '地方選舉' },
-    { value: 'party_leadership', label: '政黨選舉' },
-    { value: 'referendum', label: '公投' }
-  ];
+  electionTypes: { value: string; label: string }[] = [];
 
   electionStatuses = [
     { value: 'all', label: '全部狀態' },
@@ -47,6 +40,14 @@ export class ElectionListComponent implements OnInit {
     
     // 直接使用前端配置數據，不需要串接後端
     this.elections = election_config_list;
+    
+      // 固定包含政黨選舉和地方選舉（即使地方選舉還在開發中）
+    this.electionTypes = [
+      { value: 'all', label: '全部選舉' },
+      { value: 'party_leadership', label: '政黨選舉' },
+      { value: 'local', label: '地方選舉' }
+    ];
+    
     this.isLoading = false;
   }
 
@@ -62,6 +63,10 @@ export class ElectionListComponent implements OnInit {
     }
 
     return filtered;
+  }
+
+  get allElections(): any[] {
+    return this.elections;
   }
 
   onTypeChange(): void {

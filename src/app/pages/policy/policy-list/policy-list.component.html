@@ -79,32 +79,13 @@
           <i class="cil-dollar"></i>
           <span>預算：{{ policy.budget }}</span>
         </div>
-        <div class="info-item" *ngIf="policy.beneficiaries">
-          <i class="cil-people"></i>
-          <span>受惠對象：{{ policy.beneficiaries }}</span>
-        </div>
         <div class="info-item" *ngIf="policy.start_date && policy.end_date">
           <i class="cil-calendar"></i>
           <span>{{ getDateRange(policy) }}</span>
+          <span *ngIf="policy.end_date" style="color: red; margin-left: 8px;">結束日期：{{ policy.end_date }}</span>
         </div>
       </div>
 
-      <!-- 關鍵議題 -->
-      <div class="key-issues" *ngIf="policy.key_issues && policy.key_issues.length > 0">
-        <h4>關鍵議題</h4>
-        <div class="issues-tags">
-          <span 
-            class="issue-tag" 
-            *ngFor="let issue of policy.key_issues.slice(0, 3)">
-            {{ issue }}
-          </span>
-          <span 
-            class="more-issues" 
-            *ngIf="policy.key_issues && policy.key_issues.length > 3">
-            +{{ policy.key_issues.length - 3 }} 個議題
-          </span>
-        </div>
-      </div>
 
       <!-- 相關部門 -->
       <div class="related-departments" *ngIf="policy.related_departments && policy.related_departments.length > 0">
