@@ -80,7 +80,7 @@ export const election_config_list = [
   },
   {
     "election_id": "local-2026-coming-soon",
-    "title": "敬請期待2026縣市長",
+    "title": "敬請期待2026縣市長選舉",
     "subtitle": "Coming Soon - 2026 Local Elections",
     "type": "local",
     "status": "upcoming",
