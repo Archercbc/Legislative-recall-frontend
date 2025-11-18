@@ -1,7 +1,8 @@
 .election-analysis-container {
   padding: 2rem;
-  max-width: 1400px;
+  max-width: 1600px; // 增加最大寬度
   margin: 0 auto;
+  width: 100%;
 }
 
 .page-header {
@@ -390,22 +391,63 @@
   margin-bottom: 2rem;
   width: 100%;
   max-width: 100%;
-  overflow: hidden;
+  overflow: visible; // 改為 visible 讓 tooltip 可以完整顯示
+  padding-right: 50px; // 添加右側空間給 tooltip
 }
 
-// 圖表容器樣式 - 固定高度避免不斷放長
-.chart-container {
+// 圖表容器樣式 - 響應式設計，無滾動條，但允許 tooltip 顯示
+.chart-body-container {
   position: relative;
   width: 100%;
-  height: 400px; // 固定高度
+  overflow: visible !important; // 允許 tooltip 超出容器顯示
+  padding: 1.5rem; // 增加內距
+  padding-right: 80px; // 右側留更多空間給 tooltip
+  // 確保 tooltip 不會被裁剪
+  z-index: 1;
+  contain: none !important; // 允許子元素超出容器
+}
+
+.chart-container {
+  position: relative;
+  width: calc(100% - 80px); // 減去右側留白，讓圖表本身不要太靠右
+  min-height: 550px; // 再增加高度
+  height: auto; // 自動高度
+  max-height: 750px; // 增加最大高度
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: visible !important; // 允許 tooltip 顯示
+  z-index: 1;
+  contain: none !important; // 允許子元素超出容器
+  margin: 0 auto; // 置中
+  
+  // 響應式高度調整
+  @media (min-width: 1600px) {
+    height: 600px; // 大螢幕更高
+    width: calc(100% - 100px); // 大螢幕留更多空間
+  }
+  
+  @media (min-width: 1200px) {
+    height: 580px; // 增加高度
+  }
+  
+  @media (max-width: 768px) {
+    min-height: 400px;
+    max-height: 500px;
+    width: 100%; // 小螢幕使用全寬
+  }
 }
 
 .time-series-chart {
   width: 100% !important;
   height: 100% !important;
+  max-width: 100%;
+  
+  // 確保圖表不會產生滾動條
+  canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
 }
 
 .chart-section {
@@ -713,5 +755,134 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+  }
+}
+
+// Tooltip 樣式增強 - 確保在最頂層顯示
+::ng-deep {
+  // Chart.js tooltip 容器 - 確保在最頂層且不被裁剪
+  .chartjs-tooltip-container {
+    position: absolute !important; // 使用 absolute，讓 positioner 控制位置
+    z-index: 99999 !important;
+    pointer-events: none !important;
+    overflow: visible !important;
+    // 確保不會被父容器裁剪
+    contain: none !important;
+  }
+  
+  // Chart.js tooltip 樣式
+  .chartjs-tooltip {
+    opacity: 1 !important;
+    pointer-events: none !important;
+    position: absolute !important; // 使用 absolute 定位，讓 Chart.js 的 positioner 控制位置
+    transition: all 0.15s ease;
+    z-index: 99999 !important; // 極高的 z-index 確保在最頂層
+    max-width: 300px !important;
+    min-width: 200px;
+    
+    // 添加陰影和動畫效果
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    
+    // 確保 tooltip 不會被裁剪
+    overflow: visible !important;
+    transform-origin: center center;
+    isolation: isolate; // 創建新的堆疊上下文
+    
+    // 確保 tooltip 內容清晰可讀
+    .chartjs-tooltip-body {
+      white-space: pre-line;
+      line-height: 1.6;
+      overflow: visible !important;
+    }
+    
+    // Tooltip 標題樣式
+    .chartjs-tooltip-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    // Tooltip 列表樣式
+    .chartjs-tooltip-list {
+      margin: 0;
+      padding: 0;
+      overflow: visible !important;
+      
+      .chartjs-tooltip-list-item {
+        margin: 4px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+    }
+  }
+  
+  // 改善圖表互動體驗
+  .time-series-chart {
+    canvas {
+      cursor: crosshair !important;
+    }
+  }
+  
+  // 圖表容器 - 確保 tooltip 不會超出範圍
+  .chart-container {
+    position: relative;
+    overflow: visible !important;
+    // 確保 tooltip 可以超出容器邊界顯示
+    clip-path: none !important;
+    
+    // 確保圖表本身不會產生滾動條
+    c-chart {
+      overflow: hidden !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      // 但允許 tooltip 超出
+      clip-path: none !important;
+    }
+    
+    &:hover {
+      .chartjs-tooltip {
+        opacity: 1 !important;
+      }
+    }
+  }
+  
+  // 確保圖表卡片不會裁剪 tooltip，但也不產生滾動條
+  c-card {
+    overflow: visible !important;
+    position: relative;
+    z-index: 1;
+    contain: none !important; // 允許子元素超出容器
+    
+    c-card-body {
+      overflow: visible !important; // 允許 tooltip 顯示
+      position: relative;
+      z-index: 1;
+      contain: none !important; // 允許子元素超出容器
+      
+      &.chart-body-container {
+        overflow: visible !important; // 允許 tooltip 顯示
+        contain: none !important; // 允許子元素超出容器
+      }
+    }
+  }
+  
+  // 確保圖表畫布容器允許 tooltip 顯示
+  .chartjs-tooltip-container {
+    position: absolute !important; // 使用 absolute 定位，讓 Chart.js 控制
+    overflow: visible !important;
+    z-index: 99999 !important; // 極高的 z-index
+    pointer-events: none !important;
+  }
+  
+  // 確保所有可能遮擋 tooltip 的元素都有較低的 z-index
+  .election-analysis-container,
+  c-card,
+  c-card-body,
+  .chart-container {
+    position: relative;
+    z-index: 1 !important; // 確保低於 tooltip
   }
 }

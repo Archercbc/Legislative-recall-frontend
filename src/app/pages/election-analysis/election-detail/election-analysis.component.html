@@ -220,7 +220,7 @@
             </div>
           </div>
         </div>
-        <div cCardBody style="overflow-x: auto; overflow-y: visible;">
+        <div cCardBody class="chart-body-container">
           <div *ngIf="!isLoadingTimeData" class="chart-container">
             <c-chart #lineChart [data]="lineChartData" type="line" [options]="lineChartOptions" class="time-series-chart"></c-chart>
           </div>
