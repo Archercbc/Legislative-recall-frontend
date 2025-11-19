@@ -82,85 +82,295 @@ export class ElectionAnalysisComponent implements OnInit {
   // 後端數據相關屬性
   timeSeriesStats: any = null;
   
+  // 動態圖表選項配置（用於 updateChartOptionsForDataPoints）
+  private dynamicChartOptions: any = {
+    maxTicksLimit: 20,
+    autoSkip: false,
+    maxRotation: 45
+  };
+  
   // 圖表選項 - 動態調整標籤顯示
-  lineChartOptions: any = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: true,
-        position: 'top' as const,
-      },
-      interaction: {
-        mode: 'nearest' as const,
-        intersect: false,
-      },
-      tooltip: {
-        enabled: true,
+  get lineChartOptions(): any {
+    const component = this; // 保存組件引用
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top' as const,
+          align: 'start' as const,
+          labels: {
+            usePointStyle: true,
+            padding: 15,
+            boxWidth: 8,
+            boxHeight: 8,
+            font: {
+              size: 11
+            }
+          },
+          maxWidth: 800,
+          fullSize: true
+        },
+        interaction: {
           mode: 'nearest' as const,
-          intersect: false,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          intersect: true,
+        },
+        tooltip: {
+          enabled: true,
+          mode: 'nearest' as const,
+          intersect: true,
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
           titleColor: '#fff',
           bodyColor: '#fff',
-          borderColor: '#fff',
+          borderColor: 'rgba(255, 255, 255, 0.2)',
           borderWidth: 1,
-          cornerRadius: 6,
+          cornerRadius: 10,
           displayColors: true,
-          padding: 12,
+          padding: {
+            top: 16,
+            right: 20,
+            bottom: 16,
+            left: 20
+          },
           titleFont: {
-            size: 14,
+            size: 16,
             weight: 'bold' as const
           },
           bodyFont: {
             size: 14
-          }
-        }
-    },
-    scales: {
-      x: {
-        display: true,
-        title: {
-          display: true,
-          text: '時間',
-          font: {
-            size: 10
-          }
-        },
-        ticks: {
-          font: {
-            size: 8
           },
-          maxTicksLimit: 20, // 增加最大標籤數量
-          autoSkip: false, // 禁用自動跳過標籤
-          maxRotation: 45, // 允許標籤旋轉45度
-          minRotation: 0
-        },
-        grid: {
-          color: 'rgba(0, 0, 0, 0.1)'
+          titleSpacing: 10,
+          bodySpacing: 8,
+          boxWidth: 12,
+          boxHeight: 12,
+          boxPadding: 6,
+          maxWidth: 300,
+          // 移除 position、xAlign、yAlign，讓 positioner 完全控制位置
+          filter: (tooltipItem: any) => {
+            // 只顯示有效的數據點
+            return tooltipItem.parsed.y !== null && tooltipItem.parsed.y !== undefined;
+          },
+          // 自定義位置函數：預設顯示在滑鼠右側
+          positioner: (elements: any[], eventPosition: any) => {
+            const tooltip = elements[0];
+            if (!tooltip || !tooltip.chart) {
+              return false;
+            }
+            
+            const chart = tooltip.chart;
+            const chartCanvas = chart.canvas;
+            const chartRect = chartCanvas.getBoundingClientRect();
+            const chartArea = chart.chartArea;
+            
+            // 獲取 tooltip 實際尺寸
+            const tooltipWidth = tooltip.width || 280;
+            const tooltipHeight = tooltip.height || 180;
+            
+            // 計算相對於畫布的絕對位置
+            const canvasX = chartRect.left + eventPosition.x;
+            const canvasY = chartRect.top + eventPosition.y;
+            
+            // 獲取視窗尺寸
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // 定位邏輯：簡化並確保在最右側時能正確顯示
+            const offsetX = 15; // 與數據點的間距
+            const margin = 30; // 視窗邊距（增加以確保可見性）
+            
+            // 垂直位置：tooltip 垂直居中對齊數據點
+            let tooltipY = canvasY - tooltipHeight / 2;
+            let tooltipX;
+            
+            // 計算右側可用空間（從數據點到視窗右邊界）
+            const rightSpaceAvailable = viewportWidth - canvasX - margin;
+            
+            // 決定顯示在左側還是右側
+            if (rightSpaceAvailable >= tooltipWidth + offsetX) {
+              // 右側有足夠空間，顯示在右側
+              tooltipX = canvasX + offsetX;
+            } else {
+              // 右側空間不足，強制顯示在左側
+              tooltipX = canvasX - tooltipWidth - offsetX;
+              
+              // 如果左側也不夠（數據點太靠左），確保 tooltip 至少在視窗內
+              if (tooltipX < margin) {
+                // 左側空間不足，將 tooltip 緊貼左邊界
+                tooltipX = margin;
+              }
+            }
+            
+            // 最終安全檢查：確保 tooltip 完全在視窗內
+            // 檢查右邊界
+            if (tooltipX + tooltipWidth > viewportWidth - margin) {
+              tooltipX = viewportWidth - tooltipWidth - margin;
+            }
+            
+            // 檢查左邊界
+            if (tooltipX < margin) {
+              tooltipX = margin;
+            }
+            
+            // 垂直位置調整：確保 tooltip 在視窗內，但優先保持與數據點對齊
+            if (tooltipY < 20) {
+              // 上方超出視窗，向下調整到視窗頂部
+              tooltipY = 20;
+            } else if (tooltipY + tooltipHeight > viewportHeight - 20) {
+              // 下方超出視窗，向上調整
+              tooltipY = viewportHeight - tooltipHeight - 20;
+              // 如果調整後仍然超出，至少確保頂部可見
+              if (tooltipY < 20) {
+                tooltipY = 20;
+              }
+            }
+            
+            // 轉換回相對於圖表的座標（Chart.js 期望相對於畫布的座標）
+            const relativeX = tooltipX - chartRect.left;
+            const relativeY = tooltipY - chartRect.top;
+            
+            return {
+              x: relativeX,
+              y: relativeY
+            };
+          },
+          callbacks: {
+            title: (tooltipItems: any[]) => {
+              // 顯示日期作為標題
+              if (tooltipItems && tooltipItems.length > 0) {
+                const label = tooltipItems[0].label;
+                return `日期：${label}`;
+              }
+              return '';
+            },
+            label: (context: any) => {
+              // 自定義標籤顯示
+              const dataset = context.dataset;
+              const value = context.parsed.y;
+              const label = dataset.label || '未知';
+              
+              // 格式化數值（添加千分位）
+              const formattedValue = value.toLocaleString('zh-TW');
+              
+              // 如果是個人分析模式，顯示正負面數據
+              if (component.selectedCandidateForTimeChart && dataset.label) {
+                // 檢查是否有正負面數據
+                const positiveData = dataset.positiveData;
+                const negativeData = dataset.negativeData;
+                
+                if (positiveData && negativeData && context.dataIndex !== undefined) {
+                  const positive = positiveData[context.dataIndex] || 0;
+                  const negative = negativeData[context.dataIndex] || 0;
+                  const total = positive + negative;
+                  
+                  return [
+                    `${label}: ${formattedValue}`,
+                    `  正面: ${positive.toLocaleString('zh-TW')}`,
+                    `  負面: ${negative.toLocaleString('zh-TW')}`,
+                    `  總計: ${total.toLocaleString('zh-TW')}`
+                  ];
+                }
+              }
+              
+              return `${label}: ${formattedValue}`;
+            },
+            afterLabel: (context: any) => {
+              // 在標籤後添加額外資訊
+              if (!component.selectedCandidateForTimeChart) {
+                // 總覽模式：顯示排名資訊（計算所有候選人在該時間點的值）
+                const allDatasets = context.chart.data.datasets;
+                const dataIndex = context.dataIndex;
+                const allValues = allDatasets
+                  .map((ds: any) => ds.data[dataIndex])
+                  .filter((v: any) => v !== null && v !== undefined && !isNaN(v));
+                const currentValue = context.parsed.y;
+                
+                if (allValues.length > 1) {
+                  // 計算排名（值越大排名越前）
+                  const sortedValues = [...allValues].sort((a: number, b: number) => b - a);
+                  const rank = sortedValues.indexOf(currentValue) + 1;
+                  return `排名：第 ${rank} 名 / ${allValues.length} 位候選人`;
+                }
+              }
+              return '';
+            },
+            labelColor: (context: any) => {
+              // 使用數據集的顏色作為 tooltip 顏色指示器
+              return {
+                borderColor: context.dataset.borderColor || context.dataset.backgroundColor,
+                backgroundColor: context.dataset.borderColor || context.dataset.backgroundColor
+              };
+            }
+          }
         }
       },
-      y: {
-        display: true,
-        beginAtZero: true,
-        title: {
+      scales: {
+        x: {
           display: true,
-          text: '累計網友數',
-          font: {
-            size: 10
+          title: {
+            display: true,
+            text: '時間',
+            font: {
+              size: 12,
+              weight: 'bold' as const
+            },
+            padding: {
+              top: 10,
+              bottom: 5
+            }
+          },
+          ticks: {
+            font: {
+              size: 10
+            },
+            maxTicksLimit: component.dynamicChartOptions.maxTicksLimit,
+            autoSkip: component.dynamicChartOptions.autoSkip,
+            maxRotation: component.dynamicChartOptions.maxRotation,
+            minRotation: 0,
+            padding: 8
+          },
+          grid: {
+            color: 'rgba(0, 0, 0, 0.1)',
+            display: true
           }
         },
-        ticks: {
-          font: {
-            size: 8
+        y: {
+          display: true,
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: '累計網友數',
+            font: {
+              size: 12,
+              weight: 'bold' as const
+            },
+            padding: {
+              top: 5,
+              right: 10
+            }
           },
-          maxTicksLimit: 5
-        },
-        grid: {
-          color: 'rgba(0, 0, 0, 0.1)'
+          ticks: {
+            font: {
+              size: 10
+            },
+            maxTicksLimit: 8,
+            padding: 8,
+            // 格式化 Y 軸數值
+            callback: function(value: any) {
+              if (value >= 10000) {
+                return (value / 10000).toFixed(1) + '萬';
+              }
+              return value.toLocaleString('zh-TW');
+            }
+          },
+          grid: {
+            color: 'rgba(0, 0, 0, 0.1)',
+            display: true
+          }
         }
       }
-    },
-  };
+    };
+  }
 
   barChartOptions: ChartOptions<'bar'> = {
     responsive: true,
@@ -368,10 +578,45 @@ export class ElectionAnalysisComponent implements OnInit {
         const pointCount = originalData.labels ? originalData.labels.length : 0;
         const labels = this.generateTimeAxisLabels(pointCount, this.currentFilter);
         
+        // 處理數據集，確保正負面數據被正確傳遞
+        const processedDatasets = (originalData.datasets || []).map((dataset: any) => {
+          // 如果數據集有正負面數據，確保它們被正確傳遞
+          if (dataset.label === '支持' || dataset.label === '正面') {
+            return {
+              ...dataset,
+              label: '支持',
+              positiveData: dataset.data,
+              negativeData: []
+            };
+          } else if (dataset.label === '反對' || dataset.label === '負面') {
+            return {
+              ...dataset,
+              label: '反對',
+              positiveData: [],
+              negativeData: dataset.data
+            };
+          }
+          return dataset;
+        });
+        
+        // 如果數據集有兩條線（支持/反對），合併正負面數據
+        if (processedDatasets.length >= 2) {
+          const supportDataset = processedDatasets.find((ds: any) => ds.label === '支持' || ds.label === '正面');
+          const opposeDataset = processedDatasets.find((ds: any) => ds.label === '反對' || ds.label === '負面');
+          
+          if (supportDataset && opposeDataset) {
+            // 為兩個數據集添加正負面數據引用
+            supportDataset.positiveData = supportDataset.data;
+            supportDataset.negativeData = opposeDataset.data;
+            opposeDataset.positiveData = supportDataset.data;
+            opposeDataset.negativeData = opposeDataset.data;
+          }
+        }
+        
         // 創建新的圖表數據，使用動態生成的標籤
         this.lineChartData = {
           labels: labels,
-          datasets: originalData.datasets || []
+          datasets: processedDatasets
         };
         
         // 為個人分析也動態調整圖表選項
@@ -736,46 +981,65 @@ export class ElectionAnalysisComponent implements OnInit {
     });
   }
 
-  // 根據數據點數量動態調整圖表選項
+  // 根據數據點數量動態調整圖表選項 - 優化以避免滾動條
   private updateChartOptionsForDataPoints(dataPointCount: number): void {
-    // 根據數據點數量調整 X 軸標籤顯示策略
+    // 根據數據點數量和容器寬度智能調整 X 軸標籤顯示策略
+    // 目標：避免產生滾動條，同時保持可讀性
+    
     let maxTicksLimit: number;
     let autoSkip: boolean;
     let maxRotation: number;
 
+    // 根據數據點數量智能調整
     if (dataPointCount <= 7) {
-      // 7天內：顯示所有標籤
+      // 7天內：顯示所有標籤，不旋轉
       maxTicksLimit = dataPointCount;
       autoSkip = false;
       maxRotation = 0;
     } else if (dataPointCount <= 14) {
-      // 14天內：顯示所有標籤，允許輕微旋轉
+      // 14天內：顯示所有標籤，輕微旋轉
       maxTicksLimit = dataPointCount;
       autoSkip = false;
       maxRotation = 15;
     } else if (dataPointCount <= 30) {
-      // 30天內：顯示所有標籤，允許旋轉
+      // 30天內：顯示所有標籤，適度旋轉
       maxTicksLimit = dataPointCount;
       autoSkip = false;
       maxRotation = 30;
+    } else if (dataPointCount <= 60) {
+      // 60天內：智能顯示標籤，適度旋轉
+      // 根據容器寬度估算：假設每個標籤需要約 80px（含旋轉）
+      maxTicksLimit = Math.min(dataPointCount, 25);
+      autoSkip = true; // 啟用自動跳過，避免重疊
+      maxRotation = 35;
     } else if (dataPointCount <= 90) {
-      // 90天內：顯示大部分標籤，允許旋轉
-      maxTicksLimit = Math.min(dataPointCount, 30);
-      autoSkip = false;
-      maxRotation = 45;
+      // 90天內：顯示關鍵標籤
+      maxTicksLimit = Math.min(dataPointCount, 20);
+      autoSkip = true;
+      maxRotation = 40;
     } else {
-      // 超過90天：智能跳過標籤
-      maxTicksLimit = 20;
+      // 超過90天：顯示關鍵時間點標籤
+      // 計算合理的標籤數量，確保不會產生滾動條
+      maxTicksLimit = Math.min(dataPointCount, 15);
       autoSkip = true;
       maxRotation = 45;
     }
 
-    // 更新圖表選項
-    this.lineChartOptions.scales.x.ticks.maxTicksLimit = maxTicksLimit;
-    this.lineChartOptions.scales.x.ticks.autoSkip = autoSkip;
-    this.lineChartOptions.scales.x.ticks.maxRotation = maxRotation;
+    // 更新動態圖表選項
+    this.dynamicChartOptions.maxTicksLimit = maxTicksLimit;
+    this.dynamicChartOptions.autoSkip = autoSkip;
+    this.dynamicChartOptions.maxRotation = maxRotation;
 
-    console.log('🔍 圖表選項更新:', {
+    // 強制圖表更新，確保響應式調整
+    setTimeout(() => {
+      if (this.lineChartComponent?.chart) {
+        this.lineChartComponent.chart.update('none'); // 使用 'none' 模式避免動畫
+        // 確保圖表適應容器大小
+        this.lineChartComponent.chart.resize();
+      }
+    }, 100);
+
+    console.log('🔍 圖表選項更新（無滾動條優化）:', {
       dataPointCount,
       maxTicksLimit,
       autoSkip,
