@@ -38,7 +38,7 @@
         </div>
         <div class="stat-content">
           <h3>{{ totalSentiment | number }}</h3>
-          <p>總網友數</p>
+          <p>累計評論總網友數</p>
         </div>
       </div>
       <div class="stat-card">
@@ -61,7 +61,8 @@
           class="candidate-card" 
           *ngFor="let candidate of candidates"
           [class.invisible]="!candidate.visible"
-          [class.selected-for-time-chart]="selectedCandidateForTimeChart === candidate.id">
+          [class.selected-for-time-chart]="selectedCandidateForTimeChart === candidate.id"
+          [style.border-left-color]="candidate.color">
           <div class="candidate-header">
             <img 
               [src]="candidate.photo" 
@@ -76,6 +77,8 @@
               <button 
                 class="btn btn-toggle"
                 [class.active]="candidate.visible"
+                [style.background-color]="candidate.visible ? candidate.color : 'transparent'"
+                [style.border-color]="candidate.visible ? candidate.color : '#e9ecef'"
                 (click)="toggleCandidateVisibility(candidate.id)">
                 <i class="cil-check" *ngIf="candidate.visible"></i>
                 <i class="cil-x" *ngIf="!candidate.visible"></i>
@@ -199,7 +202,7 @@
           <div class="chart-header-content">
             <div class="chart-title-section">
               <i class="cil-chart-line"></i>
-              <span>{{ selectedCandidateForTimeChart ? '候選人正負面網友數趨勢' : '各候選人總網友數趨勢' }}</span>
+              <span>{{ selectedCandidateForTimeChart ? '候選人正負面網友數趨勢' : '累計評論總網友數' }}</span>
             </div>
             
           

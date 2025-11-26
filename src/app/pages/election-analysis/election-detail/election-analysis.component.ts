@@ -272,7 +272,8 @@ export class ElectionAnalysisComponent implements OnInit {
                 }
               }
               
-              return `${label}: ${formattedValue}`;
+              // 總覽模式：顯示「候選人名字 - 累計評論總網友數」
+              return `${label} - 累計評論總網友數: ${formattedValue}`;
             },
             afterLabel: (context: any) => {
               // 在標籤後添加額外資訊
@@ -339,7 +340,7 @@ export class ElectionAnalysisComponent implements OnInit {
           beginAtZero: true,
           title: {
             display: true,
-            text: '累計網友數',
+            text: '累計評論總網友數',
             font: {
               size: 12,
               weight: 'bold' as const
@@ -685,11 +686,11 @@ export class ElectionAnalysisComponent implements OnInit {
       labels: labels,
       datasets: [
         {
-          label: '總網友數',
+          label: '累計評論總網友數',
           data: totalData,  // 累計總網友數，只會上漲或持平
           positiveData: positiveData,  // 累計正面網友數
           negativeData: negativeData,  // 累計負面網友數
-          candidateName: '總網友數',
+          candidateName: '累計評論總網友數',
           borderColor: '#3b82f6',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
           tension: 0.3,

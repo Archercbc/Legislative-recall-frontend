@@ -265,6 +265,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   border: 2px solid transparent;
+  border-left: 4px solid;
   
   &.invisible {
     opacity: 0.5;
@@ -337,10 +338,9 @@
       align-items: center;
       justify-content: center;
       transition: all 0.3s ease;
+      color: #6c757d;
       
       &.active {
-        background: #28a745;
-        border-color: #28a745;
         color: white;
       }
       
