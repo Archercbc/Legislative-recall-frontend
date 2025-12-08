@@ -12,7 +12,7 @@ export interface EventMarker {
 export const COMMON_EVENTS: EventMarker[] = [
   // 普發一萬元現金事件（調整為2024年日期以匹配圖表數據）
   {
-    date: "2024-07-11",
+    date: "2025-07-11",
     title: "立法院三讀通過普發一萬",
     description: "立法院於 7 月 11 日三讀通過全民普發一萬元現金。",
     type: "legislation_passed",
@@ -20,7 +20,7 @@ export const COMMON_EVENTS: EventMarker[] = [
     icon: "📜"
   },
   {
-    date: "2024-08-01",
+    date: "2025-08-01",
     title: "總統公告普發現金",
     description: "總統賴清德於 8 月 1 日正式公告確認普發一萬元現金。",
     type: "policy_announcement",
@@ -28,7 +28,7 @@ export const COMMON_EVENTS: EventMarker[] = [
     icon: "💰"
   },
   {
-    date: "2024-08-29",
+    date: "2025-08-29",
     title: "普發將於公布後 1 個月內啟動",
     description: "立法院三讀通過修正案，確定普發將於公布後 1 個月內啟動，7 個月內發放完畢，民眾最快 10 月可領取。",
     type: "budget_approval",
@@ -36,7 +36,7 @@ export const COMMON_EVENTS: EventMarker[] = [
     icon: "📊"
   },
   {
-    date: "2024-09-06",
+    date: "2025-09-06",
     title: "普發現金外籍永居人士也可領取",
     description: "行政院長卓榮泰表示普發現金一萬元將比照過去發放模式，外籍永居人士也可領取，預算增加約 10 億元。",
     type: "policy_detail",
@@ -44,7 +44,7 @@ export const COMMON_EVENTS: EventMarker[] = [
     icon: "🌍"
   },
   {
-    date: "2024-10-01",
+    date: "2025-10-01",
     title: "普發一萬元啟動",
     description: "普發現金正式發放，民眾可領取一萬元現金。",
     type: "implementation",
@@ -54,7 +54,7 @@ export const COMMON_EVENTS: EventMarker[] = [
 
   // 罷免與遊行事件
   {
-    date: "2024-07-05",
+    date: "2025-07-05",
     title: "雙北機車大掃街",
     description: "首波雙北機車大掃街登場，民眾以機車隊方式展開街頭活動。",
     type: "protest",
@@ -62,7 +62,7 @@ export const COMMON_EVENTS: EventMarker[] = [
     icon: "🏍️"
   },
   {
-    date: "2024-07-25",
+    date: "2025-07-25",
     title: "凱道路權反罷免",
     description: "國民黨成功搶下 7 月 25 日凱道的路權，舉行大型集會反罷免。",
     type: "protest",
