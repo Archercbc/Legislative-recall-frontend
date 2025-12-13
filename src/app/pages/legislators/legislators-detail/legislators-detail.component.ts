@@ -476,6 +476,12 @@ export class LegislatorsDetailComponent {
     datasets: []
   };
 
+  // 平台統計長條圖資料
+  platformBarChartData: ChartData<'bar'> = {
+    labels: [],
+    datasets: []
+  };
+
   // 詞雲資料 - 初始為空 (已移至文字雲相關屬性中)
 
   // 時間範圍篩選
@@ -530,7 +536,67 @@ export class LegislatorsDetailComponent {
     radius: '90%'
   };
 
-
+  // 平台統計長條圖配置
+  platformBarChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top' as const,
+        labels: {
+          usePointStyle: true,
+          padding: 15,
+          font: {
+            size: 12
+          }
+        }
+      },
+      tooltip: {
+        enabled: true,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: '#fff',
+        borderWidth: 1,
+        cornerRadius: 6,
+        displayColors: true,
+        padding: 12,
+        callbacks: {
+          label: (context: any) => {
+            const label = context.dataset.label || '';
+            const value = context.parsed.y;
+            return `${label}: ${value.toLocaleString()} 人`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        stacked: false,
+        ticks: {
+          font: {
+            size: 11
+          }
+        },
+        grid: {
+          display: false
+        }
+      },
+      y: {
+        stacked: false,
+        beginAtZero: true,
+        ticks: {
+          font: {
+            size: 11
+          },
+          callback: function(value: any) {
+            return value.toLocaleString();
+          }
+        }
+      }
+    }
+  };
 
   public lineChartOptions = {
     responsive: true,
@@ -756,30 +822,30 @@ export class LegislatorsDetailComponent {
         
         // 🔥 優先使用新的 sentiment_analysis 數據
         if (chartData.sentiment_analysis) {
-          // 🔥 統一標籤：positive = 支持（反對罷免），negative = 反對（支持罷免）
-          const positive_count = chartData.sentiment_analysis.positive_count || chartData.sentiment_analysis.positive || 0;  // positive = 支持
-          const negative_count = chartData.sentiment_analysis.negative_count || chartData.sentiment_analysis.negative || 0;  // negative = 反對
+          // 🔥 罷免場景數據映射：positive = 反對罷免（正面聲量），negative = 支持罷免（負面聲量）
+          const positive_count = chartData.sentiment_analysis.positive_count || chartData.sentiment_analysis.positive || 0;  // positive = 反對罷免
+          const negative_count = chartData.sentiment_analysis.negative_count || chartData.sentiment_analysis.negative || 0;  // negative = 支持罷免
           const total_people = chartData.sentiment_analysis.total_people || chartData.sentiment_analysis.total || (positive_count + negative_count);
           const time_period = chartData.sentiment_analysis.time_period;
           
-          // 更新圓餅圖數據（罷免場景：支持=反對罷免=positive，反對=支持罷免=negative）
+          // 更新圓餅圖數據：positive_count = 反對罷免，negative_count = 支持罷免
           this.sentimentChartData = {
             labels: ['反對罷免', '支持罷免'],
             datasets: [{
-              data: [positive_count, negative_count],  // [反對罷免=positive=支持, 支持罷免=negative=反對]
-              backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持（反對罷免），紅色=負面/反對（支持罷免）
+              data: [positive_count, negative_count],  // [反對罷免, 支持罷免]
+              backgroundColor: ['#4f8cff', '#f87171']  // 藍色=反對罷免，紅色=支持罷免
             }]
           };
           
           // 更新統計數據
-          this.positiveCount = positive_count;  // positive = 支持（反對罷免）
-          this.negativeCount = negative_count;  // negative = 反對（支持罷免）
+          this.positiveCount = positive_count;  // positive = 反對罷免
+          this.negativeCount = negative_count;  // negative = 支持罷免
           
         } else {
           // 如果沒有 sentiment_analysis，使用根級別數據作為備用
-          // 🔥 統一標籤：positive = 支持（反對罷免），negative = 反對（支持罷免）
-          this.positiveCount = this.data.positive || 0;  // positive = 支持（反對罷免）
-          this.negativeCount = this.data.negative || 0;  // negative = 反對（支持罷免）
+          // 🔥 罷免場景數據映射：positive = 反對罷免，negative = 支持罷免
+          this.positiveCount = this.data.positive || 0;  // positive = 反對罷免
+          this.negativeCount = this.data.negative || 0;  // negative = 支持罷免
           
           this.updateSentimentChart({
             '反對罷免人數': this.data.positive || 0,  // positive = 支持（反對罷免）
@@ -804,6 +870,11 @@ export class LegislatorsDetailComponent {
           
           // 同時更新情感分析圓餅圖
           this.updateSentimentChart(chartData.emotion_analysis);
+        }
+        
+        // 處理平台統計數據
+        if (chartData.platform_detail) {
+          this.updatePlatformBarChart(chartData.platform_detail);
         }
         
         // 設置初始篩選為一年
@@ -896,7 +967,12 @@ export class LegislatorsDetailComponent {
       this.updateEmotionRadarChart(data.emotion_analysis);
     }
     
-    // 3. 文字雲 - 使用wordcloud_data
+    // 3. 平台統計長條圖 - 使用platform_detail
+    if (data.platform_detail) {
+      this.updatePlatformBarChart(data.platform_detail);
+    }
+    
+    // 4. 文字雲 - 使用wordcloud_data
     if (data.wordcloud_data && data.wordcloud_data.length > 0) {
       // 轉換為新文字雲組件格式
       this.wordCloudData = data.wordcloud_data
@@ -1821,6 +1897,58 @@ export class LegislatorsDetailComponent {
     return ((this.positiveCount / total) * 100).toFixed(1);  // positiveCount = 反對罷免
   }
 
+  // 更新平台統計長條圖
+  private updatePlatformBarChart(platformDetail: any): void {
+    if (!platformDetail || Object.keys(platformDetail).length === 0) {
+      this.platformBarChartData = {
+        labels: [],
+        datasets: []
+      };
+      return;
+    }
+
+    // 平台名稱映射（中文顯示）
+    const platformNameMap: { [key: string]: string } = {
+      'youtube': 'YouTube',
+      'ptt': 'PTT',
+      'threads': 'Threads',
+      'facebook': 'Facebook',
+      'unknown': '未知平台'
+    };
+
+    // 提取平台數據
+    const platforms = Object.keys(platformDetail);
+    const labels = platforms.map(p => platformNameMap[p] || p);
+    const positiveData: number[] = [];
+    const negativeData: number[] = [];
+
+    platforms.forEach(platform => {
+      const stats = platformDetail[platform];
+      positiveData.push(stats.positive || 0);  // 反對罷免
+      negativeData.push(stats.negative || 0);  // 支持罷免
+    });
+
+    this.platformBarChartData = {
+      labels: labels,
+      datasets: [
+        {
+          label: '反對罷免',
+          data: positiveData,
+          backgroundColor: '#4f8cff',
+          borderColor: '#2563eb',
+          borderWidth: 1
+        },
+        {
+          label: '支持罷免',
+          data: negativeData,
+          backgroundColor: '#f87171',
+          borderColor: '#ef4444',
+          borderWidth: 1
+        }
+      ]
+    };
+  }
+
   // 處理中文屬性訪問的方法
   getUserCount(): string {
     if (!this.data) return '0';
@@ -1998,34 +2126,34 @@ export class LegislatorsDetailComponent {
           
           // 🔥 優先使用新的 sentiment_analysis 數據
           if (data.sentiment_analysis) {
-            // 🔥 統一標籤：positive = 支持（反對罷免），negative = 反對（支持罷免）
-            const positive_count = data.sentiment_analysis.positive_count || data.sentiment_analysis.positive || 0;  // positive = 支持（反對罷免）
-            const negative_count = data.sentiment_analysis.negative_count || data.sentiment_analysis.negative || 0;  // negative = 反對（支持罷免）
+            // 🔥 罷免場景數據映射：positive = 反對罷免（正面聲量），negative = 支持罷免（負面聲量）
+            const positive_count = data.sentiment_analysis.positive_count || data.sentiment_analysis.positive || 0;  // positive = 反對罷免
+            const negative_count = data.sentiment_analysis.negative_count || data.sentiment_analysis.negative || 0;  // negative = 支持罷免
             const total_people = data.sentiment_analysis.total_people || data.sentiment_analysis.total || (positive_count + negative_count);
             const time_period = data.sentiment_analysis.time_period;
             
-            // 更新圓餅圖數據（罷免場景：支持=反對罷免=positive，反對=支持罷免=negative）
+            // 更新圓餅圖數據：positive_count = 反對罷免，negative_count = 支持罷免
             this.sentimentChartData = {
               labels: ['反對罷免', '支持罷免'],
               datasets: [{
-                data: [positive_count, negative_count],  // [反對罷免=positive=支持, 支持罷免=negative=反對]
-                backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持（反對罷免），紅色=負面/反對（支持罷免）
+                data: [positive_count, negative_count],  // [反對罷免, 支持罷免]
+                backgroundColor: ['#4f8cff', '#f87171']  // 藍色=反對罷免，紅色=支持罷免
               }]
             };
             
             // 更新統計數據
-            this.positiveCount = positive_count;  // positive = 支持（反對罷免）
-            this.negativeCount = negative_count;  // negative = 反對（支持罷免）
+            this.positiveCount = positive_count;  // positive = 反對罷免
+            this.negativeCount = negative_count;  // negative = 支持罷免
             
           } else {
             // 如果沒有 sentiment_analysis，使用根級別數據作為備用
-            // 🔥 統一標籤：positive = 支持（反對罷免），negative = 反對（支持罷免）
-            this.positiveCount = this.data.positive || 0;  // positive = 支持（反對罷免）
-            this.negativeCount = this.data.negative || 0;  // negative = 反對（支持罷免）
+            // 🔥 罷免場景數據映射：positive = 反對罷免，negative = 支持罷免
+            this.positiveCount = this.data.positive || 0;  // positive = 反對罷免
+            this.negativeCount = this.data.negative || 0;  // negative = 支持罷免
             
             this.updateSentimentChart({
-              '反對罷免人數': this.data.positive || 0,  // positive = 支持（反對罷免）
-              '支持罷免人數': this.data.negative || 0,  // negative = 反對（支持罷免）
+              '反對罷免人數': this.data.positive || 0,  // positive = 反對罷免
+              '支持罷免人數': this.data.negative || 0,  // negative = 支持罷免
               '中性人數': 0
             });
           }
@@ -2033,6 +2161,14 @@ export class LegislatorsDetailComponent {
           // 處理情緒分析數據
           if (data.emotion_analysis) {
             this.updateEmotionRadarChart(data.emotion_analysis);
+          }
+          
+          // 處理平台統計數據
+          if (data.platform_detail) {
+            this.updatePlatformBarChart(data.platform_detail);
+          } else if (this.data && this.data.platform_detail) {
+            // 如果 API 返回的數據中沒有，嘗試從根級別獲取
+            this.updatePlatformBarChart(this.data.platform_detail);
           }
           
           this.isLoadingTimeData = false;
@@ -2334,6 +2470,11 @@ export class LegislatorsDetailComponent {
           // 更新統計數據
           this.positiveCount = positive_count;  // positive = 支持（反對罷免）
           this.negativeCount = negative_count;  // negative = 反對（支持罷免）
+        }
+        
+        // 處理平台統計數據
+        if (data.platform_detail) {
+          this.updatePlatformBarChart(data.platform_detail);
         }
       },
       error: (error: any) => {

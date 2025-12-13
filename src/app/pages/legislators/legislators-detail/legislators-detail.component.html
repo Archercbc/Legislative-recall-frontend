@@ -276,6 +276,24 @@
           </div>-->
         </div>
 
+        <!-- 平台統計長條圖 -->
+        <div cRow *ngIf="platformBarChartData.labels && platformBarChartData.labels.length > 0">
+          <div cCol xs="12">
+            <div cCard class="mb-4">
+              <div cCardHeader>
+                <i class="cil-chart"></i>
+                <span>各平台支持/反對聲量分析</span>
+                <span *ngIf="isLoadingTimeData" class="spinner-border spinner-border-sm ms-2"></span>
+              </div>
+              <div cCardBody>
+                <div style="height: 400px; position: relative;">
+                  <c-chart [data]="platformBarChartData" type="bar" [options]="platformBarChartOptions" style="height: 100%; width: 100%;"></c-chart>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 熱門關鍵字 -->
         <div cRow>
           <div cCol xs="12">
