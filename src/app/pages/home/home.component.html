@@ -1,178 +1,242 @@
 <div class="home-container">
-  <!-- Hero Section -->
+  <!-- 首屏：深底 + 聲波感 SVG，強調「流動／即時」 -->
   <section class="hero-section">
-    <div class="hero-content">
-      <div class="hero-logo">
-        <img src="/web_logo.png" alt="POI Logo" class="logo-image">
+    <div class="hero-bg-grid" aria-hidden="true"></div>
+    <!-- 粒子連線：對應「連結／網絡」，由 TS 載入 tsParticles slim -->
+    <div class="hero-particles" aria-hidden="true"></div>
+    <div class="hero-wave" aria-hidden="true">
+      <svg class="wave-svg" viewBox="0 0 1440 320" preserveAspectRatio="none">
+        <path class="wave-path" fill="none" stroke="rgba(96,165,250,0.35)" stroke-width="2"
+              d="M0,160 Q360,80 720,160 T1440,160"></path>
+        <path class="wave-path wave-path-delay" fill="none" stroke="rgba(168,85,247,0.25)"
+              stroke-width="1.5"
+              d="M0,200 Q420,260 840,190 T1440,210"></path>
+      </svg>
+    </div>
+
+    <div class="hero-inner">
+      <!-- 外層 scroll-reveal；Hero 右欄不使用 js-tilt，避免版塊隨視角微晃 -->
+      <div class="scroll-reveal">
+        <div class="hero-content">
+        <img src="/web_logo.png" alt="POI Logo" class="hero-logo-img" />
+        <div class="hero-live-pill font-mono" role="status">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span class="live-text">Live Data Processing</span>
+        </div>
+        <h1 class="hero-title">
+          <span class="title-main hero-title-shine">公民意見指數平台</span>
+          <span class="title-accent">民意 × 連結 × 精準 × 即時</span>
+        </h1>
+        <span class="hero-subtitle mono-upper">Public Opinion Index (POI)</span>
+        <div class="hero-lead">
+          解碼台灣<strong class="text-gradient">民意脈動</strong>——把碎片化的網路聲量，
+          <strong class="accent-link">連結</strong>成可決策的分析語言，
+          <strong class="accent-precision">精準</strong>衡量情緒與議題強度，
+          <strong class="accent-live">即時</strong>反映輿論流動。
+        </div>
+
+        <div class="keywords-row" aria-label="平台核心語彙">
+          <span class="kw">流動</span>
+          <span class="kw">連結</span>
+          <span class="kw">精準</span>
+          <span class="kw">即時</span>
+        </div>
+
+        <a class="scroll-hint" href="#features" aria-label="前往特色介紹">
+          <span class="scroll-hint-text">繼續探索</span>
+          <span class="scroll-hint-arrow" aria-hidden="true"></span>
+        </a>
+        </div>
       </div>
-      <h1 class="hero-title">公民意見指數平台</h1>
-      <p class="hero-subtitle">Public Opinion Index (POI)</p>
-      <p class="hero-description">
-        透過大數據分析與AI技術，深度解析台灣政治輿情與公民參與趨勢
-      </p>
+
+      <div class="scroll-reveal">
+      <aside class="hero-panel glass" aria-label="示意：情緒與議題快照">
+        <div class="panel-head">
+          <span class="panel-kicker mono-upper">Current Sentiment</span>
+          <span class="spark">社會熱議中</span>
+        </div>
+        <!-- 長條固定高度，僅微弱亮度呼吸，版面不再跟著上下拉扯 -->
+        <div class="spark-bars" aria-hidden="true">
+          <span class="bar sb1"></span><span class="bar sb2"></span><span class="bar sb3"></span>
+          <span class="bar sb4"></span><span class="bar sb5"></span>
+        </div>
+        <span class="panel-foot mono-upper">Top Issue · 議題強度視覺化（示意）</span>
+      </aside>
+      </div>
     </div>
   </section>
 
-  <!-- Analysis Tools Section -->
-  <section class="analysis-tools-section">
-    <div class="container">
-      <h2 class="section-title">網友聲量調查</h2>
-      <div class="tools-grid">
-        <div class="tool-card recall-analysis" routerLink="/taiwan-map">
-          <div class="tool-icon">
-            <i class="fas fa-map"></i>
+  <section id="features" class="features-narrative">
+    <h2 class="section-kicker mono-upper scroll-reveal">產品敘事</h2>
+
+    <!-- 左右交錯：網友導向洞察 + 連結視覺 -->
+    <div class="feature-row scroll-reveal">
+      <div class="feature-text">
+        <div class="icon-badge blue"><i class="fas fa-diagram-project" aria-hidden="true"></i></div>
+        <h3 class="feature-title">網友導向洞察</h3>
+        <div class="feature-desc">
+          以真實互動為核心，辨識灌水與雜訊，把散落討論
+          <strong class="accent-link">連結</strong>成可讀的聲量結構。
+        </div>
+      </div>
+      <div class="feature-visual glass viz-visual-one" aria-hidden="true">
+        <!-- 對應「濾噪＋連結」：左雜訊／中門檻過濾／右結構化討論節點 -->
+        <div class="viz-one-grid">
+          <div class="viz-one-noise">
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
           </div>
-          <h3>2025立委罷免分析</h3>
-          <p>地圖化展示立委罷免相關數據與趨勢分析</p>
-          <div class="recall-dates">
+          <div class="viz-one-gate mono-upper">
+            <div class="gate-line" aria-hidden="true"></div>
+            <span>過濾</span>
+          </div>
+          <svg class="viz-one-graph" viewBox="0 0 220 120" preserveAspectRatio="xMidYMid meet">
+            <line x1="28" y1="58" x2="78" y2="38" stroke="rgba(148,163,184,0.45)" stroke-width="1"/>
+            <line x1="78" y1="38" x2="128" y2="58" stroke="rgba(96,165,250,0.55)" stroke-width="1"/>
+            <line x1="78" y1="38" x2="98" y2="88" stroke="rgba(96,165,250,0.45)" stroke-width="1"/>
+            <line x1="128" y1="58" x2="182" y2="48" stroke="rgba(168,85,247,0.4)" stroke-width="1"/>
+            <circle cx="28" cy="58" r="5" fill="rgba(248,113,113,0.55)"/>
+            <circle cx="78" cy="38" r="6" fill="#60a5fa"/>
+            <circle cx="128" cy="58" r="5.5" fill="#38bdf8"/>
+            <circle cx="98" cy="88" r="5" fill="#818cf8"/>
+            <circle cx="182" cy="48" r="6.5" fill="#a855f7"/>
+          </svg>
+        </div>
+        <span class="viz-caption mono-upper">雜訊 → 門檻 → 可讀聲量結構</span>
+      </div>
+    </div>
+
+    <!-- AI：反向交錯 + 類神經元閃動 -->
+    <div class="feature-row reverse scroll-reveal">
+      <div class="feature-text">
+        <div class="icon-badge violet"><i class="fas fa-brain" aria-hidden="true"></i></div>
+        <h3 class="feature-title">AI 智能分析</h3>
+        <div class="feature-desc">
+          語意模型辨識反諷與態度落差，將文字情緒
+          <strong class="accent-precision">精準</strong>映射成趨勢與區隔。
+        </div>
+      </div>
+      <div class="feature-visual glass viz-visual-two" aria-hidden="true">
+        <!-- 對應語意／情緒：原文 → 分層解析 → 正負中光譜與區隔 -->
+        <div class="nlp-stack">
+          <div class="nlp-line nlp-line--text">評論碎片化 · 語氣含糊</div>
+          <div class="nlp-arrow" aria-hidden="true"></div>
+          <div class="nlp-line nlp-line--feat mono-upper">語意向量 × 態度特徵</div>
+          <div class="nlp-spectrum">
+            <span class="sp-neg mono-upper">負向</span>
+            <span class="track"><i class="mark m1"></i><i class="mark m2"></i><i class="mark m3"></i></span>
+            <span class="sp-pos mono-upper">正向</span>
+          </div>
+          <span class="viz-caption violet mono-upper">映射為趨勢與版塊區隔（示意）</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bento：分析入口（維持原 routerLink） -->
+  <section class="modules-section">
+    <div class="container-inner hud-framed">
+      <h2 class="section-kicker mono-upper scroll-reveal">分析模組</h2>
+      <span class="section-sub mono-upper scroll-reveal">選擇維度，深入調查／聲量</span>
+
+      <div class="modules-bento">
+        <div class="scroll-reveal lg-slot">
+        <div class="mod-card lg glass js-tilt" routerLink="/taiwan-map" tabindex="0" role="link">
+          <span class="mod-tag tag-blue mono-upper">Module 01</span>
+          <h3 class="mod-title recall">2025 立委罷免分析</h3>
+          <div class="mod-desc">
+            地圖整合選區資料與社群動態，掌握熱點區域。</div>
+          <div class="recall-inline">
             <span class="date-badge">7/26</span>
             <span class="date-badge">8/23</span>
           </div>
+          <span class="mod-arrow" aria-hidden="true">→</span>
         </div>
-        
-        <div class="tool-card" routerLink="/politicians">
-          <div class="tool-icon">
-            <i class="fas fa-user-tie"></i>
-          </div>
-          <h3>政治人物分析</h3>
-          <p>總統、立委、市長等各級政治人物輿情監控</p>
         </div>
-        
-        <div class="tool-card" routerLink="/policy">
-          <div class="tool-icon">
-            <i class="fas fa-vote-yea"></i>
-          </div>
-          <h3>政策議題追蹤</h3>
-          <p>各項政策議題的民意趨勢與影響因素分析</p>
+
+        <div class="scroll-reveal">
+        <div class="mod-card glass js-tilt" routerLink="/politicians" tabindex="0" role="link">
+          <span class="mod-tag tag-violet mono-upper">Module 02</span>
+          <h3 class="mod-title gradient-text">政治人物</h3>
+          <div class="mod-desc">全時段追蹤聲量與好感度的變化。</div>
         </div>
-        
-        <div class="tool-card" routerLink="/election-analysis">
-          <div class="tool-icon">
-            <i class="fas fa-chart-line"></i>
+        </div>
+
+        <div class="scroll-reveal">
+        <div class="mod-card glass js-tilt" routerLink="/election-analysis" tabindex="0"
+             role="link">
+          <span class="mod-tag tag-warn mono-upper">Module 03</span>
+          <h3 class="mod-title">選舉分析</h3>
+          <div class="mod-desc">歷年趨勢比對與決勝結構拆解。</div>
+        </div>
+        </div>
+
+        <div class="scroll-reveal lg-slot">
+        <div class="mod-card lg glass js-tilt" routerLink="/policy" tabindex="0"
+             role="link">
+          <span class="mod-tag tag-green mono-upper">Module 04</span>
+          <h3 class="mod-title">政策議題追蹤</h3>
+          <div class="mod-desc">
+            <strong class="accent-live">即時</strong>掌握議題正負面因素與擴散路徑。
           </div>
-          <h3>選舉分析</h3>
-          <p>選舉期間的民意變化與趨勢預測分析</p>
+        </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Features Section -->
-  <section class="features-section">
-    <div class="container">
-      <h2 class="section-title">平台特色</h2>
-      <div class="features-list">
-        <div class="feature-item">
-          <div class="feature-icon">
-            <i class="fas fa-chart-line"></i>
-          </div>
-          <div class="feature-content">
-            <h3>網友導向洞察</h3>
-            <p>利用用戶數據為核心，而非單純貼文數量，精準呈現真實民意與社群互動影響力。</p>
-          </div>
-        </div>
-        
-        <div class="feature-item">
-          <div class="feature-icon">
-            <i class="fas fa-chart-line"></i>
-          </div>
-          <div class="feature-content">
-            <h3>即時數據分析</h3>
-            <p>運用先進的數據分析技術，即時監控與分析政治輿情趨勢，提供準確的民意洞察。</p>
-          </div>
-        </div>
-        
-        <div class="feature-item">
-          <div class="feature-icon">
-            <i class="fas fa-robot"></i>
-          </div>
-          <div class="feature-content">
-            <h3>AI智能分析</h3>
-            <p>結合自然語言處理與機器學習，深度解析社群媒體言論，識別情感傾向與議題熱度。</p>
-          </div>
-        </div>
-        
-        <div class="feature-item">
-          <div class="feature-icon">
-            <i class="fas fa-users"></i>
-          </div>
-          <div class="feature-content">
-            <h3>公民參與</h3>
-            <p>促進公民社會參與，透過透明化的數據呈現，讓民眾了解政治議題的多元觀點。</p>
-          </div>
-        </div>
-        
-        <div class="feature-item">
-          <div class="feature-icon">
-            <i class="fas fa-shield-alt"></i>
-          </div>
-          <div class="feature-content">
-            <h3>學術研究</h3>
-            <p>專注於政治傳播與公民參與的學術研究。</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Statistics Section -->
+  <!-- 統計：數字進場累加 -->
   <section class="stats-section">
-    <div class="container">
-      <h2 class="section-title">平台統計</h2>
+    <div class="stats-inner scroll-reveal">
+      <div class="stats-live corner-live" role="status">
+        <span class="corner-dot" aria-hidden="true"></span>
+        Live Data Processing…
+      </div>
+      <h2 class="section-kicker mono-upper">資料維度快照</h2>
       <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-number">{{ visitorStats?.total_visits || 0 | number }}</div>
+        <div class="stat-card glass">
+          <div class="stat-number">{{ displayedTotalVisits | number }}</div>
           <div class="stat-label">總訪問次數</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-number">{{ visitorStats?.today_visitors || 0 | number }}</div>
+        <div class="stat-card glass">
+          <div class="stat-number">{{ displayedTodayVisitors | number }}</div>
           <div class="stat-label">今日訪客</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-number">{{ getLegislatorCount() }}</div>
+        <div class="stat-card glass">
+          <div class="stat-number">{{ displayedLegislators }}</div>
           <div class="stat-label">立委輿情分析</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-number">24 hours</div>
-          <div class="stat-label">即時監控</div>
+        <div class="stat-card glass">
+          <div class="stat-number">{{ displayedHours }}</div>
+          <div class="stat-label mono-upper">即時監控（小時）</div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- About Section -->
   <section class="about-section">
-    <div class="container">
-      <div class="about-content">
-        <div class="about-text">
-          <h2>關於我們</h2>
-          <p>
-            公民意見指數平台（Public Opinion Index, POI）是由顏宏旭教授與學生江秉騏、李逸晨共同開發的學術研究平台。
-            我們致力於透過大數據分析技術，深度解析台灣政治輿情與公民參與趨勢。
-          </p>
-          <p>
-            本平台運用先進的自然語言處理技術，分析社群媒體上的政治討論，提供客觀、準確的民意洞察。
-            所有數據僅供研究與學術展示使用，促進公民社會的理性討論與參與。
-          </p>
-        </div>
-      </div>
+    <div class="container-inner about-block glass scroll-reveal">
+      <h2>關於我們</h2>
+      <div class="about-body">
+        公民意見指數平台（Public Opinion Index, POI）由顏宏旭教授與學生江秉騏、李逸晨共同開發的學術研究平台。
+        我們以透明、可複驗的流程，把社群上的政治討論轉成研究可用的指標；
+        資料僅供學術與公開展示使用，協助理性對話。</div>
     </div>
   </section>
 
-  <!-- Contact Section -->
-  <section class="contact-section">
-    <div class="container">
-      <h2 class="section-title">聯絡我們</h2>
-      <div class="contact-info">
-        <div class="contact-item">
-          <i class="fas fa-envelope"></i>
-          <span>學術研究合作請聯繫：hhyen&#64;mail.shu.edu.tw</span>
-        </div>
-        <div class="contact-item">
-          <i class="fas fa-info-circle"></i>
-          <span>本平台僅供學術研究使用</span>
-        </div>
+  <footer class="home-footer scroll-reveal">
+    <div class="container-inner contact-wrap">
+      <h2 class="section-kicker mono-upper">聯絡我們</h2>
+      <address class="contact-row">
+        <i class="fas fa-envelope" aria-hidden="true"></i>
+        <span>學術合作：hhyen&#64;mail.shu.edu.tw</span>
+      </address>
+      <div class="contact-row muted">
+        <i class="fas fa-info-circle" aria-hidden="true"></i>
+        <span>本平台僅供學術研究使用</span>
       </div>
     </div>
-  </section>
+    <div class="footer-copy mono-upper">
+      © 2026 Public Opinion Index (POI) · Transparency-first
+    </div>
+  </footer>
 </div>
