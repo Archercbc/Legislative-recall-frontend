@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { NavigationEnd, Router, RouterModule } from '@angular/router';
+import { Subscription, filter } from 'rxjs';
 import { navItems, navigationConfig } from '../_nav';
-import { VisitorService, VisitorStats } from '../../../services/visitor.service';
 
 @Component({
   selector: 'app-default-header',
@@ -11,35 +11,34 @@ import { VisitorService, VisitorStats } from '../../../services/visitor.service'
   templateUrl: './default-header.component.html',
   styleUrl: './default-header.component.scss'
 })
-export class DefaultHeaderComponent implements OnInit {
-  visitorStats: VisitorStats | null = null;
+export class DefaultHeaderComponent implements OnInit, OnDestroy {
   navItems = navItems;
   brand = navigationConfig.brand;
-  showStats = navigationConfig.stats.showInHeader;
 
-  constructor(private visitorService: VisitorService) { }
+  /** 首頁用暗色戲作 Header；分析頁用淺色實心 */
+  isHomeRoute = false;
+  isSolid = true;
 
-  ngOnInit(): void {
-    this.loadVisitorStats();
-    // 定期更新統計數據，確保與首頁同步
-    setInterval(() => {
-      this.loadVisitorStats();
-    }, 30000); // 每30秒更新一次
+  private routeSub?: Subscription;
+
+  constructor(private router: Router) {
+    this.syncRoute(this.router.url);
   }
 
-  private loadVisitorStats(): void {
-    // 使用VisitorService獲取訪問統計
-    this.visitorService.getVisitorStats()
-      .then((stats) => {
-        this.visitorStats = stats;
-      })
-      .catch((error) => {
-        console.error('獲取訪問統計失敗:', error);
-        // 如果API失敗，使用默認值
-        this.visitorStats = {
-          total_visits: 0,
-          today_visitors: 0
-        };
-      });
+  ngOnInit(): void {
+    this.routeSub = this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe((e) => this.syncRoute(e.urlAfterRedirects));
+  }
+
+  ngOnDestroy(): void {
+    this.routeSub?.unsubscribe();
+  }
+
+  private syncRoute(url: string): void {
+    const path = url.split('?')[0];
+    this.isHomeRoute = path === '/' || path === '';
+    // 首頁全程暗色，避免捲動後白 Header 壓在暗底上造成斷層
+    this.isSolid = !this.isHomeRoute;
   }
 }

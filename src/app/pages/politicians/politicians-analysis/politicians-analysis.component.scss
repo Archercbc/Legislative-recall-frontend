@@ -131,14 +131,14 @@ $spacing-lg: 24px;
   .recall-date-info {
     font-size: 14px;
     color: $text-gray;
-    background: #fff3cd;
+    background: rgba(255,255,255,0.06)3cd;
     border-radius: 6px;
     padding: 6px 12px;
     border-left: 3px solid #e74c3c;
     white-space: nowrap;
     
     strong {
-      color: #2c3e50;
+      color: #e2e8f0;
       font-weight: 600;
     }
   }
@@ -299,7 +299,7 @@ $spacing-lg: 24px;
 
     .progress-value {
       font-weight: 600;
-      color: #333;
+      color: #e2e8f0;
 
       &.status {
         &.status-success {
@@ -311,7 +311,7 @@ $spacing-lg: 24px;
         }
         
         &.status-ongoing {
-          color: #3b82f6; /* 藍色 */
+          color: #0d9488; /* 藍色 */
         }
         
         &.status-supplement {
@@ -337,7 +337,7 @@ $spacing-lg: 24px;
       }
       
       &.status-ongoing {
-        color: #3b82f6; /* 藍色 */
+        color: #0d9488; /* 藍色 */
       }
       
       &.status-supplement {
@@ -369,7 +369,7 @@ $spacing-lg: 24px;
     }
 
     &.status-petition-failed {
-      color: #6c757d; // 灰色 - 連署未通過
+      color: #94a3b8; // 灰色 - 連署未通過
     }
 
     &.status-recall-ongoing {
@@ -378,7 +378,7 @@ $spacing-lg: 24px;
     }
 
     &.status-recall-failed {
-      color: #6c757d; // 灰色 - 罷免未通過
+      color: #94a3b8; // 灰色 - 罷免未通過
     }
 
     &.status-recall-success {
@@ -387,7 +387,7 @@ $spacing-lg: 24px;
     }
 
     &.status-unknown {
-      color: #6c757d; // 灰色 - 狀態未知
+      color: #94a3b8; // 灰色 - 狀態未知
     }
   }
 
@@ -426,20 +426,20 @@ $spacing-lg: 24px;
 
     .ratio-label {
       font-weight: bold;
-      color: #495057;
+      color: #cbd5e1;
       font-size: 14px;
     }
 
     .ratio-total {
       font-size: 12px;
-      color: #6c757d;
+      color: #94a3b8;
     }
   }
 
   .dual-color-bar {
     position: relative;
     height: 30px;
-    background-color: #f8f9fa;
+    background-color: rgba(255,255,255,0.04);
     border-radius: 15px;
     overflow: visible; // 改為 visible 讓文字可以顯示在外面
     border: 1px solid #dee2e6;
@@ -447,7 +447,7 @@ $spacing-lg: 24px;
     margin-bottom: 15px;
 
     .positive-bar {
-      background-color: #ffffff;
+      background-color: rgba(255,255,255,0.06)fff;
       border-right: 1px solid #dee2e6;
       transition: width 0.3s ease;
     }
@@ -465,7 +465,7 @@ $spacing-lg: 24px;
       transform: translateY(-50%);
       font-size: 11px;
       font-weight: bold;
-      color: #6c757d;
+      color: #94a3b8;
       white-space: nowrap;
       z-index: 10;
       pointer-events: none;
@@ -500,7 +500,7 @@ $spacing-lg: 24px;
         margin-bottom: 3px;
 
         &.positive {
-          color: #6c757d;
+          color: #94a3b8;
         }
 
         &.negative {
@@ -510,7 +510,7 @@ $spacing-lg: 24px;
 
       .stat-label {
         font-size: 10px;
-        color: #6c757d;
+        color: #94a3b8;
         line-height: 1.2;
       }
     }
@@ -544,7 +544,7 @@ $spacing-lg: 24px;
   justify-content: space-around;
   margin-top: 1rem;
   padding: 0.5rem;
-  background: #f8f9fa;
+  background: rgba(255,255,255,0.04);
   border-radius: 6px;
 
   .stat-item {
@@ -583,7 +583,7 @@ $spacing-lg: 24px;
     display: flex;
     align-items: center;
     padding: 0.75rem;
-    background: #f8f9fa;
+    background: rgba(255,255,255,0.04);
     border-radius: 8px;
     border-left: 4px solid transparent;
 
@@ -623,7 +623,7 @@ $spacing-lg: 24px;
       .stat-percentage {
         font-size: 1.5rem;
         font-weight: bold;
-        color: #333;
+        color: #e2e8f0;
       }
     }
   }
@@ -642,7 +642,7 @@ $spacing-lg: 24px;
     display: flex;
     align-items: center;
     padding: 0.75rem;
-    background: #f8f9fa;
+    background: rgba(255,255,255,0.04);
     border-radius: 8px;
     border-left: 4px solid transparent;
 
@@ -682,7 +682,7 @@ $spacing-lg: 24px;
       .stat-percentage {
         font-size: 1.5rem;
         font-weight: bold;
-        color: #333;
+        color: #e2e8f0;
       }
     }
   }
@@ -695,7 +695,7 @@ $spacing-lg: 24px;
   gap: 0.5rem;
   margin-top: 1rem;
   padding: 0.5rem;
-  background: #f8f9fa;
+  background: rgba(255,255,255,0.04);
   border-radius: 6px;
 
   .emotion-item {
@@ -864,7 +864,7 @@ c-chart canvas {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: linear-gradient(135deg, #f8f9fa 0%, rgba(148,163,184,0.18) 100%);
   border-radius: 12px;
   border: 1px solid #dee2e6;
   position: relative;
@@ -1021,7 +1021,7 @@ c-chart canvas {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: linear-gradient(135deg, #f8f9fa 0%, rgba(148,163,184,0.18) 100%);
   border-radius: 12px;
   border: 1px solid #dee2e6;
   position: relative;
@@ -1359,8 +1359,8 @@ c-badge {
   font-size: 0.75rem;
 
   &.badge-light {
-    background-color: #f8f9fa;
-    color: #6c757d;
+    background-color: rgba(255,255,255,0.04);
+    color: #94a3b8;
   }
 }
 
@@ -1407,7 +1407,7 @@ c-badge {
   }
 
   &.badge-secondary {
-    background-color: #6c757d;
+    background-color: #94a3b8;
   }
 }
 

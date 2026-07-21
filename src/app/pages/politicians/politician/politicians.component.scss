@@ -2,6 +2,7 @@
   padding: 2rem;
   max-width: 1400px;
   margin: 0 auto;
+  background: transparent;
 }
 
 .page-header {
@@ -12,7 +13,7 @@
     .page-title {
       font-size: 2.5rem;
       font-weight: 700;
-      color: #2c3e50;
+      color: #e2e8f0;
       margin-bottom: 0.5rem;
       display: flex;
       align-items: center;
@@ -20,14 +21,14 @@
       gap: 0.75rem;
       
       i {
-        color: #007bff;
+        color: #0d9488;
         font-size: 2.2rem;
       }
     }
     
     .page-subtitle {
       font-size: 1.1rem;
-      color: #6c757d;
+      color: #94a3b8;
       margin: 0;
     }
   }
@@ -47,23 +48,23 @@
   }
   
   .loading-text {
-    color: #6c757d;
+    color: #94a3b8;
     font-size: 1.1rem;
     margin: 0;
   }
 }
 
 .tabs-container {
-  background: #fff;
+  background: rgba(255,255,255,0.06);
   border-radius: 12px;
   padding: 0;
   margin-bottom: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.35);
   
   .tabs-wrapper {
     display: flex;
     gap: 0;
-    border-bottom: 2px solid #e9ecef;
+    border-bottom: 2px solid rgba(148,163,184,0.18);
     
     .tab-button {
       flex: 1;
@@ -79,21 +80,21 @@
       gap: 0.5rem;
       font-size: 0.95rem;
       font-weight: 500;
-      color: #6c757d;
+      color: #94a3b8;
       
       i {
         font-size: 1rem;
       }
       
       &:hover {
-        background: #f8f9fa;
-        color: #007bff;
+        background: rgba(255,255,255,0.05);
+        color: #0d9488;
       }
       
       &.active {
-        color: #007bff;
-        border-bottom-color: #007bff;
-        background: #f8f9fa;
+        color: #0d9488;
+        border-bottom-color: #0d9488;
+        background: rgba(255,255,255,0.05);
         font-weight: 600;
       }
       
@@ -109,11 +110,11 @@
 }
 
 .filters-container {
-  background: #fff;
+  background: rgba(255,255,255,0.06);
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.35);
   
   .filters-row {
     display: flex;
@@ -131,12 +132,12 @@
     .filter-label {
       display: block;
       font-weight: 600;
-      color: #495057;
+      color: #cbd5e1;
       margin-bottom: 0.5rem;
     }
     
     .filter-select, .search-input {
-      border: 2px solid #e9ecef;
+      border: 2px solid rgba(148,163,184,0.22);
       border-radius: 8px;
       padding: 0.75rem 1rem;
       font-size: 1rem;
@@ -144,8 +145,8 @@
       width: 100%;
       
       &:focus {
-        border-color: #007bff;
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        border-color: #0d9488;
+        box-shadow: 0 0 0 0.2rem rgba(13, 148, 136, 0.25);
         outline: none;
       }
     }
@@ -159,10 +160,10 @@
 }
 
 .politician-card {
-  background: #fff;
+  background: rgba(255,255,255,0.06);
   border-radius: 16px;
   padding: 1.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.35);
   transition: all 0.3s ease;
   cursor: pointer;
   border: 2px solid transparent;
@@ -172,7 +173,7 @@
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    border-color: #007bff;
+    border-color: #0d9488;
   }
   
   .politician-avatar {
@@ -184,8 +185,8 @@
       height: 100px;
       border-radius: 50%;
       object-fit: cover;
-      border: 3px solid #e9ecef;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border: 3px solid rgba(148,163,184,0.25);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.35);
     }
   }
   
@@ -196,7 +197,7 @@
     .politician-name {
       font-size: 1.4rem;
       font-weight: 700;
-      color: #2c3e50;
+      color: #e2e8f0;
       margin-bottom: 0.75rem;
     }
     
@@ -215,8 +216,8 @@
         color: white;
         
         &.badge-type {
-          background: #e3f2fd;
-          color: #1976d2;
+          background: rgba(13,148,136,0.22);
+          color: #0f766e;
         }
       }
     }
@@ -226,12 +227,12 @@
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
-      color: #6c757d;
+      color: #94a3b8;
       font-size: 0.9rem;
       margin-bottom: 0.25rem;
       
       i {
-        color: #007bff;
+        color: #0d9488;
       }
     }
   }
@@ -241,7 +242,7 @@
     text-align: center;
     
     p {
-      color: #495057;
+      color: #cbd5e1;
       line-height: 1.6;
       margin: 0;
       font-size: 0.95rem;
@@ -254,7 +255,7 @@
     h4 {
       font-size: 1rem;
       font-weight: 600;
-      color: #2c3e50;
+      color: #e2e8f0;
       margin-bottom: 0.5rem;
       text-align: center;
     }
@@ -266,8 +267,8 @@
       justify-content: center;
       
       .issue-tag {
-        background: #e3f2fd;
-        color: #1976d2;
+        background: rgba(13,148,136,0.22);
+        color: #0f766e;
         padding: 0.25rem 0.75rem;
         border-radius: 16px;
         font-size: 0.8rem;
@@ -275,7 +276,7 @@
       }
       
       .more-issues {
-        color: #6c757d;
+        color: #94a3b8;
         font-size: 0.8rem;
         font-style: italic;
       }
@@ -285,11 +286,11 @@
   .politician-actions {
     text-align: center;
     padding-top: 1rem;
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid rgba(148,163,184,0.16);
     margin-top: auto;
     
     .btn-view {
-      background: linear-gradient(135deg, #007bff, #0056b3);
+      background: linear-gradient(135deg, #0d9488, #0f766e);
       border: none;
       color: white;
       padding: 0.75rem 1.5rem;
@@ -301,9 +302,9 @@
       gap: 0.5rem;
       
       &:hover {
-        background: linear-gradient(135deg, #0056b3, #004085);
+        background: linear-gradient(135deg, #0f766e, #115e59);
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
       }
     }
   }
@@ -320,17 +321,17 @@
     
     i {
       font-size: 4rem;
-      color: #dee2e6;
+      color: #475569;
       margin-bottom: 1rem;
     }
     
     h3 {
-      color: #6c757d;
+      color: #94a3b8;
       margin-bottom: 0.5rem;
     }
     
     p {
-      color: #adb5bd;
+      color: #64748b;
       margin: 0;
     }
   }

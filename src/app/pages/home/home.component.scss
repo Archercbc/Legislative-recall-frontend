@@ -1,9 +1,14 @@
 .home-container {
-  --bg-deep: #020617;
+  /* 全頁暗色戲作（取消淺色工作台斷層）；色相維持青綠／珊瑚 */
+  --bg-deep: #07131a;
+  --bg-deep-2: #0c1f28;
   --text: #f8fafc;
   --muted: #94a3b8;
-  --grid-line: rgba(30, 41, 59, 0.45);
-  /* 流體排版：大字幕／正文隨視窗自動放大 */
+  --grid-line: rgba(45, 212, 191, 0.08);
+  --teal: #0d9488;
+  --teal-soft: #5eead4;
+  --coral: #f07363;
+  --coral-soft: #fda4a4;
   --text-xs: clamp(0.75rem, 1vw, 0.875rem);
   --text-sm: clamp(0.875rem, 1.2vw, 1rem);
   --text-base: clamp(1rem, 1.5vw, 1.125rem);
@@ -11,8 +16,15 @@
   --text-xl: clamp(1.5rem, 2.5vw, 2rem);
   --text-2xl: clamp(2rem, 4vw, 3rem);
   min-height: 100vh;
+  margin-top: calc(-1 * var(--poi-header-h, 80px));
   background: var(--bg-deep);
   color: var(--text);
+}
+
+@media (max-width: 768px) {
+  .home-container {
+    margin-top: -60px;
+  }
 }
 
 /* 捲動揭露：對應 TS 加的 .is-revealed */
@@ -33,8 +45,13 @@
   min-height: 88vh;
   display: flex;
   align-items: center;
-  padding: clamp(5.5rem, 10vw, 7rem) 1.25rem 3rem;
+  padding: clamp(6.5rem, 12vw, 8rem) 1.25rem 3rem;
   overflow: hidden;
+  color: var(--text);
+  background:
+    radial-gradient(900px 500px at 15% 20%, rgba(13, 148, 136, 0.28), transparent 55%),
+    radial-gradient(700px 420px at 85% 10%, rgba(240, 115, 99, 0.14), transparent 50%),
+    linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-deep-2) 55%, #0a1820 100%);
 }
 
 .hero-bg-grid {
@@ -128,9 +145,9 @@
   letter-spacing: 0.04em;
   padding: 0.35rem 0.85rem;
   border-radius: 999px;
-  border: 1px solid rgba(59, 130, 246, 0.35);
-  background: rgba(37, 99, 235, 0.1);
-  color: #93c5fd;
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  background: rgba(13, 148, 136, 0.15);
+  color: #99f6e4;
   margin-bottom: 1.15rem;
 }
 
@@ -233,20 +250,20 @@
 }
 
 .text-gradient {
-  background: linear-gradient(135deg, #60a5fa 0%, #a855f7 100%);
+  background: linear-gradient(135deg, #14b8a6 0%, #5eead4 55%, #f07363 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .accent-link {
-  color: #93c5fd;
+  color: #99f6e4;
 }
 .accent-precision {
-  color: #c4b5fd;
+  color: #fda4a4;
 }
 .accent-live {
-  color: #6ee7b7;
+  color: #5eead4;
 }
 
 .keywords-row {
@@ -356,7 +373,7 @@
   min-width: 0;
   border-radius: 3px 3px 6px 6px;
   align-self: flex-end;
-  background: linear-gradient(to top, #3b82f6 0%, #8b5cf6 92%);
+  background: linear-gradient(to top, #0d9488 0%, #5eead4 92%);
 }
 
 .bar.sb1 {
@@ -365,6 +382,7 @@
 
 .bar.sb2 {
   height: 62%;
+  background: linear-gradient(to top, #e11d48 0%, #fda4a4 92%);
 }
 
 .bar.sb3 {
@@ -373,6 +391,7 @@
 
 .bar.sb4 {
   height: 78%;
+  background: linear-gradient(to top, #e11d48 0%, #fda4a4 92%);
 }
 
 .bar.sb5 {
@@ -386,8 +405,43 @@
   color: #64748b;
 }
 
+/* 與 hero 同一套戲作語言：網格 + 青绿光暈（不只頂部有） */
+.cinematic-section {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.section-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(45, 212, 191, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 212, 191, 0.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 75% 60% at 50% 40%, black 25%, transparent 75%);
+  opacity: 0.9;
+}
+
+.section-fx::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(600px 280px at 20% 20%, rgba(13, 148, 136, 0.14), transparent 60%),
+    radial-gradient(520px 260px at 85% 70%, rgba(240, 115, 99, 0.08), transparent 55%);
+}
+
+.cinematic-section > *:not(.section-fx) {
+  position: relative;
+  z-index: 1;
+}
+
 .features-narrative {
   padding: clamp(4rem, 10vw, 6rem) 1.25rem;
+  background: linear-gradient(180deg, #0a1820 0%, var(--bg-deep) 40%, var(--bg-deep-2) 100%);
 }
 
 .section-kicker {
@@ -435,12 +489,12 @@
   margin-bottom: 1rem;
 
   &.blue {
-    background: rgba(59, 130, 246, 0.15);
-    color: #60a5fa;
+    background: rgba(13, 148, 136, 0.15);
+    color: #2dd4bf;
   }
   &.violet {
-    background: rgba(168, 85, 247, 0.15);
-    color: #c084fc;
+    background: rgba(240, 115, 99, 0.15);
+    color: #fda4a4;
   }
 
   i {
@@ -595,7 +649,7 @@
 }
 
 .viz-caption.violet {
-  color: #c4b5fd;
+  color: #fda4a4;
 }
 
 /* ——「AI 智能分析」示意：零散語句 → 特徵向量 → 情緒光譜區隔 —— */
@@ -707,7 +761,7 @@
 
 .modules-section {
   padding: clamp(3.5rem, 9vw, 5rem) 1.25rem 5rem;
-  background: rgba(255, 255, 255, 0.02);
+  background: linear-gradient(180deg, var(--bg-deep-2) 0%, #081820 100%);
 }
 
 .container-inner {
@@ -727,7 +781,7 @@
       'Cascadia Mono',
       monospace;
     position: absolute;
-    color: rgba(96, 165, 250, 0.45);
+    color: rgba(13, 148, 136, 0.45);
     font-size: 1.35rem;
     line-height: 1;
     pointer-events: none;
@@ -799,9 +853,9 @@
 
   &:hover,
   &:focus-visible {
-    border-color: rgba(96, 165, 250, 0.55);
+    border-color: rgba(13, 148, 136, 0.45);
     box-shadow:
-      0 10px 38px -12px rgba(96, 165, 250, 0.36),
+      0 10px 38px -12px rgba(13, 148, 136, 0.28),
       0 14px 50px rgba(15, 23, 42, 0.45);
     background: rgba(255, 255, 255, 0.07);
   }
@@ -813,7 +867,7 @@
   font-size: var(--text-xs);
 
   &.tag-blue {
-    color: #93c5fd;
+    color: #99f6e4;
   }
 
   &.tag-violet {
@@ -825,16 +879,16 @@
   }
 
   &.tag-green {
-    color: #6ee7b7;
+    color: #5eead4;
   }
 }
 
 .mod-title.recall {
-  color: #f87171;
+  color: #f07363;
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #60a5fa 0%, #a855f7 100%);
+  background: linear-gradient(135deg, #14b8a6 0%, #5eead4 55%, #f07363 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -859,13 +913,13 @@
   gap: 0.55rem;
 
   .date-badge {
-    background: rgba(239, 68, 68, 0.2);
-    color: #fecaca;
+    background: rgba(240, 115, 99, 0.14);
+    color: #9f1239;
     padding: 0.25rem 0.72rem;
     border-radius: 999px;
     font-size: 0.82rem;
     font-weight: 700;
-    border: 1px solid rgba(248, 113, 113, 0.35);
+    border: 1px solid rgba(240, 115, 99, 0.35);
   }
 }
 
@@ -899,7 +953,7 @@
   gap: 0.42rem;
   font-size: var(--text-xs);
   letter-spacing: 0.06em;
-  color: #f87171;
+  color: #f07363;
   text-transform: uppercase;
 }
 
@@ -1017,7 +1071,7 @@
   }
 
   i {
-    color: #818cf8;
+    color: #0d9488;
   }
 }
 

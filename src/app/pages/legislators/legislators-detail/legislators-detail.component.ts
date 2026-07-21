@@ -44,8 +44,8 @@ export class LegislatorsDetailComponent {
   // 文字雲相關屬性
   wordCloudData: CloudData[] = [];
   wordCloudOptions: CloudOptions = {
-    width: 600,
-    height: 400,
+    width: 480,
+    height: 220,
     overflow: false,
     zoomOnHover: { scale: 1.2, transitionTime: 0.3, delay: 0.1 },
     realignOnResize: true,
@@ -468,7 +468,7 @@ export class LegislatorsDetailComponent {
   address: string = '';
 
   // 圖表資料 - 初始為空
-  sentimentChartData: ChartData<'doughnut'> = { labels: [], datasets: [{ data: [], backgroundColor: ['#4f8cff', '#f87171'] }] };
+  sentimentChartData: ChartData<'doughnut'> = { labels: [], datasets: [{ data: [], backgroundColor: ['#38bdf8', '#f07363'], hoverBackgroundColor: ['#7dd3fc', '#fb923c'], borderWidth: 0 }] };
   
   // 折線圖資料 - 初始為空
   demoLineChartData: ChartData<'line'> = {
@@ -494,49 +494,39 @@ export class LegislatorsDetailComponent {
   maxDate: string = '';
   oneYearAgoDate: string = '';  // 新增一年前日期
 
-  // 圓餅圖配置 - 美化 tooltip
+  // 圓環儀表：較粗色環，確保霓虹藍／珊瑚可見
   doughnutOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: { animateRotate: true, duration: 700 },
     plugins: {
-      legend: {
-        display: true,
-        position: 'bottom' as const,
-        labels: {
-          usePointStyle: true,
-          padding: 15,
-          font: {
-            size: 11
-          }
-        }
-      },
+      legend: { display: false },
       tooltip: {
         enabled: true,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleColor: '#fff',
-        bodyColor: '#fff',
-        borderColor: '#fff',
+        backgroundColor: 'rgba(7, 19, 26, 0.92)',
+        titleColor: '#5eead4',
+        bodyColor: '#f1f5f9',
+        borderColor: 'rgba(45, 212, 191, 0.45)',
         borderWidth: 1,
-        cornerRadius: 6,
+        cornerRadius: 2,
         displayColors: true,
-        padding: 12,
+        padding: 10,
         callbacks: {
           label: function(context: any) {
             const label = context.label || '';
             const value = context.parsed;
             const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
-            const percentage = ((value / total) * 100).toFixed(1);
+            const percentage = total ? ((value / total) * 100).toFixed(1) : '0';
             return `${label}: ${value} 人 (${percentage}%)`;
           }
         }
       }
     },
-    // 確保圓餅圖正確顯示比例
-    cutout: '60%',
-    radius: '90%'
+    cutout: '58%',
+    layout: { padding: 4 }
   };
 
-  // 平台統計長條圖配置
+  // 平台統計長條圖配置（暗色戰情室軸線）
   platformBarChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -546,22 +536,21 @@ export class LegislatorsDetailComponent {
         position: 'top' as const,
         labels: {
           usePointStyle: true,
-          padding: 15,
-          font: {
-            size: 12
-          }
+          padding: 12,
+          color: '#94a3b8',
+          font: { size: 11 }
         }
       },
       tooltip: {
         enabled: true,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleColor: '#fff',
-        bodyColor: '#fff',
-        borderColor: '#fff',
+        backgroundColor: 'rgba(7, 19, 26, 0.92)',
+        titleColor: '#5eead4',
+        bodyColor: '#f1f5f9',
+        borderColor: 'rgba(45, 212, 191, 0.4)',
         borderWidth: 1,
-        cornerRadius: 6,
+        cornerRadius: 2,
         displayColors: true,
-        padding: 12,
+        padding: 10,
         callbacks: {
           label: (context: any) => {
             const label = context.dataset.label || '';
@@ -574,26 +563,22 @@ export class LegislatorsDetailComponent {
     scales: {
       x: {
         stacked: false,
-        ticks: {
-          font: {
-            size: 11
-          }
-        },
-        grid: {
-          display: false
-        }
+        ticks: { color: '#94a3b8', font: { size: 11 } },
+        grid: { display: false },
+        border: { color: 'rgba(148,163,184,0.25)' }
       },
       y: {
         stacked: false,
         beginAtZero: true,
         ticks: {
-          font: {
-            size: 11
-          },
+          color: '#94a3b8',
+          font: { size: 11 },
           callback: function(value: any) {
             return value.toLocaleString();
           }
-        }
+        },
+        grid: { color: 'rgba(148,163,184,0.12)' },
+        border: { color: 'rgba(148,163,184,0.25)' }
       }
     }
   };
@@ -670,7 +655,8 @@ export class LegislatorsDetailComponent {
       },
       legend: {
         display: true,
-        position: 'top' as const
+        position: 'top' as const,
+        labels: { color: '#94a3b8' }
       },
       // 添加註釋插件配置
       annotation: {
@@ -682,14 +668,23 @@ export class LegislatorsDetailComponent {
         display: true,
         title: {
           display: true,
-          text: '時間'
-        }
-      },      y: {
+          text: '時間',
+          color: '#94a3b8'
+        },
+        ticks: { color: '#94a3b8' },
+        grid: { color: 'rgba(148,163,184,0.12)' },
+        border: { color: 'rgba(148,163,184,0.25)' }
+      },
+      y: {
         display: true,
         title: {
           display: true,
-          text: '累計人數'
-        }
+          text: '累計人數',
+          color: '#94a3b8'
+        },
+        ticks: { color: '#94a3b8' },
+        grid: { color: 'rgba(148,163,184,0.12)' },
+        border: { color: 'rgba(148,163,184,0.25)' }
       }
     },
     onHover: (event: any, activeElements: any, chart: any) => {
@@ -833,7 +828,7 @@ export class LegislatorsDetailComponent {
             labels: ['反對罷免', '支持罷免'],
             datasets: [{
               data: [positive_count, negative_count],  // [反對罷免, 支持罷免]
-              backgroundColor: ['#4f8cff', '#f87171']  // 藍色=反對罷免，紅色=支持罷免
+              backgroundColor: ['#38bdf8', '#f07363'], hoverBackgroundColor: ['#7dd3fc', '#fb923c'], borderWidth: 0  // 藍色=反對罷免，紅色=支持罷免
             }]
           };
           
@@ -1520,7 +1515,7 @@ export class LegislatorsDetailComponent {
         labels: ['反對罷免', '支持罷免'],
         datasets: [{
           data: [totalPositive, totalNegative],  // [反對罷免=positive=支持, 支持罷免=negative=反對]
-          backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持（反對罷免），紅色=負面/反對（支持罷免）
+          backgroundColor: ['#38bdf8', '#f07363'], hoverBackgroundColor: ['#7dd3fc', '#fb923c'], borderWidth: 0  // 藍色=正面/支持（反對罷免），紅色=負面/反對（支持罷免）
         }]
       };
       
@@ -1540,7 +1535,7 @@ export class LegislatorsDetailComponent {
           labels: ['反對罷免', '支持罷免'],
           datasets: [{
             data: [totalPositive, totalNegative],  // [反對罷免=positive=支持, 支持罷免=negative=反對]
-            backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持（反對罷免），紅色=負面/反對（支持罷免）
+            backgroundColor: ['#38bdf8', '#f07363'], hoverBackgroundColor: ['#7dd3fc', '#fb923c'], borderWidth: 0  // 藍色=正面/支持（反對罷免），紅色=負面/反對（支持罷免）
           }]
         };
         
@@ -1675,7 +1670,7 @@ export class LegislatorsDetailComponent {
         labels: ['反對罷免', '支持罷免'],
         datasets: [{
           data: [positive_count, negative_count],  // [反對罷免=positive=支持, 支持罷免=negative=反對]
-          backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持（反對罷免），紅色=負面/反對（支持罷免）
+          backgroundColor: ['#38bdf8', '#f07363'], hoverBackgroundColor: ['#7dd3fc', '#fb923c'], borderWidth: 0  // 藍色=正面/支持（反對罷免），紅色=負面/反對（支持罷免）
         }]
       };
 
@@ -1689,7 +1684,7 @@ export class LegislatorsDetailComponent {
         labels: ['反對罷免', '支持罷免'],
         datasets: [{
           data: [this.positiveCount, this.negativeCount],  // [反對罷免=positive=支持, 支持罷免=negative=反對]
-          backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持（反對罷免），紅色=負面/反對（支持罷免）
+          backgroundColor: ['#38bdf8', '#f07363'], hoverBackgroundColor: ['#7dd3fc', '#fb923c'], borderWidth: 0  // 藍色=正面/支持（反對罷免），紅色=負面/反對（支持罷免）
         }]
       };
     }
@@ -1895,6 +1890,25 @@ export class LegislatorsDetailComponent {
     const total = this.positiveCount + this.negativeCount;
     if (total === 0) return '0.0';
     return ((this.positiveCount / total) * 100).toFixed(1);  // positiveCount = 反對罷免
+  }
+
+  /** 收件相對法定門檻（與網友聲量無關，避免與圓環重複） */
+  getThresholdProgress(): { pct: number; label: string } | null {
+    if (!this.recallData) return null;
+    const current = this.parseRecallNumber(this.recallData['目前收件']);
+    const threshold = this.parseRecallNumber(this.recallData['罷免門檻']);
+    if (!threshold || threshold <= 0 || current === null) return null;
+    const pct = Math.min(100, Math.round((current / threshold) * 1000) / 10);
+    return { pct, label: `${pct}%` };
+  }
+
+  private parseRecallNumber(raw: unknown): number | null {
+    if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+    if (typeof raw !== 'string') return null;
+    const digits = raw.replace(/[^\d.]/g, '');
+    if (!digits) return null;
+    const n = Number(digits);
+    return Number.isFinite(n) ? n : null;
   }
 
   // 更新平台統計長條圖
@@ -2137,7 +2151,7 @@ export class LegislatorsDetailComponent {
               labels: ['反對罷免', '支持罷免'],
               datasets: [{
                 data: [positive_count, negative_count],  // [反對罷免, 支持罷免]
-                backgroundColor: ['#4f8cff', '#f87171']  // 藍色=反對罷免，紅色=支持罷免
+                backgroundColor: ['#38bdf8', '#f07363'], hoverBackgroundColor: ['#7dd3fc', '#fb923c'], borderWidth: 0  // 藍色=反對罷免，紅色=支持罷免
               }]
             };
             
@@ -2463,7 +2477,7 @@ export class LegislatorsDetailComponent {
             labels: ['反對罷免', '支持罷免'],
             datasets: [{
               data: [positive_count, negative_count],  // [反對罷免=positive=支持, 支持罷免=negative=反對]
-              backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持（反對罷免），紅色=負面/反對（支持罷免）
+              backgroundColor: ['#38bdf8', '#f07363'], hoverBackgroundColor: ['#7dd3fc', '#fb923c'], borderWidth: 0  // 藍色=正面/支持（反對罷免），紅色=負面/反對（支持罷免）
             }]
           };
           
@@ -2525,7 +2539,7 @@ export class LegislatorsDetailComponent {
             labels: ['反對罷免', '支持罷免'],
             datasets: [{
               data: [positive_count, negative_count],  // [反對罷免=positive=支持, 支持罷免=negative=反對]
-              backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持（反對罷免），紅色=負面/反對（支持罷免）
+              backgroundColor: ['#38bdf8', '#f07363'], hoverBackgroundColor: ['#7dd3fc', '#fb923c'], borderWidth: 0  // 藍色=正面/支持（反對罷免），紅色=負面/反對（支持罷免）
             }]
           };
           

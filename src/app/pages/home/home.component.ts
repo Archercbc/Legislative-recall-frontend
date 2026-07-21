@@ -70,11 +70,12 @@ const HERO_NETWORK_OPTIONS = {
 
     number: { value: 48 },
 
-    color: { value: '#a6baff' },
+    // 星座連線保留；色相改為 D+ 青綠／珊瑚（不再用藍紫）
+    color: { value: ['#5eead4', '#99f6e4', '#fda4a4'] },
 
     shape: { type: 'circle' },
 
-    opacity: { value: { min: 0.2, max: 0.52 } },
+    opacity: { value: { min: 0.22, max: 0.55 } },
 
     size: { value: { min: 1.1, max: 3.2 } },
 
@@ -84,11 +85,11 @@ const HERO_NETWORK_OPTIONS = {
 
       distance: 128,
 
-      color: '#5b73ff',
+      color: '#14b8a6',
 
-      opacity: 0.34,
+      opacity: 0.38,
 
-      width: 0.8,
+      width: 0.85,
 
       triangles: { enable: false },
 

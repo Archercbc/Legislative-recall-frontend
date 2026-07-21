@@ -1,1 +1,114 @@
-/* You can add global styles to this file, and also import other style files */
+/* =========================================================
+   POI 全站設計系統：暗色戲作 Civic Pulse
+   原則：Home / 地圖 / 列表 / 詳情共用同一套底色與面板語言
+   ========================================================= */
+:root {
+  --poi-teal: #0d9488;
+  --poi-teal-deep: #0f766e;
+  --poi-teal-soft: #5eead4;
+  --poi-coral: #f07363;
+  --poi-coral-soft: #fda4a4;
+  --poi-bg: #07131a;
+  --poi-bg-2: #0c1f28;
+  --poi-bg-3: #132533;
+  --poi-text: #f8fafc;
+  --poi-muted: #94a3b8;
+  --poi-line: rgba(148, 163, 184, 0.18);
+  --poi-glass: rgba(255, 255, 255, 0.06);
+  --poi-glass-strong: rgba(255, 255, 255, 0.09);
+  --poi-glass-line: rgba(255, 255, 255, 0.12);
+  --poi-header-h: 80px;
+  --poi-radius: 16px;
+  --poi-radius-sm: 12px;
+  --poi-radius-pill: 999px;
+  --poi-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  /* 舊別名：避免殘留紙白語意 */
+  --poi-ink: var(--poi-text);
+  --poi-paper: var(--poi-bg);
+  --poi-panel: var(--poi-glass);
+  --poi-dark: var(--poi-bg);
+  --poi-dark-2: var(--poi-bg-2);
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--poi-bg);
+  color: var(--poi-text);
+}
+
+@media (max-width: 768px) {
+  :root {
+    --poi-header-h: 60px;
+  }
+}
+
+/* 共用頁面殼：分析頁加在最外層 container（padding 由各頁自己管） */
+.poi-page {
+  min-height: calc(100vh - var(--poi-header-h));
+  color: var(--poi-text);
+  background:
+    radial-gradient(900px 420px at 8% -10%, rgba(13, 148, 136, 0.16), transparent 55%),
+    radial-gradient(700px 380px at 100% 0%, rgba(240, 115, 99, 0.08), transparent 50%),
+    var(--poi-bg);
+}
+
+.poi-page .page-header .page-title {
+  color: var(--poi-text);
+}
+
+.poi-page .page-header .page-subtitle {
+  color: var(--poi-muted);
+}
+
+.poi-page .page-header .page-title i {
+  color: var(--poi-teal-soft);
+}
+
+.poi-card {
+  background: var(--poi-glass);
+  border: 1px solid var(--poi-glass-line);
+  border-radius: var(--poi-radius);
+  box-shadow: var(--poi-shadow);
+  color: var(--poi-text);
+  backdrop-filter: blur(12px);
+}
+
+.text-primary {
+  color: var(--poi-teal-soft) !important;
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--poi-teal);
+  --bs-btn-border-color: var(--poi-teal);
+  --bs-btn-hover-bg: var(--poi-teal-deep);
+  --bs-btn-hover-border-color: var(--poi-teal-deep);
+  --bs-btn-active-bg: var(--poi-teal-deep);
+  --bs-btn-active-border-color: var(--poi-teal-deep);
+  --bs-btn-color: #042f2e;
+  --bs-btn-hover-color: #042f2e;
+}
+
+.spinner-border.text-primary {
+  color: var(--poi-teal-soft) !important;
+}
+
+.form-control,
+.form-select {
+  background-color: var(--poi-bg-2);
+  border-color: var(--poi-line);
+  color: var(--poi-text);
+}
+
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--poi-bg-3);
+  border-color: var(--poi-teal);
+  color: var(--poi-text);
+  box-shadow: 0 0 0 0.2rem rgba(13, 148, 136, 0.25);
+}
+
+.form-control::placeholder {
+  color: var(--poi-muted);
+}

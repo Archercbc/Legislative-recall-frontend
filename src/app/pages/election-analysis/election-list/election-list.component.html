@@ -1,178 +1,124 @@
-<div class="election-list-container">
-  <!-- 頁面標題 -->
-  <div class="page-header">
-    <div class="header-content">
-      <h1 class="page-title">
-        <i class="cil-chart-line"></i>
-        選舉分析中心
-      </h1>
-      <p class="page-subtitle">Election Analysis Center</p>
-    </div>
-  </div>
+<div class="election-list-container poi-page ops-dossier ops-compact">
+  <div class="ops-fx" aria-hidden="true"></div>
 
-  <!-- 載入狀態 -->
+  <header class="ops-subject hud-panel">
+    <span class="hud-corner tl" aria-hidden="true"></span>
+    <span class="hud-corner tr" aria-hidden="true"></span>
+    <span class="hud-corner bl" aria-hidden="true"></span>
+    <span class="hud-corner br" aria-hidden="true"></span>
+
+    <div class="ops-subject-top">
+      <span class="ops-kicker">OPS // ELECTION ANALYSIS CENTER</span>
+      <span class="ops-live" role="status">
+        <i class="live-dot" aria-hidden="true"></i>
+        LIVE
+      </span>
+    </div>
+    <h1 class="profile-name">選舉分析中心</h1>
+    <p class="ops-lead">Election Analysis · 聲量戰情總覽</p>
+  </header>
+
   <div class="loading-container" *ngIf="isLoading">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">載入中...</span>
-    </div>
-    <p class="loading-text">載入選舉資料中...</p>
+    <div class="spinner-border text-primary" role="status"></div>
+    <p>載入選舉資料中...</p>
   </div>
 
-  <!-- 篩選器 -->
-  <div class="filters-container" *ngIf="!isLoading">
-    <div class="filters-row">
-      <div class="filter-group">
-        <label for="typeFilter" class="filter-label">選舉類型</label>
-        <select 
-          id="typeFilter" 
-          class="form-select filter-select"
-          [(ngModel)]="selectedType"
-          (change)="onTypeChange()">
-          <option *ngFor="let type of electionTypes" [value]="type.value">
-            {{ type.label }}
-          </option>
+  <ng-container *ngIf="!isLoading">
+    <div class="ops-toolbar hud-panel">
+      <span class="toolbar-label"><i class="cil-filter" aria-hidden="true"></i> FILTER</span>
+      <div class="filter-inline">
+        <label for="typeFilter">類型</label>
+        <select id="typeFilter" [(ngModel)]="selectedType" (change)="onTypeChange()">
+          <option *ngFor="let type of electionTypes" [value]="type.value">{{ type.label }}</option>
         </select>
       </div>
-
-      <div class="filter-group">
-        <label for="statusFilter" class="filter-label">選舉狀態</label>
-        <select 
-          id="statusFilter" 
-          class="form-select filter-select"
-          [(ngModel)]="selectedStatus"
-          (change)="onStatusChange()">
-          <option *ngFor="let status of electionStatuses" [value]="status.value">
-            {{ status.label }}
-          </option>
+      <div class="filter-inline">
+        <label for="statusFilter">狀態</label>
+        <select id="statusFilter" [(ngModel)]="selectedStatus" (change)="onStatusChange()">
+          <option *ngFor="let status of electionStatuses" [value]="status.value">{{ status.label }}</option>
         </select>
       </div>
+      <span class="toolbar-meta">{{ filteredElections.length }} 場任務</span>
     </div>
-  </div>
 
-  <!-- 選舉列表 -->
-  <div class="elections-grid" *ngIf="!isLoading">
-    <div 
-      class="election-card" 
-      [class.coming-soon-card]="election.coming_soon || election.disabled"
-      [class.disabled-card]="election.disabled"
-      *ngFor="let election of filteredElections"
-      [style.pointer-events]="election.disabled ? 'none' : 'auto'"
-      (click)="!election.disabled && viewElectionDetails(election.election_id)">
-      
-      <!-- 選舉標題 -->
-      <div class="election-header">
-        <h3 class="election-title">{{ election.title }}</h3>
-        <p class="election-subtitle">{{ election.subtitle }}</p>
-        <div class="election-badges">
+    <div class="elections-grid">
+      <article
+        class="election-card hud-panel"
+        [class.is-disabled]="election.disabled"
+        [class.is-soon]="election.coming_soon || election.disabled"
+        *ngFor="let election of filteredElections; let i = index"
+        [style.pointer-events]="election.disabled ? 'none' : 'auto'"
+        (click)="!election.disabled && viewElectionDetails(election.election_id)"
+        (keyup.enter)="!election.disabled && viewElectionDetails(election.election_id)"
+        [attr.tabindex]="election.disabled ? -1 : 0"
+        role="button">
+        <span class="hud-corner tl" aria-hidden="true"></span>
+        <span class="hud-corner tr" aria-hidden="true"></span>
+        <span class="hud-corner bl" aria-hidden="true"></span>
+        <span class="hud-corner br" aria-hidden="true"></span>
+
+        <div class="card-kicker">
+          <span class="panel-code">EL-{{ (i + 1).toString().padStart(2, '0') }}</span>
           <span class="badge badge-type">{{ getTypeText(election.type) }}</span>
-          <span class="badge" [style.background-color]="getStatusClass(election.status)">
+          <span class="badge badge-status" [style.background-color]="getStatusClass(election.status)">
             {{ getStatusText(election.status) }}
           </span>
         </div>
-      </div>
 
-      <!-- 選舉描述 -->
-      <div class="election-description">
-        <p>{{ election.description }}</p>
-      </div>
+        <h3 class="election-title">{{ election.title }}</h3>
+        <p class="election-subtitle" *ngIf="election.subtitle">{{ election.subtitle }}</p>
+        <p class="election-desc" *ngIf="election.description">{{ election.description }}</p>
 
-      <!-- 選舉資訊 -->
-      <div class="election-info">
-        <div class="info-item" *ngIf="!election.disabled && getCandidateCount(election) > 0">
-          <i class="cil-people"></i>
-          <span>{{ getCandidateCount(election) }} 位候選人</span>
+        <div class="meta-row">
+          <span *ngIf="!election.disabled && getCandidateCount(election) > 0">
+            <i class="cil-people" aria-hidden="true"></i>{{ getCandidateCount(election) }} 候選人
+          </span>
+          <span *ngIf="election.start_date && election.end_date">
+            <i class="cil-calendar" aria-hidden="true"></i>{{ getDateRange(election) }}
+          </span>
+          <span *ngIf="election.disabled">
+            <i class="cil-calendar-check" aria-hidden="true"></i>2026
+          </span>
+          <span *ngIf="election.analysis_period">
+            <i class="cil-clock" aria-hidden="true"></i>{{ election.analysis_period }}
+          </span>
         </div>
-        <div class="info-item" *ngIf="election.start_date && election.end_date">
-          <i class="cil-calendar"></i>
-          <span>{{ getDateRange(election) }}</span>
-        </div>
-        <div class="info-item" *ngIf="election.disabled">
-          <i class="cil-calendar-check"></i>
-          <span>2026年</span>
-        </div>
-        <div class="info-item" *ngIf="election.analysis_period">
-          <i class="cil-clock"></i>
-          <span>{{ election.analysis_period }}</span>
-        </div>
-      </div>
 
-      <!-- 候選人預覽 -->
-      <div class="candidates-preview" *ngIf="!election.disabled && election.candidates && election.candidates.length > 0">
-        <div class="candidates-header">
-          <h4>候選人</h4>
-          <span class="candidate-count">{{ getCandidateCount(election) }} 人</span>
-        </div>
-        <div class="candidates-list">
-          <div 
-            class="candidate-item" 
-            *ngFor="let candidate of (election.candidates || [])">
-            <img 
-              [src]="candidate.photo" 
-              [alt]="candidate.name"
-              class="candidate-photo"
-              onerror="this.src='/assets/images/default-candidate.jpg'">
-            <div class="candidate-info">
-              <span class="candidate-name">{{ candidate.name }}</span>
-              <span class="candidate-party">{{ candidate.party }}</span>
+        <div class="candidates-preview" *ngIf="!election.disabled && election.candidates?.length">
+          <div class="preview-head">
+            <span>候選人預覽</span>
+            <span>{{ getCandidateCount(election) }} 人</span>
+          </div>
+          <div class="candidates-list">
+            <div class="candidate-item" *ngFor="let candidate of election.candidates">
+              <img [src]="candidate.photo" [alt]="candidate.name" class="candidate-photo"
+                   onerror="this.src='/assets/images/default-candidate.jpg'">
+              <div class="candidate-info">
+                <span class="candidate-name">{{ candidate.name }}</span>
+                <span class="candidate-party">{{ candidate.party }}</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- 關鍵議題 -->
-      <div class="key-issues" *ngIf="election.key_issues && election.key_issues.length > 0">
-        <h4>關鍵議題</h4>
-        <div class="issues-tags">
-          <span 
-            class="issue-tag" 
-            *ngFor="let issue of election.key_issues.slice(0, 3)">
-            {{ issue }}
-          </span>
-          <span 
-            class="more-issues" 
-            *ngIf="election.key_issues && election.key_issues.length > 3">
-            +{{ election.key_issues.length - 3 }} 個議題
+        <div class="issues-tags" *ngIf="election.key_issues?.length">
+          <span class="issue-tag" *ngFor="let issue of election.key_issues.slice(0, 3)">{{ issue }}</span>
+          <span class="more-issues" *ngIf="election.key_issues.length > 3">+{{ election.key_issues.length - 3 }}</span>
+        </div>
+
+        <div class="card-action">
+          <span class="action-btn" [class.disabled]="election.disabled">
+            <i [class]="election.disabled ? 'cil-calendar-check' : 'cil-chart-line'" aria-hidden="true"></i>
+            {{ election.disabled ? '敬請期待' : '進入戰情' }}
           </span>
         </div>
-      </div>
-
-      <!-- 媒體報導統計 -->
-      <div class="media-coverage" *ngIf="election.media_coverage">
-        <div class="coverage-stats">
-          <div class="stat-item">
-            <i class="cil-newspaper"></i>
-            <span>{{ election.media_coverage.total_articles | number }} 篇報導</span>
-          </div>
-          <div class="stat-item">
-            <i class="cil-chart"></i>
-            <span class="sentiment" [ngClass]="'sentiment-' + election.media_coverage.sentiment">
-              {{ election.media_coverage.sentiment === 'positive' ? '正面' : 
-                 election.media_coverage.sentiment === 'negative' ? '負面' : '中性' }}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 操作按鈕 -->
-      <div class="election-actions">
-        <button 
-          class="btn btn-primary btn-view"
-          [disabled]="election.disabled"
-          [style.opacity]="election.disabled ? '0.6' : '1'"
-          [style.cursor]="election.disabled ? 'not-allowed' : 'pointer'">
-          <i [class]="election.disabled ? 'cil-calendar-check' : 'cil-chart-line'"></i>
-          {{ election.disabled ? '敬請期待' : '查看分析' }}
-        </button>
-      </div>
+      </article>
     </div>
-  </div>
 
-  <!-- 無資料狀態 -->
-  <div class="no-data" *ngIf="!isLoading && filteredElections.length === 0">
-    <div class="no-data-content">
-      <i class="cil-search"></i>
-      <h3>沒有找到符合條件的選舉</h3>
-      <p>請嘗試調整篩選條件或稍後再試</p>
+    <div class="no-data" *ngIf="filteredElections.length === 0">
+      <i class="cil-search" aria-hidden="true"></i>
+      <h3>沒有符合條件的選舉</h3>
+      <p>請調整篩選條件</p>
     </div>
-  </div>
+  </ng-container>
 </div>

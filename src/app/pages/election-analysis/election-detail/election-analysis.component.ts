@@ -105,6 +105,7 @@ export class ElectionAnalysisComponent implements OnInit {
             padding: 15,
             boxWidth: 8,
             boxHeight: 8,
+            color: '#94a3b8',
             font: {
               size: 11
             }
@@ -311,6 +312,7 @@ export class ElectionAnalysisComponent implements OnInit {
           title: {
             display: true,
             text: '時間',
+            color: '#94a3b8',
             font: {
               size: 12,
               weight: 'bold' as const
@@ -321,6 +323,7 @@ export class ElectionAnalysisComponent implements OnInit {
             }
           },
           ticks: {
+            color: '#94a3b8',
             font: {
               size: 10
             },
@@ -331,9 +334,10 @@ export class ElectionAnalysisComponent implements OnInit {
             padding: 8
           },
           grid: {
-            color: 'rgba(0, 0, 0, 0.1)',
+            color: 'rgba(148, 163, 184, 0.12)',
             display: true
-          }
+          },
+          border: { color: 'rgba(148, 163, 184, 0.25)' }
         },
         y: {
           display: true,
@@ -341,6 +345,7 @@ export class ElectionAnalysisComponent implements OnInit {
           title: {
             display: true,
             text: '累計評論總網友數',
+            color: '#94a3b8',
             font: {
               size: 12,
               weight: 'bold' as const
@@ -351,6 +356,7 @@ export class ElectionAnalysisComponent implements OnInit {
             }
           },
           ticks: {
+            color: '#94a3b8',
             font: {
               size: 10
             },
@@ -365,9 +371,10 @@ export class ElectionAnalysisComponent implements OnInit {
             }
           },
           grid: {
-            color: 'rgba(0, 0, 0, 0.1)',
+            color: 'rgba(148, 163, 184, 0.12)',
             display: true
-          }
+          },
+          border: { color: 'rgba(148, 163, 184, 0.25)' }
         }
       }
     };
@@ -375,23 +382,23 @@ export class ElectionAnalysisComponent implements OnInit {
 
   barChartOptions: ChartOptions<'bar'> = {
     responsive: true,
-    maintainAspectRatio: true,
-    aspectRatio: 2,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         display: true,
         position: 'top',
         labels: {
           usePointStyle: true,
-          padding: 20,
-          boxWidth: 12
+          padding: 16,
+          boxWidth: 12,
+          color: '#94a3b8'
         }
       },
       tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleColor: '#fff',
-        bodyColor: '#fff',
-        borderColor: '#dee2e6',
+        backgroundColor: 'rgba(7, 19, 26, 0.92)',
+        titleColor: '#5eead4',
+        bodyColor: '#f1f5f9',
+        borderColor: 'rgba(45, 212, 191, 0.4)',
         borderWidth: 1
       }
     },
@@ -399,13 +406,16 @@ export class ElectionAnalysisComponent implements OnInit {
       x: {
         display: true,
         grid: {
-          color: 'rgba(0, 0, 0, 0.1)'
+          color: 'rgba(148, 163, 184, 0.12)'
         },
+        ticks: { color: '#94a3b8' },
+        border: { color: 'rgba(148, 163, 184, 0.25)' },
         title: {
           display: true,
           text: '候選人',
+          color: '#94a3b8',
           font: {
-            size: 14,
+            size: 13,
             weight: 'bold'
           }
         }
@@ -413,13 +423,16 @@ export class ElectionAnalysisComponent implements OnInit {
       y: {
         display: true,
         grid: {
-          color: 'rgba(0, 0, 0, 0.1)'
+          color: 'rgba(148, 163, 184, 0.12)'
         },
+        ticks: { color: '#94a3b8' },
+        border: { color: 'rgba(148, 163, 184, 0.25)' },
         title: {
           display: true,
           text: '網友數',
+          color: '#94a3b8',
           font: {
-            size: 14,
+            size: 13,
             weight: 'bold'
           }
         },
@@ -691,7 +704,7 @@ export class ElectionAnalysisComponent implements OnInit {
           positiveData: positiveData,  // 累計正面網友數
           negativeData: negativeData,  // 累計負面網友數
           candidateName: '累計評論總網友數',
-          borderColor: '#3b82f6',
+          borderColor: '#0d9488',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
           tension: 0.3,
           fill: true

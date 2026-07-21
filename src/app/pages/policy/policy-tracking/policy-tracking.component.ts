@@ -44,15 +44,26 @@ export class PolicyTrackingComponent {
   negativeCount = 0;  // negative = 反對
   isLoading = true;  // 主要載入狀態
 
-  // 圖表選項
+  // 圖表選項（戰情室圓環）
   doughnutOptions: any = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: { animateRotate: true, duration: 700 },
     plugins: {
-      legend: {
-        position: 'bottom'
+      legend: { display: false },
+      tooltip: {
+        enabled: true,
+        backgroundColor: 'rgba(7, 19, 26, 0.92)',
+        titleColor: '#5eead4',
+        bodyColor: '#f1f5f9',
+        borderColor: 'rgba(45, 212, 191, 0.45)',
+        borderWidth: 1,
+        cornerRadius: 2,
+        padding: 10
       }
-    }
+    },
+    cutout: '58%',
+    layout: { padding: 4 }
   };
 
   // 圖表數據
@@ -60,7 +71,9 @@ export class PolicyTrackingComponent {
     labels: ['支持', '反對'],
     datasets: [{
       data: [0, 0],
-      backgroundColor: ['#4f8cff', '#f87171']  // 統一顏色：藍色=正面/支持，紅色=負面/反對
+      backgroundColor: ['#38bdf8', '#f07363'],
+      hoverBackgroundColor: ['#7dd3fc', '#fb923c'],
+      borderWidth: 0
     }]
   };
 
@@ -69,7 +82,7 @@ export class PolicyTrackingComponent {
     datasets: [{
       label: '網友數',
       data: [],
-      borderColor: '#3b82f6',
+      borderColor: '#0d9488',
       backgroundColor: 'rgba(59, 130, 246, 0.1)',
       tension: 0.4
     }]
@@ -78,8 +91,8 @@ export class PolicyTrackingComponent {
   // 文字雲相關屬性
   wordCloudData: CloudData[] = [];
   wordCloudOptions: CloudOptions = {
-    width: 600,
-    height: 400,
+    width: 420,
+    height: 220,
     overflow: false,
     zoomOnHover: { scale: 1.2, transitionTime: 0.3, delay: 0.1 },
     realignOnResize: true,
@@ -450,7 +463,8 @@ export class PolicyTrackingComponent {
       },
       legend: {
         display: true,
-        position: 'top' as const
+        position: 'top' as const,
+        labels: { color: '#94a3b8' }
       },
       // 添加註釋插件配置
       annotation: {
@@ -460,16 +474,17 @@ export class PolicyTrackingComponent {
     scales: {
       x: {
         display: true,
-        title: {
-          display: true,
-          text: '時間'
-        }
-      },      y: {
+        title: { display: true, text: '時間', color: '#94a3b8' },
+        ticks: { color: '#94a3b8' },
+        grid: { color: 'rgba(148,163,184,0.12)' },
+        border: { color: 'rgba(148,163,184,0.25)' }
+      },
+      y: {
         display: true,
-        title: {
-          display: true,
-          text: '累計人數'
-        }
+        title: { display: true, text: '累計人數', color: '#94a3b8' },
+        ticks: { color: '#94a3b8' },
+        grid: { color: 'rgba(148,163,184,0.12)' },
+        border: { color: 'rgba(148,163,184,0.25)' }
       }
     },
     onHover: (event: any, activeElements: any, chart: any) => {
@@ -621,7 +636,7 @@ export class PolicyTrackingComponent {
         labels: ['支持', '反對'],
         datasets: [{
           data: [positiveCount, negativeCount],  // [支持, 反對] positive=支持，negative=反對
-          backgroundColor: ['#4f8cff', '#f87171']  // 統一顏色：藍色=正面/支持，紅色=負面/反對
+          backgroundColor: ['#38bdf8', '#f07363'], hoverBackgroundColor: ['#7dd3fc', '#fb923c'], borderWidth: 0  // 統一顏色：藍色=正面/支持，紅色=負面/反對
         }]
       };
     }
@@ -767,7 +782,7 @@ export class PolicyTrackingComponent {
             labels: ['支持', '反對'],
             datasets: [{
               data: [positive_count, negative_count],  // [支持, 反對]
-              backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持，紅色=負面/反對
+              backgroundColor: ['#38bdf8', '#f07363'], hoverBackgroundColor: ['#7dd3fc', '#fb923c'], borderWidth: 0  // 藍色=正面/支持，紅色=負面/反對
             }]
           };
           
@@ -1224,7 +1239,7 @@ export class PolicyTrackingComponent {
         labels: ['支持', '反對'],
         datasets: [{
           data: [totalPositive, totalNegative],  // [支持, 反對] positive=支持，negative=反對
-          backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持，紅色=負面/反對
+          backgroundColor: ['#38bdf8', '#f07363'], hoverBackgroundColor: ['#7dd3fc', '#fb923c'], borderWidth: 0  // 藍色=正面/支持，紅色=負面/反對
         }]
       };
       
@@ -1247,7 +1262,7 @@ export class PolicyTrackingComponent {
         labels: ['支持', '反對'],
         datasets: [{
           data: [totalPositive, totalNegative],  // [支持, 反對] positive=支持，negative=反對
-          backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持，紅色=負面/反對
+          backgroundColor: ['#38bdf8', '#f07363'], hoverBackgroundColor: ['#7dd3fc', '#fb923c'], borderWidth: 0  // 藍色=正面/支持，紅色=負面/反對
         }]
       };
       
@@ -1384,7 +1399,7 @@ export class PolicyTrackingComponent {
         labels: ['支持', '反對'],
         datasets: [{
           data: [positive_count, negative_count],  // [支持, 反對] positive=支持，negative=反對
-          backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持，紅色=負面/反對
+          backgroundColor: ['#38bdf8', '#f07363'], hoverBackgroundColor: ['#7dd3fc', '#fb923c'], borderWidth: 0  // 藍色=正面/支持，紅色=負面/反對
         }]
       };
       
@@ -2062,7 +2077,7 @@ export class PolicyTrackingComponent {
           labels: ['支持', '反對'],
           datasets: [{
             data: [positive_count, negative_count],  // [支持, 反對] positive=支持，negative=反對
-            backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持，紅色=負面/反對
+            backgroundColor: ['#38bdf8', '#f07363'], hoverBackgroundColor: ['#7dd3fc', '#fb923c'], borderWidth: 0  // 藍色=正面/支持，紅色=負面/反對
           }]
         };
         
@@ -2143,7 +2158,7 @@ export class PolicyTrackingComponent {
           labels: ['支持', '反對'],
           datasets: [{
             data: [positive_count, negative_count],  // [支持, 反對] positive=支持，negative=反對
-            backgroundColor: ['#4f8cff', '#f87171']  // 藍色=正面/支持，紅色=負面/反對
+            backgroundColor: ['#38bdf8', '#f07363'], hoverBackgroundColor: ['#7dd3fc', '#fb923c'], borderWidth: 0  // 藍色=正面/支持，紅色=負面/反對
           }]
         };
         

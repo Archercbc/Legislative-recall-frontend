@@ -1,8 +1,9 @@
 .footer {
-  background: #333;
-  color: white;
+  background: var(--poi-dark, #07131a);
+  color: #e2e8f0;
   padding: 2rem 0;
   margin-top: auto;
+  border-top: 1px solid rgba(45, 212, 191, 0.12);
 }
 
 .footer-content {
@@ -26,4 +27,5 @@
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 0.8rem;
   opacity: 0.7;
+  color: var(--poi-teal-soft, #5eead4);
 }

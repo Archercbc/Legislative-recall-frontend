@@ -43,7 +43,7 @@ export const navigationConfig = {
   },
   stats: {
     enabled: true,
-    showInHeader: true,
+    showInHeader: false, // 導覽列不顯示訪客數
     showInFooter: true
   }
 }; 

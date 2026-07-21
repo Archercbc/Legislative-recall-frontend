@@ -1,266 +1,186 @@
-<div class="election-analysis-container">
-  <!-- 頁面標題 -->
-  <div class="page-header" *ngIf="election">
-    <div class="header-content">
-      <button class="btn btn-back" (click)="goBack()">
-        <i class="cil-arrow-left"></i>
-        返回選舉列表
-      </button>
-      <h1 class="page-title">{{ election.title }}</h1>
-      <p class="page-subtitle">{{ election.subtitle }}</p>
-    </div>
-  </div>
+<div class="election-analysis-container poi-page ops-dossier ops-compact">
+  <div class="ops-fx" aria-hidden="true"></div>
 
-  <!-- 載入狀態 -->
   <div class="loading-container" *ngIf="isLoading">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">載入中...</span>
-    </div>
-    <p class="loading-text">載入選舉分析資料中...</p>
+    <div class="spinner-border text-primary"></div>
+    <p>載入選舉分析資料中...</p>
   </div>
 
-  <!-- 主要內容 -->
-  <div class="main-content" *ngIf="!isLoading && election">
-    <!-- 統計卡片 -->
-    <div class="stats-cards">
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="cil-people"></i>
-        </div>
-        <div class="stat-content">
-          <h3>{{ totalCandidates }}</h3>
-          <p>候選人總數</p>
+  <ng-container *ngIf="!isLoading && election">
+    <header class="ops-subject hud-panel">
+      <span class="hud-corner tl" aria-hidden="true"></span>
+      <span class="hud-corner tr" aria-hidden="true"></span>
+      <span class="hud-corner bl" aria-hidden="true"></span>
+      <span class="hud-corner br" aria-hidden="true"></span>
+
+      <div class="subject-row">
+        <button type="button" class="btn-back" (click)="goBack()">
+          <i class="cil-arrow-left" aria-hidden="true"></i>
+          返回
+        </button>
+        <div class="subject-main">
+          <div class="ops-subject-top">
+            <span class="ops-kicker">CASE FILE // ELECTION</span>
+            <span class="ops-live" role="status">
+              <i class="live-dot" aria-hidden="true"></i>
+              LIVE
+            </span>
+          </div>
+          <h1 class="profile-name">{{ election.title }}</h1>
+          <p class="ops-lead" *ngIf="election.subtitle">{{ election.subtitle }}</p>
         </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="cil-chart"></i>
-        </div>
-        <div class="stat-content">
-          <h3>{{ totalSentiment | number }}</h3>
-          <p>累計評論總網友數</p>
-        </div>
+    </header>
+
+    <!-- KPI 三格 -->
+    <div class="kpi-strip">
+      <div class="progress-item hud-panel">
+        <div class="progress-label">候選人總數</div>
+        <div class="progress-value">{{ totalCandidates }}</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="cil-graph"></i>
-        </div>
-        <div class="stat-content">
-          <h3>{{ averageSentiment | number }}</h3>
-          <p>平均網友數</p>
-        </div>
+      <div class="progress-item hud-panel">
+        <div class="progress-label">累計評論網友</div>
+        <div class="progress-value">{{ totalSentiment | number }}</div>
+      </div>
+      <div class="progress-item hud-panel">
+        <div class="progress-label">平均網友數</div>
+        <div class="progress-value">{{ averageSentiment | number }}</div>
       </div>
     </div>
 
-    <!-- 候選人列表 - 3個一列 -->
-    <div class="candidates-section">
-      <h3 class="section-title">候選人列表</h3>
-      <p>點選候選人姓名可查看其網友數趨勢</p>
-      <div class="candidates-grid-3col" *ngIf="candidates.length > 0">
-        <div 
-          class="candidate-card" 
-          *ngFor="let candidate of candidates"
-          [class.invisible]="!candidate.visible"
-          [class.selected-for-time-chart]="selectedCandidateForTimeChart === candidate.id"
-          [style.border-left-color]="candidate.color">
-          <div class="candidate-header">
-            <img 
-              [src]="candidate.photo" 
-              [alt]="candidate.name"
-              class="candidate-photo"
-              onerror="this.src='/assets/images/default-candidate.jpg'">
-            <div class="candidate-info" (click)="selectCandidateForTimeChart(candidate.id)">
-              <h4 class="candidate-name">{{ candidate.name }}</h4>
-              <p class="candidate-party">{{ candidate.party }}</p>
-            </div>
-            <div class="candidate-actions">
-              <button 
-                class="btn btn-toggle"
+    <!-- 候選人作戰艙 -->
+    <section class="hud-panel candidates-panel">
+      <span class="hud-corner tl" aria-hidden="true"></span>
+      <span class="hud-corner tr" aria-hidden="true"></span>
+      <span class="hud-corner bl" aria-hidden="true"></span>
+      <span class="hud-corner br" aria-hidden="true"></span>
+
+      <div class="panel-head panel-head--sm">
+        <i class="cil-people" aria-hidden="true"></i>
+        <span>候選人列表</span>
+        <span class="panel-code">ROSTER</span>
+      </div>
+      <div class="panel-body panel-body--sm">
+        <p class="hint">點選姓名可鎖定其趨勢；右側開關控制圖表可見性</p>
+
+        <div class="candidates-grid" *ngIf="candidates.length > 0">
+          <article
+            class="candidate-card"
+            *ngFor="let candidate of candidates"
+            [class.is-hidden]="!candidate.visible"
+            [class.is-selected]="selectedCandidateForTimeChart === candidate.id"
+            [style.--accent]="candidate.color">
+            <div class="candidate-header">
+              <img
+                [src]="candidate.photo"
+                [alt]="candidate.name"
+                class="candidate-photo"
+                onerror="this.src='/assets/images/default-candidate.jpg'">
+              <button type="button" class="candidate-info" (click)="selectCandidateForTimeChart(candidate.id)">
+                <h4>{{ candidate.name }}</h4>
+                <p>{{ candidate.party }}</p>
+              </button>
+              <button
+                type="button"
+                class="btn-toggle"
                 [class.active]="candidate.visible"
                 [style.background-color]="candidate.visible ? candidate.color : 'transparent'"
-                [style.border-color]="candidate.visible ? candidate.color : '#e9ecef'"
-                (click)="toggleCandidateVisibility(candidate.id)">
-                <i class="cil-check" *ngIf="candidate.visible"></i>
-                <i class="cil-x" *ngIf="!candidate.visible"></i>
+                [style.border-color]="candidate.visible ? candidate.color : 'rgba(148,163,184,0.35)'"
+                (click)="toggleCandidateVisibility(candidate.id)"
+                [attr.aria-label]="candidate.visible ? '隱藏' : '顯示'">
+                <i class="cil-check" *ngIf="candidate.visible" aria-hidden="true"></i>
+                <i class="cil-x" *ngIf="!candidate.visible" aria-hidden="true"></i>
               </button>
             </div>
-          </div>
-          <div class="candidate-stats">
-            <div class="stat-item">
-              <span class="stat-label">正面</span>
-              <span class="stat-value">{{ (candidate.positive ?? 0) | number }}</span>
+            <div class="candidate-stats">
+              <div><span>正面</span><strong>{{ (candidate.positive ?? 0) | number }}</strong></div>
+              <div><span>負面</span><strong>{{ (candidate.negative ?? 0) | number }}</strong></div>
+              <div><span>支持率</span><strong>{{ getSupportPercentage(candidate) }}%</strong></div>
             </div>
-            <div class="stat-item">
-              <span class="stat-label">負面</span>
-              <span class="stat-value">{{ (candidate.negative ?? 0) | number }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">支持率</span>
-              <span class="stat-value">{{ getSupportPercentage(candidate) }}%</span>
-            </div>
-          </div>
+          </article>
         </div>
-      </div>
-      <div *ngIf="candidates.length === 0" class="coming-soon-message">
-        <div class="coming-soon-content">
-          <i class="cil-calendar-check" style="font-size: 48px; color: #6c757d; margin-bottom: 20px;"></i>
-          <h2>敬請期待2026縣市長</h2>
+
+        <div *ngIf="candidates.length === 0" class="coming-soon">
+          <i class="cil-calendar-check" aria-hidden="true"></i>
+          <h2>敬請期待</h2>
           <p>相關分析資料即將推出</p>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- 圖表區域 - 參考立委頁面實現 -->
-    <div class="charts-container" *ngIf="candidates.length > 0">
-      <!-- 時間範圍選擇器 - 移到圖表區域 -->
-      <div cCard class="time-filter-card-modern mb-4">
-        <div cCardBody class="modern-body">
-          <!-- 快速篩選按鈕 -->
-          <div class="quick-filters-modern">
-            <div class="filter-label">
-              <i class="cil-clock me-1"></i>
-              <span>快速選擇：</span>
-            </div>
-            <div class="filter-buttons">
-              <button
-                cButton
-                [ngClass]="currentFilter === 'week' ? 'btn-primary active-filter' : 'btn-outline-primary'"
-                size="sm"
-                (click)="setQuickFilter('week')"
-                [disabled]="isLoadingTimeData"
-                class="filter-btn"
-                title="最近一週">
-                <i class="cil-calendar-check me-1"></i>
-                最近一週
-              </button>
-              <button
-                cButton
-                [ngClass]="currentFilter === '2weeks' ? 'btn-primary active-filter' : 'btn-outline-primary'"
-                size="sm"
-                (click)="setQuickFilter('2weeks')"
-                [disabled]="isLoadingTimeData"
-                class="filter-btn"
-                title="最近兩週">
-                <i class="cil-calendar me-1"></i>
-                最近兩週
-              </button>
-              <button
-                cButton
-                [ngClass]="currentFilter === 'month' ? 'btn-primary active-filter' : 'btn-outline-primary'"
-                size="sm"
-                (click)="setQuickFilter('month')"
-                [disabled]="isLoadingTimeData"
-                class="filter-btn"
-                title="最近一個月">
-                <i class="cil-calendar me-1"></i>
-                最近一個月
-              </button>
-              <button
-                cButton
-                [ngClass]="currentFilter === '3months' ? 'btn-primary active-filter' : 'btn-outline-primary'"
-                size="sm"
-                (click)="setQuickFilter('3months')"
-                [disabled]="isLoadingTimeData"
-                class="filter-btn"
-                title="最近三個月">
-                <i class="cil-calendar-range me-1"></i>
-                最近三個月
-              </button>
-              <button
-                cButton
-                [ngClass]="currentFilter === '6months' ? 'btn-primary active-filter' : 'btn-outline-primary'"
-                size="sm"
-                (click)="setQuickFilter('6months')"
-                [disabled]="isLoadingTimeData"
-                class="filter-btn"
-                title="最近六個月">
-                <i class="cil-calendar-range me-1"></i>
-                最近六個月
-              </button>
-              <button
-                cButton
-                [ngClass]="currentFilter === '1year' ? 'btn-primary active-filter' : 'btn-outline-primary'"
-                size="sm"
-                (click)="setQuickFilter('1year')"
-                [disabled]="isLoadingTimeData"
-                class="filter-btn"
-                title="最近一年">
-                <i class="cil-calendar-range me-1"></i>
-                最近一年
-              </button>
-            </div>
-          </div>
-          <div class="date-display">
-            <span>顯示期間：{{ getDisplayPeriod() }}</span>
-          </div>
+    <ng-container *ngIf="candidates.length > 0">
+      <!-- 時間工具列 -->
+      <div class="ops-toolbar hud-panel">
+        <span class="toolbar-label"><i class="cil-clock" aria-hidden="true"></i> T-RANGE</span>
+        <div class="filter-buttons">
+          <button type="button" class="filter-btn" [class.active-filter]="currentFilter === 'week'" (click)="setQuickFilter('week')" [disabled]="isLoadingTimeData">一週</button>
+          <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '2weeks'" (click)="setQuickFilter('2weeks')" [disabled]="isLoadingTimeData">兩週</button>
+          <button type="button" class="filter-btn" [class.active-filter]="currentFilter === 'month'" (click)="setQuickFilter('month')" [disabled]="isLoadingTimeData">一月</button>
+          <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '3months'" (click)="setQuickFilter('3months')" [disabled]="isLoadingTimeData">三月</button>
+          <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '6months'" (click)="setQuickFilter('6months')" [disabled]="isLoadingTimeData">半年</button>
+          <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '1year'" (click)="setQuickFilter('1year')" [disabled]="isLoadingTimeData">一年</button>
+        </div>
+        <span class="date-inline">{{ getDisplayPeriod() }}</span>
+        <div class="loading-indicator" *ngIf="isLoadingTimeData">
+          <div class="spinner-border spinner-border-sm text-primary"></div>
         </div>
       </div>
 
-      <!-- 時間趨勢圖 -->
-      <div cCard class="mb-4">
-        <div cCardHeader>
-          <div class="chart-header-content">
-            <div class="chart-title-section">
-              <i class="cil-chart-line"></i>
-              <span>{{ selectedCandidateForTimeChart ? '候選人正負面網友數趨勢' : '累計評論總網友數' }}</span>
-            </div>
-            
-          
-            
-            <div class="chart-controls" *ngIf="selectedCandidateForTimeChart">
-              <button 
-                class="btn btn-sm btn-outline-primary return-to-overview-btn" 
-                (click)="returnToOverview()"
-                title="返回總覽比較">
-                <i class="cil-arrow-left me-1"></i>
-                返回總覽
-              </button>
-            </div>
-            
-            <div class="loading-indicator" *ngIf="isLoadingTimeData">
-              <div class="spinner-border spinner-border-sm text-primary ms-2"></div>
-              <small class="text-muted">載入中...</small>
-            </div>
-          </div>
-        </div>
-        <div cCardBody class="chart-body-container">
-          <div *ngIf="!isLoadingTimeData" class="chart-container">
-            <c-chart #lineChart [data]="lineChartData" type="line" [options]="lineChartOptions" class="time-series-chart"></c-chart>
-          </div>
-          <div *ngIf="isLoadingTimeData" class="loading-placeholder">
-            <div class="spinner-border text-primary"></div>
-            <p class="mt-3 text-muted">正在載入趨勢數據...</p>
-          </div>
-        </div>
-      </div>
+      <div class="charts-board">
+        <section class="hud-panel chart-panel">
+          <span class="hud-corner tl" aria-hidden="true"></span>
+          <span class="hud-corner tr" aria-hidden="true"></span>
+          <span class="hud-corner bl" aria-hidden="true"></span>
+          <span class="hud-corner br" aria-hidden="true"></span>
 
-      <!-- 聲量比較圖 -->
-      <div cCard class="mb-4">
-        <div cCardHeader>
-          <div class="chart-header-content">
-            <div class="chart-title-section">
-              <i class="cil-chart-bar"></i>
-              <span>網友數比較分析</span>
+          <div class="panel-head panel-head--sm panel-head--wrap">
+            <div class="head-left">
+              <i class="cil-chart-line" aria-hidden="true"></i>
+              <span>{{ selectedCandidateForTimeChart ? '候選人正負面趨勢' : '累計評論總網友數' }}</span>
+              <span class="panel-code">TREND</span>
             </div>
+            <button
+              *ngIf="selectedCandidateForTimeChart"
+              type="button"
+              class="btn-overview"
+              (click)="returnToOverview()">
+              <i class="cil-arrow-left" aria-hidden="true"></i>
+              返回總覽
+            </button>
           </div>
-        </div>
-        <div cCardBody>
-          <div *ngIf="!isLoadingTimeData" class="chart-wrapper">
-            <c-chart 
-              #barChart
-              type="bar"
-              [data]="barChartData"
-              [options]="barChartOptions">
-            </c-chart>
-          </div>
-          <div *ngIf="isLoadingTimeData" class="loading-placeholder d-flex align-items-center justify-content-center" style="height: 400px;">
-            <div class="text-center">
+          <div class="panel-body panel-body--sm">
+            <div *ngIf="!isLoadingTimeData" class="chart-stage chart-stage--line">
+              <c-chart #lineChart [data]="lineChartData" type="line" [options]="lineChartOptions"></c-chart>
+            </div>
+            <div *ngIf="isLoadingTimeData" class="loading-placeholder">
               <div class="spinner-border text-primary"></div>
-              <p class="mt-3 text-muted">正在載入比較數據...</p>
+              <p>載入趨勢中...</p>
             </div>
           </div>
-        </div>
+        </section>
+
+        <section class="hud-panel chart-panel">
+          <span class="hud-corner tl" aria-hidden="true"></span>
+          <span class="hud-corner tr" aria-hidden="true"></span>
+          <span class="hud-corner bl" aria-hidden="true"></span>
+          <span class="hud-corner br" aria-hidden="true"></span>
+
+          <div class="panel-head panel-head--sm">
+            <i class="cil-chart-bar" aria-hidden="true"></i>
+            <span>網友數比較分析</span>
+            <span class="panel-code">SIG-BAR</span>
+          </div>
+          <div class="panel-body panel-body--sm">
+            <div *ngIf="!isLoadingTimeData" class="chart-stage chart-stage--bar">
+              <c-chart #barChart type="bar" [data]="barChartData" [options]="barChartOptions"></c-chart>
+            </div>
+            <div *ngIf="isLoadingTimeData" class="loading-placeholder">
+              <div class="spinner-border text-primary"></div>
+              <p>載入比較中...</p>
+            </div>
+          </div>
+        </section>
       </div>
-    </div>
-  </div>
+    </ng-container>
+  </ng-container>
 </div>

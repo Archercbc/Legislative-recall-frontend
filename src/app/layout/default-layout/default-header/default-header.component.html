@@ -1,4 +1,7 @@
-<header class="header">
+<header
+  class="header"
+  [class.header--cinematic]="!isSolid"
+  [class.header--solid]="isSolid">
   <div class="header-container">
     <div class="header-brand">
       <a [routerLink]="brand.url" class="brand-link">
@@ -6,11 +9,11 @@
         <span class="brand-text">{{ brand.name }}</span>
       </a>
     </div>
-    
+
     <nav class="header-nav">
-      <a *ngFor="let item of navItems" 
-         [routerLink]="item.url" 
-         routerLinkActive="active" 
+      <a *ngFor="let item of navItems"
+         [routerLink]="item.url"
+         routerLinkActive="active"
          [routerLinkActiveOptions]="{exact: item.url === '/'}"
          [ngClass]="{'nav-link': true, 'recall-analysis': item.isRecallAnalysis}"
          class="nav-link">
@@ -18,16 +21,5 @@
         <span>{{ item.name }}</span>
       </a>
     </nav>
-    
-    <div class="header-stats" *ngIf="visitorStats && showStats">
-      <div class="stat-item">
-        <i class="fas fa-users"></i>
-        <span>{{ visitorStats.total_visits | number }}</span>
-      </div>
-      <div class="stat-item">
-        <i class="fas fa-user"></i>
-        <span>{{ visitorStats.today_visitors | number }}</span>
-      </div>
-    </div>
   </div>
 </header>
