@@ -9,6 +9,7 @@ import { ChartjsComponent } from '@coreui/angular-chartjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ElectionService } from '../../../services/election.service';
 import { election_config_list, getElectionById } from '../election-config';
+import taiwan from '@svg-maps/taiwan';
 
 // 自定義數據集類型
 interface CustomChartDataset {
@@ -54,7 +55,263 @@ export class ElectionAnalysisComponent implements OnInit {
       this.barChartComponent.chart.resize();
     }
   }
+  // 視圖狀態：'map' (第一層) | 'city' (第二層) | 'candidate' (第三層)
+  currentView: 'map' | 'city' | 'candidate' = 'map';
+  selectedCounty: string | null = null;
+  selectedCountyName: string = '';
+  selectedCandidate: any = null; // 第三層選中的候選人
+  
+  // 修正 viewBox：X=180, Y=20, 寬=420, 高=700，讓台灣垂直水平完整居中填滿
+ // 直接改成更大範圍試試看：
+  viewBox="-30 0 850 800"
 
+  // 台灣主要縣市清單（對齊 SVG 地圖 ID）
+  // 縣市列表（初始化時由 allMayoralCandidates 動態算出人數）
+countyList = [
+  { id: 'taipei-city', name: '臺北市', candidateCount: 0, hotIndex: '95%' },
+  { id: 'new-taipei-city', name: '新北市', candidateCount: 0, hotIndex: '93%' },
+  { id: 'keelung-city', name: '基隆市', candidateCount: 0, hotIndex: '82%' },
+  { id: 'taoyuan-city', name: '桃園市', candidateCount: 0, hotIndex: '86%' },
+  { id: 'hsinchu-county', name: '新竹縣', candidateCount: 0, hotIndex: '79%' },
+  { id: 'hsinchu-city', name: '新竹市', candidateCount: 0, hotIndex: '91%' },
+  { id: 'miaoli-county', name: '苗栗縣', candidateCount: 0, hotIndex: '74%' },
+  { id: 'taichung-city', name: '臺中市', candidateCount: 0, hotIndex: '89%' },
+  { id: 'changhua-county', name: '彰化縣', candidateCount: 0, hotIndex: '80%' },
+  { id: 'nantou-county', name: '南投縣', candidateCount: 0, hotIndex: '72%' },
+  { id: 'yunlin-county', name: '雲林縣', candidateCount: 0, hotIndex: '76%' },
+  { id: 'chiayi-county', name: '嘉義縣', candidateCount: 0, hotIndex: '68%' },
+  { id: 'chiayi-city', name: '嘉義市', candidateCount: 0, hotIndex: '78%' },
+  { id: 'tainan-city', name: '臺南市', candidateCount: 0, hotIndex: '87%' },
+  { id: 'kaohsiung-city', name: '高雄市', candidateCount: 0, hotIndex: '94%' },
+  { id: 'pingtung-county', name: '屏東縣', candidateCount: 0, hotIndex: '75%' },
+  { id: 'yilan-county', name: '宜蘭縣', candidateCount: 0, hotIndex: '77%' },
+  { id: 'hualien-county', name: '花蓮縣', candidateCount: 0, hotIndex: '84%' },
+  { id: 'taitung-county', name: '臺東縣', candidateCount: 0, hotIndex: '73%' },
+  { id: 'penghu-county', name: '澎湖縣', candidateCount: 0, hotIndex: '70%' },
+  { id: 'kinmen-county', name: '金門縣', candidateCount: 0, hotIndex: '66%' },
+  { id: 'lienchiang-county', name: '連江縣', candidateCount: 0, hotIndex: '55%' },
+];
+  // 1. 保留一份全量候選人母體（暫時作為本地測試，之後直接接 API）
+  allMayoralCandidates: any[] = [
+    // 台北市
+    { id: 'chiang-wan-an', name: '蔣萬安', party: '國民黨', city: 'taipei-city', photo: '/assets/candidates/蔣萬安.jpg', color: '#000080', status: 'incumbent', positive: 18507, negative: 42925, visible: true },
+    { id: 'pua-shen-po', name: '沈伯洋', party: '民進黨', city: 'taipei-city', photo: '/assets/candidates/沈伯洋.jpg', color: '#1b9431', status: 'potential', positive: 21824, negative: 2768, visible: true },
+    { id: 'kuo-hsi', name: '郭璽', party: '台灣麻將最大黨', city: 'taipei-city', photo: '/assets/candidates/郭璽.jpg', color: '#ea580c', status: 'announced', positive: 5400, negative: 8200, visible: true },
+    { id: 'hsiao-wen-chien', name: '蕭文乾', party: '台灣SoR無法黨', city: 'taipei-city', photo: '/assets/candidates/蕭文乾.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true },
+
+    // 新北市
+    { id: 'lee-sichuan', name: '李四川', party: '國民黨', city: 'new-taipei-city', photo: '/assets/candidates/李四川.jpg', color: '#000080', status: 'announced', positive: 12450, negative: 3200, visible: true },
+    { id: 'su-chiao-hui', name: '蘇巧慧', party: '民進黨', city: 'new-taipei-city', photo: '/assets/candidates/蘇巧慧.jpg', color: '#1b9431', status: 'announced', positive: 15320, negative: 4100, visible: true },
+
+    // 基隆市
+    { id: 'tong-zi-wei', name: '童子瑋', party: '民進黨', city: 'keelung-city', photo: '/assets/candidates/童子瑋.jpg', color: '#1b9431', status: 'announced', positive: 8520, negative: 3100, visible: true },
+    { id: 'hsieh-kuo-liang', name: '謝國樑', party: '國民黨', city: 'keelung-city', photo: '/assets/candidates/謝國樑.jpg', color: '#000080', status: 'incumbent', positive: 11200, negative: 14500, visible: true },
+
+    // 桃園市
+    { id: 'huang-shi-jie', name: '黃世杰', party: '民進黨', city: 'taoyuan-city', photo: '/assets/candidates/黃世杰.jpg', color: '#1b9431', status: 'potential', positive: 9400, negative: 4200, visible: true },
+    { id: 'chang-shan-cheng', name: '張善政', party: '國民黨', city: 'taoyuan-city', photo: '/assets/candidates/張善政.jpg', color: '#000080', status: 'incumbent', positive: 16800, negative: 8900, visible: true },
+
+    // 新竹縣
+    { id: 'zheng-chao-fang', name: '鄭朝方', party: '民進黨', city: 'hsinchu-county', photo: '/assets/candidates/鄭朝方.jpg', color: '#1b9431', status: 'announced', positive: 8800, negative: 3600, visible: true },
+    { id: 'hsu-hsin-ying', name: '徐欣瑩', party: '國民黨', city: 'hsinchu-county', photo: '/assets/candidates/徐欣瑩.jpg', color: '#000080', status: 'announced', positive: 10400, negative: 6500, visible: true },
+    { id: 'chu-ting-yu', name: '朱定瑀', party: '無黨籍', city: 'hsinchu-county', photo: '/assets/candidates/朱定瑀.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true },
+
+    // 新竹市
+    { id: 'zhuang-jing-cheng', name: '莊競程', party: '民進黨', city: 'hsinchu-city', photo: '/assets/candidates/莊競程.jpg', color: '#1b9431', status: 'potential', positive: 7600, negative: 2900, visible: true },
+    { id: 'kao-hung-an', name: '高虹安', party: '無黨籍', city: 'hsinchu-city', photo: '/assets/candidates/高虹安.jpg', color: '#fcfefe', status: 'incumbent', positive: 13500, negative: 18200, visible: true },
+    { id: 'ho-chih-yung', name: '何志勇', party: '無黨籍', city: 'hsinchu-city', photo: '/assets/candidates/何志勇.jpg', color: '#64748b', status: 'potential', positive: 5100, negative: 3100, visible: true },
+    { id: 'lee-chen-hsiu', name: '李貞秀', party: '無黨籍', city: 'hsinchu-city', photo: '/assets/candidates/李貞秀.jpg', color: '#fcfefe', status: 'announced', positive: 5100, negative: 3100, visible: true },
+    
+    // 苗栗縣
+    { id: 'chen-pin-an', name: '陳品安', party: '無黨籍', city: 'miaoli-county', photo: '/assets/candidates/陳品安.jpg', color: '#64748b', status: 'potential', positive: 6400, negative: 2100, visible: true },
+    { id: 'chung-tung-chin', name: '鍾東錦', party: '國民黨', city: 'miaoli-county', photo: '/assets/candidates/鍾東錦.jpg', color: '#000080', status: 'incumbent', positive: 14200, negative: 7800, visible: true },
+
+    // 台中市
+    { id: 'ho-hsin-chun', name: '何欣純', party: '民進黨', city: 'taichung-city', photo: '/assets/candidates/何欣純.jpg', color: '#1b9431', status: 'announced', positive: 16200, negative: 8100, visible: true },
+    { id: 'chiang-chi-chen', name: '江啟臣', party: '國民黨', city: 'taichung-city', photo: '/assets/candidates/江啟臣.jpg', color: '#000080', status: 'announced', positive: 19800, negative: 7200, visible: true },
+    { id: 'hung-li-hua', name: '洪麗華', party: '司法改革黨', city: 'taichung-city', photo: '/assets/candidates/洪麗華.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true },
+
+    // 彰化縣
+    { id: 'chen-su-yueh', name: '陳素月', party: '民進黨', city: 'changhua-county', photo: '/assets/candidates/陳素月.jpg', color: '#1b9431', status: 'announced', positive: 8100, negative: 3900, visible: true },
+    { id: 'wei-ping-cheng', name: '魏平政', party: '國民黨', city: 'changhua-county', photo: '/assets/candidates/魏平政.jpg', color: '#000080', status: 'announced', positive: 6900, negative: 5200, visible: true },
+    { id: 'chiu-chien-fu', name: '邱建富', party: '無黨籍', city: 'changhua-county', photo: '/assets/candidates/邱建富.jpg', color: '#64748b', status: 'announced', positive: 4500, negative: 6800, visible: true },
+    { id: 'chen-chung-chia', name: '陳重嘉', party: '無黨籍', city: 'changhua-county', photo: '/assets/candidates/陳重嘉.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true },
+
+    // 南投縣
+    { id: 'wen-shih-cheng', name: '温世政', party: '民進黨', city: 'nantou-county', photo: '/assets/candidates/温世政.jpg', color: '#1b9431', status: 'announced', positive: 4800, negative: 1900, visible: true },
+    { id: 'hsu-shu-hua', name: '許淑華', party: '國民黨', city: 'nantou-county', photo: '/assets/candidates/許淑華.jpg', color: '#000080', status: 'incumbent', positive: 15400, negative: 6700, visible: true },
+
+    // 雲林縣
+    { id: 'liu-chien-kuo', name: '劉建國', party: '民進黨', city: 'yunlin-county', photo: '/assets/candidates/劉建國.jpg', color: '#1b9431', status: 'announced', positive: 9100, negative: 5300, visible: true },
+    { id: 'chang-chia-chun', name: '張嘉郡', party: '國民黨', city: 'yunlin-county', photo: '/assets/candidates/張嘉郡.jpg', color: '#000080', status: 'announced', positive: 12100, negative: 5800, visible: true },
+    { id: 'wu-ping-hui', name: '吳炳輝', party: '無黨籍', city: 'yunlin-county', photo: '/assets/candidates/吳炳輝.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true },
+
+    // 嘉義縣
+    { id: 'tsai-yi-yu', name: '蔡易餘', party: '民進黨', city: 'chiayi-county', photo: '/assets/candidates/蔡易餘.jpg', color: '#1b9431', status: 'announced', positive: 11500, negative: 4600, visible: true },
+    { id: 'wu-pin-jui', name: '吳品叡', party: '無黨籍', city: 'chiayi-county', photo: '/assets/candidates/吳品叡.jpg', color: '#64748b', status: 'announced', positive: 7200, negative: 2300, visible: true },
+
+    // 嘉義市
+    { id: 'wang-mei-hui', name: '王美惠', party: '民進黨', city: 'chiayi-city', photo: '/assets/candidates/王美惠.jpg', color: '#1b9431', status: 'announced', positive: 13200, negative: 3800, visible: true },
+    { id: 'chang-chi-kai', name: '張啓楷', party: '民眾黨', city: 'chiayi-city', photo: '/assets/candidates/張啓楷.jpg', color: '#28c8c8', status: 'announced', positive: 9800, negative: 6200, visible: true },
+    { id: 'huang-hong-cheng', name: '黃宏成台灣阿成世界偉人財神總統', party: '無黨籍', city: 'chiayi-city', photo: '/assets/candidates/黃宏成台灣阿成世界偉人財神總統.jpg', color: '#64748b', status: 'announced', positive: 0, negative: 0, visible: true },
+    { id: 'chen-kai-huang', name: '陳愷璜', party: '無黨籍', city: 'chiayi-city', photo: '/assets/candidates/陳愷璜.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true },
+
+    // 台南市
+    { id: 'chen-ting-fei', name: '陳亭妃', party: '民進黨', city: 'tainan-city', photo: '/assets/candidates/陳亭妃.jpg', color: '#1b9431', status: 'announced', positive: 17400, negative: 6500, visible: true },
+    { id: 'hsieh-lung-chieh', name: '謝龍介', party: '國民黨', city: 'tainan-city', photo: '/assets/candidates/謝龍介.jpg', color: '#000080', status: 'announced', positive: 16100, negative: 8200, visible: true },
+    { id: 'yeh-jen-wen', name: '葉人文', party: '無黨籍', city: 'tainan-city', photo: '/assets/candidates/葉人文.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true },
+    { id: 'hsiao-lin-hung', name: '蕭燐洪', party: '台灣SoR無法黨', city: 'tainan-city', photo: '/assets/candidates/蕭燐洪.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true },
+
+    // 高雄市
+    { id: 'lai-jui-lung', name: '賴瑞隆', party: '民進黨', city: 'kaohsiung-city', photo: '/assets/candidates/賴瑞隆.jpg', color: '#1b9431', status: 'announced', positive: 15600, negative: 9100, visible: true },
+    { id: 'ko-chih-en', name: '柯志恩', party: '國民黨', city: 'kaohsiung-city', photo: '/assets/candidates/柯志恩.jpg', color: '#000080', status: 'announced', positive: 18200, negative: 8400, visible: true },
+    { id: 'chang-ching', name: '張靜', party: '司法改革黨', city: 'kaohsiung-city', photo: '/assets/candidates/張靜.jpg', color: '#64748b', status: 'announced', positive: 3100, negative: 1800, visible: true },
+    { id: 'wang-chao-min', name: '王肇民', party: '無黨籍', city: 'kaohsiung-city', photo: '/assets/candidates/王肇民.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true },
+
+    // 屏東縣
+    { id: 'chou-chun-mi', name: '周春米', party: '民進黨', city: 'pingtung-county', photo: '/assets/candidates/周春米.jpg', color: '#1b9431', status: 'incumbent', positive: 13900, negative: 5200, visible: true },
+    { id: 'su-ching-chuan', name: '蘇清泉', party: '國民黨', city: 'pingtung-county', photo: '/assets/candidates/蘇清泉.jpg', color: '#000080', status: 'announced', positive: 10800, negative: 7900, visible: true },
+
+    // 宜蘭縣
+    { id: 'lin-kuo-chang', name: '林國漳', party: '民進黨', city: 'yilan-county', photo: '/assets/candidates/林國漳.jpg', color: '#1b9431', status: 'potential', positive: 7200, negative: 2400, visible: true },
+    { id: 'wu-tsung-hsien', name: '吳宗憲', party: '國民黨', city: 'yilan-county', photo: '/assets/candidates/吳宗憲.jpg', color: '#000080', status: 'announced', positive: 9100, negative: 4300, visible: true },
+    { id: 'chen-wan-hui', name: '陳琬惠', party: '民眾黨', city: 'yilan-county', photo: '/assets/candidates/陳琬惠.jpg', color: '#28c8c8', status: 'potential', positive: 0, negative: 0, visible: true },
+    { id: 'chen-hung-yi', name: '陳宏毅', party: '無黨籍', city: 'yilan-county', photo: '/assets/candidates/陳宏毅.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true },
+    { id: 'liu-tsan-hui', name: '劉燦輝', party: '無黨籍', city: 'yilan-county', photo: '/assets/candidates/劉燦輝.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true },
+
+    // 花蓮縣
+    { id: 'yu-shu-chen', name: '游淑貞', party: '國民黨', city: 'hualien-county', photo: '/assets/candidates/游淑貞.jpg', color: '#000080', status: 'announced', positive: 8400, negative: 5100, visible: true },
+    { id: 'chang-chun', name: '張峻', party: '無黨籍', city: 'hualien-county', photo: '/assets/candidates/張峻.jpg', color: '#64748b', status: 'announced', positive: 7900, negative: 4600, visible: true },
+    { id: 'wei-chia-hsien', name: '魏嘉賢', party: '無黨籍', city: 'hualien-county', photo: '/assets/candidates/魏嘉賢.jpg', color: '#64748b', status: 'announced', positive: 6800, negative: 3200, visible: true },
+    { id: 'lo-pei-chin', name: '羅佩秦', party: '無黨籍', city: 'hualien-county', photo: '/assets/candidates/羅佩秦.jpg', color: '#64748b', status: 'announced', positive: 3200, negative: 1500, visible: true },
+
+    // 台東縣
+    { id: 'chen-ying', name: '陳瑩', party: '民進黨', city: 'taitung-county', photo: '/assets/candidates/陳瑩.jpg', color: '#1b9431', status: 'announced', positive: 7500, negative: 3400, visible: true },
+    { id: 'wu-hsiu-hua', name: '吳秀華', party: '國民黨', city: 'taitung-county', photo: '/assets/candidates/吳秀華.jpg', color: '#000080', status: 'announced', positive: 8900, negative: 4100, visible: true },
+    { id: 'liu-chao-hao', name: '劉櫂豪', party: '無黨籍', city: 'taitung-county', photo: '/assets/candidates/劉櫂豪.jpg', color: '#64748b', status: 'announced', positive: 5100, negative: 3800, visible: true },
+    { id: 'li-wu-ying-chih', name: '李吳穎智', party: '無黨籍', city: 'taitung-county', photo: '/assets/candidates/李吳穎智.jpg', color: '#64748b', status: 'potential', positive: 2100, negative: 1200, visible: true },
+
+    // 澎湖縣
+    { id: 'wu-shu-chin', name: '吳淑瑾', party: '民進黨', city: 'penghu-county', photo: '/assets/candidates/吳淑瑾.jpg', color: '#1b9431', status: 'potential', positive: 5400, negative: 2600, visible: true },
+    { id: 'chen-chen-chung', name: '陳振中', party: '國民黨', city: 'penghu-county', photo: '/assets/candidates/陳振中.jpg', color: '#000080', status: 'announced', positive: 6100, negative: 2900, visible: true },
+    { id: 'yeh-chu-lin', name: '葉竹林', party: '無黨籍', city: 'penghu-county', photo: '/assets/candidates/葉竹林.jpg', color: '#64748b', status: 'announced', positive: 4200, negative: 2100, visible: true },
+    { id: 'chou-ni-an', name: '周倪安', party: '台灣團結聯盟', city: 'penghu-county', photo: '/assets/candidates/周倪安.jpg', color: '#c89600', status: 'announced', positive: 2600, negative: 1900, visible: true },
+    { id: 'chen-chin-chuan', name: '陳盡川', party: '無黨籍', city: 'penghu-county', photo: '/assets/candidates/陳盡川.jpg', color: '#64748b', status: 'potential', positive: 1800, negative: 900, visible: true },
+    { id: 'hsu-chih-fu', name: '許智富', party: '無黨籍', city: 'penghu-county', photo: '/assets/candidates/許智富.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true },
+
+    // 金門縣
+    { id: 'chen-yu-chen', name: '陳玉珍', party: '國民黨', city: 'kinmen-county', photo: '/assets/candidates/陳玉珍.jpg', color: '#000080', status: 'announced', positive: 9800, negative: 8100, visible: true },
+    { id: 'lee-wen-liang', name: '李文良', party: '無黨籍', city: 'kinmen-county', photo: '/assets/candidates/李文良.jpg', color: '#64748b', status: 'potential', positive: 5300, negative: 2100, visible: true },
+    { id: 'hung-ho-cheng', name: '洪和成', party: '無黨籍', city: 'kinmen-county', photo: '/assets/candidates/洪和成.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true },
+    { id: 'huang-shih-tuan', name: '黃世團', party: '無黨籍', city: 'kinmen-county', photo: '/assets/candidates/黃世團.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true },
+    { id: 'chang-kuo-wei', name: '張國威', party: '無黨籍', city: 'kinmen-county', photo: '/assets/candidates/張國威.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true },
+    { id: 'liang-wen-tao', name: '梁文韜', party: '無黨籍', city: 'kinmen-county', photo: '/assets/candidates/梁文韜.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true },
+
+    // 連江縣
+    { id: 'wang-chung-ming', name: '王忠銘', party: '國民黨', city: 'lienchiang-county', photo: '/assets/candidates/王忠銘.jpg', color: '#000080', status: 'incumbent', positive: 3900, negative: 1200, visible: true },
+    { id: 'tsao-erh-yuan', name: '曹爾元', party: '無黨籍', city: 'lienchiang-county', photo: '/assets/candidates/曹爾元.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true }
+  ];
+
+  // 2. 點選縣市時，同步過濾左側候選人清單
+  onCountyClick(countyId: string, countyName?: string): void {
+    this.selectedCounty = countyId;
+
+    if (this.isLocalElection) {
+      this.filterCandidatesByCounty(countyId);
+    }
+  }
+
+  // 3. 縣市過濾方法
+  filterCandidatesByCounty(countyId: string): void {
+    // 篩選出屬於該縣市的候選人
+    this.candidates = this.allMayoralCandidates.filter(c => c.city === countyId);
+    
+    // 同步更新頂部的 KPI 數字
+    this.totalCandidates = this.candidates.length;
+  }
+  
+
+  taiwanMap = taiwan;
+  // 依據縣市 ID 動態取得該縣市候選人數量
+  getCountyCandidateCount(countyId: string): number {
+    if (!this.allMayoralCandidates) return 0;
+    return this.allMayoralCandidates.filter(c => c.city === countyId).length;
+  }
+
+  getCandidateCountByType(countyId: string, type: 'incumbent' | 'announced' | 'potential'): number {
+  if (!this.allMayoralCandidates) return 0;
+  return this.allMayoralCandidates.filter(c => 
+    (c.city === countyId || c.countyId === countyId) && c.status === type
+  ).length;
+  }
+
+  getCountyColor(countyId: string): string {
+  return this.selectedCounty === countyId ? '#38bdf8' : '#334155';
+  }
+  // 判斷是否為地方/縣市長選舉（依你的 electionId 或 type 判斷）
+  get isLocalElection(): boolean {
+    return this.electionId ? (this.electionId.includes('local') || this.electionId.includes('2026')) : false;
+  }
+  // 取得三向態度數據（支持、反對/支持他人、中立）
+  getCandidateSentimentBreakdown(candidate: any) {
+    if (!candidate) {
+      return { support: 0, oppose: 0, neutral: 0, total: 0, supportPct: 0, opposePct: 0, neutralPct: 0 };
+    }
+
+    const support = candidate.support ?? candidate.positive ?? 0;
+    const oppose = candidate.oppose ?? candidate.negative ?? 0;
+    // 若無獨立中立數據，預設以支持與反對總和的 18% 推估中立討論量
+    const neutral = candidate.neutral ?? Math.round((support + oppose) * 0.18);
+    const total = support + oppose + neutral;
+
+    const supportPct = total > 0 ? Math.round((support / total) * 1000) / 10 : 0;
+    const opposePct = total > 0 ? Math.round((oppose / total) * 1000) / 10 : 0;
+    const neutralPct = total > 0 ? Math.round((100 - supportPct - opposePct) * 10) / 10 : 0;
+
+    return {
+      support,
+      oppose,
+      neutral,
+      total,
+      supportPct,
+      opposePct,
+      neutralPct
+    };
+  }
+ // 【進入第二層：縣市戰情室】
+  enterCityBattle(countyId: string, countyName?: string): void {
+    this.selectedCounty = countyId;
+    const found = this.countyList.find(c => c.id === countyId);
+    this.selectedCountyName = countyName || (found ? found.name : countyId);
+    this.currentView = 'city';
+    this.candidates = this.allMayoralCandidates.filter(c => c.city === countyId);
+    this.totalCandidates = this.candidates.length;
+    this.selectedCandidate = null;
+  }
+
+  // 【進入第三層：候選人個人深度分析】
+  enterCandidateDetail(candidate: any): void {
+    this.selectedCandidate = candidate;
+    this.currentView = 'candidate';
+    // 連動原本底部的時間趨勢折線圖
+    if (candidate && candidate.id) {
+      this.selectCandidateForTimeChart(candidate.id);
+    }
+  }
+  // 【返回第一層：全台大地圖】
+  backToFullMap(): void {
+    this.currentView = 'map';
+    this.selectedCounty = '';
+    this.selectedCountyName = '';
+    this.selectedCandidate = null;
+  }
+
+  // 【返回第二層：縣市戰情室】
+  backToCity(): void {
+    this.currentView = 'city';
+    this.selectedCandidate = null;
+  }
+  
   // 選舉相關屬性
   electionId: string = '';
   election: any = null;
@@ -471,7 +728,15 @@ export class ElectionAnalysisComponent implements OnInit {
   ngOnInit(): void {
     this.route.params.subscribe(params => {
       this.electionId = params['id'];
+      if (this.taiwanMap && (this.taiwanMap as any).viewBox) {
+      this.viewBox = (this.taiwanMap as any).viewBox;
+      }
       if (this.electionId) {
+        // 如果是縣市長選舉，預設選取台北市
+        if (this.isLocalElection) {
+          this.selectedCounty = 'taipei';
+          this.filterCandidatesByCounty('taipei');
+        }
         this.loadElectionData();
       } else {
         // 如果沒有ID，重定向到選舉列表
@@ -529,10 +794,22 @@ export class ElectionAnalysisComponent implements OnInit {
           };
         });
 
-        this.totalCandidates = data.statistics.total_candidates;
-        this.totalSentiment = data.statistics.total_sentiment;
-        this.averageSentiment = data.statistics.average_sentiment;
+        // 暫時註解原本吃 API 的寫法
+// this.totalCandidates = data.statistics.total_candidates;
+// this.totalSentiment = data.statistics.total_sentiment;
+// this.averageSentiment = data.statistics.average_sentiment;
 
+// 🟢 改成使用本地全量名單計算：
+this.totalCandidates = this.allMayoralCandidates.length;
+
+this.totalSentiment = this.allMayoralCandidates.reduce(
+  (sum, c) => sum + (c.positive || 0) + (c.negative || 0), 
+  0
+);
+
+this.averageSentiment = this.totalCandidates > 0 
+  ? Math.round(this.totalSentiment / this.totalCandidates) 
+  : 0;
         // 載入時間序列數據 - 直接使用候選人的數據
         this.timeSeriesStats = this.buildTimeSeriesStatsFromCandidates();
         
@@ -815,8 +1092,38 @@ export class ElectionAnalysisComponent implements OnInit {
     return ((positive / total) * 100).toFixed(1);
   }
 
-  goBack(): void {
-    this.router.navigate(['/election-analysis']);
+ goBack(): void {
+  if (this.currentView === 'candidate') {
+    // 1. 第三層（個人戰情室）-> 返回第二層（縣市戰情室）
+    this.currentView = 'city';
+    this.selectedCandidate = null;
+
+  } else if (this.currentView === 'city') {
+    // 2. 第二層（縣市戰情室）-> 返回第一層（2026 縣市長選舉全台地圖）
+    this.currentView = 'map';
+    this.selectedCounty = null;
+    this.selectedCountyName = '';
+    this.selectedCandidate = null;
+
+  } else {
+    // 3. 第一層 -> 返回「選舉分析中心」入口頁
+    this.router.navigate(['/election-analysis']); 
+    // 💡 備註：如果你的路由是 '/election'，就改填 ['/election']
+  }
+}
+
+  // 加上重設全台 KPI 的函式
+  resetTotalKpis(): void {
+    if (this.allMayoralCandidates && this.allMayoralCandidates.length > 0) {
+      this.totalCandidates = this.allMayoralCandidates.length;
+      this.totalSentiment = this.allMayoralCandidates.reduce(
+        (sum, c) => sum + (c.positive || 0) + (c.negative || 0),
+        0
+      );
+      this.averageSentiment = this.totalCandidates > 0
+        ? Math.round(this.totalSentiment / this.totalCandidates)
+        : 0;
+    }
   }
 
   // 載入特定候選人的時間序列數據 - 參考政治人物頁面實現
