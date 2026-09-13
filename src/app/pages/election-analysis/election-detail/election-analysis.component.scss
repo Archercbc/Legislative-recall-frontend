@@ -406,3 +406,154 @@
 .loading-container { min-height: 40vh; }
 .spinner-border.text-primary { color: var(--ops-teal) !important; }
 .loading-indicator { display: inline-flex; align-items: center; }
+
+
+/* ==========================================
+   全台 SVG 地圖 Hover 特效與動態 Tooltip
+   ========================================== */
+
+.county-path {
+  transition: transform 0.2s ease, filter 0.2s ease, stroke 0.2s ease, fill 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    filter: brightness(1.35) drop-shadow(0 0 10px rgba(56, 189, 248, 0.7));
+    stroke: #38bdf8 !important;
+    stroke-width: 2.5px !important;
+  }
+}
+
+.map-tooltip {
+  position: absolute; /* 🟢 關鍵：從 fixed 改成 absolute */
+  z-index: 9999;
+  pointer-events: none; // 防止提示框遮擋滑鼠觸發事件
+  background: rgba(3, 7, 18, 0.96);
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 12px rgba(56, 189, 248, 0.2);
+  border-radius: 6px;
+  padding: 10px 14px;
+  min-width: 200px;
+  backdrop-filter: blur(8px);
+  transition: top 0.05s ease-out, left 0.05s ease-out;
+
+  &.map-tooltip--compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  width: max-content;
+  padding: 6px 12px;
+  font-size: 13px; // 稍微調大字體讓眼睛更好抓取
+  border-radius: 8px;
+
+  .tt-county {
+    font-weight: 800;
+    color: #5eead4; // 🟢 縣市名稱改為高亮度的亮青色
+    font-family: "Noto Sans TC", system-ui, sans-serif;
+  }
+  .tt-sep {
+    color: #cbd5e1; // 🟢 標籤文字調亮，不再灰暗
+  }
+  .tt-label {
+    color: #94a3b8;
+    font-family: "Noto Sans TC", system-ui, sans-serif;
+  }
+  .tt-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .tt-leader {
+      font-weight: 700;
+      /* 🟢 移除單純的繼承顏色，強制加上白色發光陰影，讓任何深色字體都清晰可見 */
+      color: #ffffff !important; 
+      text-shadow: 0 0 4px rgba(0, 0, 0, 0.9), 0 0 2px currentColor;
+      font-family: "Noto Sans TC", system-ui, sans-serif;
+    }
+  .tt-party {
+    color: #e2e8f0; // 🟢 政黨標籤調亮
+    font-size: 11.5px;
+    font-family: "Noto Sans TC", system-ui, sans-serif;
+  }
+  .tt-pct {
+    color: #38bdf8; // 支持度維持明亮的冰藍色，或可改為 #5eead4
+    font-weight: 800;
+  }
+  .tt-empty {
+    color: #64748b;
+    font-family: "Noto Sans TC", system-ui, sans-serif;
+  }
+}
+
+  .tooltip-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+
+    .county-title {
+      font-size: 15px;
+      font-weight: bold;
+      color: #f8fafc;
+      letter-spacing: 0.5px;
+    }
+
+    .tooltip-badge {
+      font-size: 11px;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 1px 6px;
+      border-radius: 9999px;
+    }
+  }
+
+  .tooltip-body {
+    font-size: 13px;
+
+    .leader-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+
+      .label {
+        color: #94a3b8;
+      }
+
+      .leader-name {
+        font-weight: bold;
+      }
+
+      .party-tag {
+        font-size: 10px;
+        color: #ffffff;
+        padding: 0px 5px;
+        border-radius: 3px;
+        font-weight: 600;
+      }
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #cbd5e1;
+
+      .stat-value {
+        color: #38bdf8;
+        font-size: 14px;
+      }
+
+      .stat-count {
+        font-size: 11px;
+        color: #64748b;
+      }
+    }
+  }
+}
+
