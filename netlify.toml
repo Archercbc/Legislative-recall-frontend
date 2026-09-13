@@ -1,6 +1,6 @@
 [build]
   command = "npm run build"
-  publish = "dist/legislative-recall"
+  publish = "dist/legislative-recall/browser"
 
 [[redirects]]
   from = "/*"
