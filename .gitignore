@@ -41,4 +41,5 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
-AGENTS.mdnode_modules
+AGENTS.md
+node_modules
