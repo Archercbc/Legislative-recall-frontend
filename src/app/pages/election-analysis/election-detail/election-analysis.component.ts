@@ -123,7 +123,7 @@ export class ElectionAnalysisComponent implements OnInit {
     // 新竹市
     { id: 'zhuang-jing-cheng', name: '莊競程', party: '民進黨', city: 'hsinchu-city', photo: '/assets/2026縣市長/莊競程.jpg', color: '#1b9431', status: 'potential', positive: 0, negative: 0, visible: true },
     { id: 'kao-hung-an', name: '高虹安', party: '無黨籍', city: 'hsinchu-city', photo: '/assets/2026縣市長/高虹安.jpg', color: '#fcfefe', status: 'incumbent', positive: 0, negative: 0, visible: true },
-    { id: 'ho-chih-yung', name: '何志勇', party: '無黨籍', city: 'hsinchu-city', photo: '/assets/2026縣市長/何志勇.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true },
+    { id: 'ho-chih-yung', name: '何志勇', party: '國民黨', city: 'hsinchu-city', photo: '/assets/2026縣市長/何志勇.jpg', color: '#000080', status: 'potential', positive: 0, negative: 0, visible: true },
     { id: 'lee-chen-hsiu', name: '李貞秀', party: '無黨籍', city: 'hsinchu-city', photo: '/assets/2026縣市長/李貞秀.jpg', color: '#fcfefe', status: 'announced', positive: 0, negative: 0, visible: true },
     // 苗栗縣
     { id: 'chen-pin-an', name: '陳品安', party: '民進黨', city: 'miaoli-county', photo: '/assets/2026縣市長/陳品安.jpg', color: '#1b9431', status: 'potential', positive: 0, negative: 0, visible: true },
@@ -526,6 +526,9 @@ export class ElectionAnalysisComponent implements OnInit {
   // 圖表數據
   lineChartData: ChartData<'line'> = { labels: [], datasets: [] };
   barChartData: ChartData<'bar'> = { labels: [], datasets: [] };
+  // 「網友數比較分析」專用：跟上面「各平台正面/負面情緒聲量分佈」用的是不同統計邏輯，
+  // 不能共用同一份 barChartData（那份是依情緒分正負面，這份是文件ID去重後的支持網友數）
+  userCountChartData: ChartData<'bar'> = { labels: [], datasets: [] };
 
   // 時間圖表模式控制
   selectedCandidateForTimeChart: string | null = null; // null = 顯示所有候選人總網友數
@@ -1009,6 +1012,7 @@ export class ElectionAnalysisComponent implements OnInit {
   loadChartData(): void {
     this.updateLineChart();
     this.updateBarChart();
+    this.updateUserCountChart();
   }
 
   updateLineChart(): void {
@@ -1038,7 +1042,7 @@ export class ElectionAnalysisComponent implements OnInit {
           labels: labels,
           datasets: [
             {
-              label: '支持',
+              label: '正面',
               data: positiveData,
               positiveData: positiveData,
               negativeData: negativeData,
@@ -1052,7 +1056,7 @@ export class ElectionAnalysisComponent implements OnInit {
               pointHoverRadius: 6
             } as any,
             {
-              label: '反對',
+              label: '負面',
               data: negativeData,
               positiveData: positiveData,
               negativeData: negativeData,
@@ -1134,6 +1138,44 @@ export class ElectionAnalysisComponent implements OnInit {
   });
 
   this.barChartData = { labels, datasets };
+}
+
+// 「網友數比較分析」：不分情緒正負面，只看「文件ID去重後」且 target=候選人 AND 立場判斷=投給候選人 的不重複網友數
+// 每個候選人 × 每個平台各一根柱子（不像上面 P/N 圖那樣一個平台拆兩根）
+updateUserCountChart(): void {
+  const visibleCandidates = this.candidates.filter(c => c.visible);
+
+  if (visibleCandidates.length === 0) {
+    this.userCountChartData = { labels: [], datasets: [] };
+    return;
+  }
+
+  const labels = visibleCandidates.map(c => c.name);
+  const datasets: any[] = [];
+
+  this.platforms.forEach(platform => {
+    const pLower = platform.toLowerCase();
+
+    const userCountData = visibleCandidates.map(c => {
+      const counts = c.platform_user_counts;
+      if (counts && typeof counts === 'object') {
+        return Number(counts[pLower] ?? 0);
+      }
+      return 0;
+    });
+
+    const baseColor = this.platformColors[platform] || '#38bdf8';
+
+    datasets.push({
+      label: `${platform.toUpperCase()} - 支持網友數`,
+      data: userCountData,
+      backgroundColor: baseColor,
+      borderColor: baseColor,
+      borderWidth: 1
+    });
+  });
+
+  this.userCountChartData = { labels, datasets };
 }
 
 // 輔助函式：用來動態調整顏色透明度以區分正負面
@@ -1257,6 +1299,7 @@ private adjustColorOpacity(hex: string, alpha: number): string {
   updateCharts(): void {
     this.updateLineChart();
     this.updateBarChart();
+    this.updateUserCountChart();
   }
 
   getSupportPercentage(candidate: any): string {
@@ -1638,6 +1681,7 @@ private adjustColorOpacity(hex: string, alpha: number): string {
     this.loadElectionAnalysisData(timeRange);
 
     this.updateBarChart();
+    this.updateUserCountChart();
 
     setTimeout(() => {
       this.isLoadingTimeData = false;
