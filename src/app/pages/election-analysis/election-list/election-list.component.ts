@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { election_config_list, getElectionTypeText, getStatusClass } from '../election-config';
 import { IconModule } from '@coreui/icons-angular';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-election-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, IconModule],
+  imports: [CommonModule, FormsModule, IconModule, RouterLink],
   templateUrl: './election-list.component.html',
   styleUrl: './election-list.component.scss'
 })
