@@ -42,16 +42,15 @@
     </div>
 
     <div class="elections-grid">
+      <!-- 【修改重點 1】：移除阻擋點擊的 pointer-events="none" 與 disabled 綁定 -->
       <article
         class="election-card hud-panel"
-        [class.is-disabled]="election.disabled"
-        [class.is-soon]="election.coming_soon || election.disabled"
         *ngFor="let election of filteredElections; let i = index"
-        [style.pointer-events]="election.disabled ? 'none' : 'auto'"
-        (click)="!election.disabled && viewElectionDetails(election.election_id)"
-        (keyup.enter)="!election.disabled && viewElectionDetails(election.election_id)"
-        [attr.tabindex]="election.disabled ? -1 : 0"
+        (click)="viewElectionDetails(election.election_id)"
+        (keyup.enter)="viewElectionDetails(election.election_id)"
+        tabindex="0"
         role="button">
+        
         <span class="hud-corner tl" aria-hidden="true"></span>
         <span class="hud-corner tr" aria-hidden="true"></span>
         <span class="hud-corner bl" aria-hidden="true"></span>
@@ -70,21 +69,20 @@
         <p class="election-desc" *ngIf="election.description">{{ election.description }}</p>
 
         <div class="meta-row">
-          <span *ngIf="!election.disabled && getCandidateCount(election) > 0">
+          <!-- 【修改重點 2】：移除 !election.disabled 判斷，讓有候選人資料就正常顯示 -->
+          <span *ngIf="getCandidateCount(election) > 0">
             <i class="cil-people" aria-hidden="true"></i>{{ getCandidateCount(election) }} 候選人
           </span>
           <span *ngIf="election.start_date && election.end_date">
             <i class="cil-calendar" aria-hidden="true"></i>{{ getDateRange(election) }}
-          </span>
-          <span *ngIf="election.disabled">
-            <i class="cil-calendar-check" aria-hidden="true"></i>2026
           </span>
           <span *ngIf="election.analysis_period">
             <i class="cil-clock" aria-hidden="true"></i>{{ election.analysis_period }}
           </span>
         </div>
 
-        <div class="candidates-preview" *ngIf="!election.disabled && election.candidates?.length">
+        <!-- 【修改重點 3】：移除 !election.disabled 判斷，讓預覽頭像區塊可以顯示出來 -->
+        <div class="candidates-preview" *ngIf="election.candidates?.length">
           <div class="preview-head">
             <span>候選人預覽</span>
             <span>{{ getCandidateCount(election) }} 人</span>
@@ -106,11 +104,12 @@
           <span class="more-issues" *ngIf="election.key_issues.length > 3">+{{ election.key_issues.length - 3 }}</span>
         </div>
 
+        <!-- 【修改重點 4】：保留你改好的按鈕文字與路由 -->
         <div class="card-action">
-          <span class="action-btn" [class.disabled]="election.disabled">
-            <i [class]="election.disabled ? 'cil-calendar-check' : 'cil-chart-line'" aria-hidden="true"></i>
-            {{ election.disabled ? '敬請期待' : '進入戰情' }}
-          </span>
+          <a class="action-btn" [routerLink]="['/election-analysis', election.election_id]">
+            <i class="cil-chart-line" aria-hidden="true"></i>
+            查看戰情室
+          </a>
         </div>
       </article>
     </div>
