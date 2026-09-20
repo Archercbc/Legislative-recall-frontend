@@ -500,62 +500,110 @@
           <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '1year'" (click)="setQuickFilter('1year')" [disabled]="isLoadingTimeData">一年</button>
         </div>
         <span class="date-inline">{{ getDisplayPeriod() }}</span>
-        <div class="loading-indicator" *ngIf="isLoadingTimeData">
-          <div class="spinner-border spinner-border-sm text-primary"></div>
-        </div>
       </div>
 
-      <div class="charts-board">
-        <section class="hud-panel chart-panel">
-          <span class="hud-corner tl" aria-hidden="true"></span>
-          <span class="hud-corner tr" aria-hidden="true"></span>
-          <span class="hud-corner bl" aria-hidden="true"></span>
-          <span class="hud-corner br" aria-hidden="true"></span>
-
-          <div class="panel-head panel-head--sm panel-head--wrap">
-            <div class="head-left">
-              <i class="cil-chart-line" aria-hidden="true"></i>
-              <span>{{ selectedCandidateForTimeChart ? '候選人正負面趨勢' : '累計評論總網友數' }}</span>
-              <span class="panel-code">TREND</span>
-            </div>
-            <button
-              *ngIf="selectedCandidateForTimeChart"
-              type="button"
-              class="btn-overview"
-              (click)="returnToOverview()">
-              <i class="cil-arrow-left" aria-hidden="true"></i>
-              返回總覽
-            </button>
-          </div>
-          <div class="panel-body panel-body--sm">
-            <div *ngIf="!isLoadingTimeData" class="chart-stage chart-stage--line">
-              <c-chart #lineChart [data]="lineChartData" type="line" [options]="lineChartOptions"></c-chart>
-            </div>
-            <div *ngIf="isLoadingTimeData" class="loading-placeholder">
-              <div class="spinner-border text-primary"></div>
-              <p>載入趨勢中...</p>
-            </div>
-          </div>
-        </section>
-
-        <section class="hud-panel chart-panel">
+      <!-- 3. 中間雙欄：選戰態勢達成率 + 網友聲量意向圓餅 -->
+      <div style="display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;">
+        
+        <!-- 左欄：好感度戰力指標 -->
+        <section class="hud-panel" style="flex: 1 1 450px; min-width: 320px; margin: 0;">
           <span class="hud-corner tl" aria-hidden="true"></span>
           <span class="hud-corner tr" aria-hidden="true"></span>
           <span class="hud-corner bl" aria-hidden="true"></span>
           <span class="hud-corner br" aria-hidden="true"></span>
 
           <div class="panel-head panel-head--sm">
-            <i class="cil-chart-bar" aria-hidden="true"></i>
-            <span>網友數比較分析</span>
-            <span class="panel-code">SIG-BAR</span>
+            <i class="cil-speedometer" aria-hidden="true"></i>
+            <span>好感度戰力指標（情緒分析）</span>
+            <span class="panel-code">INTEL-01</span>
           </div>
-          <div class="panel-body panel-body--sm">
-            <div *ngIf="!isLoadingTimeData" class="chart-stage chart-stage--bar">
-              <c-chart #barChart type="bar" [data]="barChartData" [options]="barChartOptions"></c-chart>
+
+          <div class="panel-body panel-body--sm" style="padding: 24px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 24px;">
+              <!-- 正面情緒聲量 (P) -->
+              <div>
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 6px;">正面情緒聲量 (P)</div>
+                <div style="font-size: 26px; font-weight: bold; color: #38bdf8;">
+                  {{ (selectedCandidate.positive || 0) | number }}
+                </div>
+              </div>
+              
+              <!-- 負面情緒聲量 (N) -->
+              <div>
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 6px;">負面情緒聲量 (N)</div>
+                <!-- 使用紅色 (#ef4444) 來標示負面數值 -->
+                <div style="font-size: 26px; font-weight: bold; color: #ef4444;">
+                  {{ (selectedCandidate.negative || 0) | number }}
+                </div>
+              </div>
+
+              <!-- 淨情緒指數 (P-N) -->
+              <div style="text-align: right;">
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 6px;">淨情緒指數 (P-N)</div>
+                <div
+                  [style.color]="((selectedCandidate.positive || 0) - (selectedCandidate.negative || 0)) >= 0 ? '#10b981' : '#ef4444'"
+                  style="font-size: 26px; font-weight: bold;">
+                  {{ ((selectedCandidate.positive || 0) - (selectedCandidate.negative || 0)) > 0 ? '+' : '' }}{{ ((selectedCandidate.positive || 0) - (selectedCandidate.negative || 0)) | number }}
+                </div>
+              </div>
             </div>
-            <div *ngIf="isLoadingTimeData" class="loading-placeholder">
-              <div class="spinner-border text-primary"></div>
-              <p>載入比較中...</p>
+
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px;">
+                <span style="color: #94a3b8;">正面情緒佔比 (P / 總情緒)</span>
+                <span style="color: #38bdf8; font-weight: bold;">
+                  {{ selectedCandidate.positive_rate ?? 0 }}%
+                </span>
+              </div>
+              <div style="width: 100%; height: 8px; background: rgba(30, 41, 59, 0.8); border-radius: 4px; overflow: hidden;">
+                <div
+                  [style.width]="(selectedCandidate.positive_rate ?? 0) + '%'"
+                  style="height: 100%; background: #38bdf8; border-radius: 4px; transition: width 0.4s ease;">
+                </div>
+              </div>
+              <div style="font-size: 11px; color: #64748b; margin-top: 8px; line-height: 1.5;">
+                正面情緒（信任、喜悅、預期）與負面情緒（憤怒、厭惡、恐懼、悲傷）留言佔該候選人總情緒聲量之比例。此指標僅反映留言的情緒基調，不代表選舉支持度。
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 右欄：網友聲量意向 -->
+        <section class="hud-panel" style="flex: 1 1 450px; min-width: 320px; margin: 0;">
+          <span class="hud-corner tl" aria-hidden="true"></span>
+          <span class="hud-corner tr" aria-hidden="true"></span>
+          <span class="hud-corner bl" aria-hidden="true"></span>
+          <span class="hud-corner br" aria-hidden="true"></span>
+
+          <div class="panel-head panel-head--sm">
+            <i class="cil-chart-pie" aria-hidden="true"></i>
+            <span>{{ selectedCountyName }} 網友數意向統計(得票分布)</span>
+            <span class="panel-code">SIG-PIE · {{ (selectedCandidate.area_total_stance || 0) | number }}人</span>
+          </div>
+
+          <div class="panel-body panel-body--sm" style="display: flex; align-items: center; justify-content: space-around; padding: 20px; flex-wrap: wrap; gap: 16px;">
+            <div
+              [style.background]="getCountyConicGradientStyle()"
+              style="width: 140px; height: 140px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+              <div style="width: 84px; height: 84px; border-radius: 50%; background: #0b1329; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <span style="font-size: 18px; font-weight: bold; color: #f8fafc;">{{ getSupportPercentage(selectedCandidate) }}%</span>
+                <span style="font-size: 10px; color: #94a3b8; text-align: center; padding: 0 4px;">{{ selectedCandidate.name }}<br>得票率</span>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; min-width: 200px; max-height: 180px; overflow-y: auto;">
+              <div
+                *ngFor="let item of getCurrentCountyBreakdown()"
+                style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; gap: 12px;">
+                <span style="display: flex; align-items: center; gap: 6px; color: #cbd5e1;">
+                  <span [style.background]="getColorForCandidateName(item.candidate_name)" style="width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex-shrink: 0;"></span>
+                  {{ item.candidate_name }}
+                </span>
+                <strong style="color: #f8fafc; white-space: nowrap;">{{ item.percentage }}% · {{ item.count | number }}人</strong>
+              </div>
+              <div *ngIf="getCurrentCountyBreakdown().length === 0" style="color: #64748b; font-size: 12px;">
+                暫無該縣市得票分佈資料
+              </div>
             </div>
           </div>
         </section>

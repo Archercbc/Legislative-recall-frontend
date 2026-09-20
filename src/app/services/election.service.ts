@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
-// 移除接口導入，直接使用 any 類型
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -12,9 +11,10 @@ export class ElectionService {
 
   constructor(private http: HttpClient) { }
 
-
   /**
    * 獲取選舉分析數據 - 傳遞候選人名單
+   * 對應後端 election_backend.py 的 /api/election/analysis
+   * 回傳格式: { success, data: [...candidates], county_stance_breakdown, statistics }
    */
   getElectionAnalysisData(candidates: string[], days: string = '365'): Observable<any> {
     const candidatesParam = candidates.join(',');
@@ -36,12 +36,12 @@ export class ElectionService {
    * 獲取特定候選人的時間序列數據 - 使用選舉分析 API
    */
   getCandidateTimeSeriesData(candidateName: string, days: number): Observable<any> {
-    // 使用選舉分析 API 獲取單一候選人的數據
     return this.http.get<any>(`${environment.apiUrl}/api/election/analysis?candidates=${encodeURIComponent(candidateName)}&days=${days}`).pipe(
       map(response => {
         if (response.success && response.data) {
-          // 返回第一個候選人的數據
-          const candidate = response.data.candidates[0];
+          // 後端 data 就是候選人陣列 (calculate_all_data 回傳的 candidates_payload)
+          const candidateList = Array.isArray(response.data) ? response.data : (response.data.candidates || []);
+          const candidate = candidateList[0];
           if (candidate) {
             return {
               time_series: {
@@ -74,8 +74,8 @@ export class ElectionService {
     };
 
     const targetKey = keyMap[days] || 'recent_365_days_cumulative';
-    const stats = timeSeriesStats[targetKey];
-    
+    const stats = timeSeriesStats?.[targetKey] || timeSeriesStats;
+
     if (!stats || !stats.stats_points) {
       return [];
     }
@@ -84,10 +84,10 @@ export class ElectionService {
       if (point.date) {
         try {
           const date = new Date(point.date);
-          return date.toLocaleDateString('zh-TW', { 
-            year: 'numeric', 
-            month: '2-digit', 
-            day: '2-digit' 
+          return date.toLocaleDateString('zh-TW', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
           });
         } catch (e) {
           return point.date;
@@ -111,13 +111,13 @@ export class ElectionService {
     };
 
     const targetKey = keyMap[days] || 'recent_365_days_cumulative';
-    const stats = timeSeriesStats[targetKey];
-    
+    const stats = timeSeriesStats?.[targetKey] || timeSeriesStats;
+
     if (!stats || !stats.stats_points) {
       return [];
     }
 
-    // 提取正負面數據
+    // 後端 sentiment_counts 是累計值 (positive / negative)
     const positiveData = stats.stats_points.map((point: any) => {
       const sentiment = point.sentiment_counts || {};
       return sentiment.positive || 0;
@@ -155,5 +155,4 @@ export class ElectionService {
       }
     ];
   }
-
 }
