@@ -64,7 +64,16 @@ export class ElectionAnalysisComponent implements OnInit {
   
   // 修正 viewBox：X=180, Y=20, 寬=420, 高=700，讓台灣垂直水平完整居中填滿
  // 直接改成更大範圍試試看：
-  viewBox="-30 0 850 800"
+  viewBox = "-30 0 850 800"
+
+  // 平台清單與代表色（候選人 × 平台長條圖）
+  readonly platforms: string[] = ['fb', 'threads', 'youtube', 'ptt'];
+  platformColors: { [key: string]: string } = {
+    fb: '#1877F2',
+    threads: '#6b7280',
+    youtube: '#FF0000',
+    ptt: '#f59e0b'
+  };
 
   // 台灣主要縣市清單（對齊 SVG 地圖 ID）
   // 縣市列表（初始化時由 allMayoralCandidates 動態算出人數）
@@ -932,7 +941,7 @@ this.averageSentiment = this.totalCandidates > 0
   const datasets: any[] = [];
 
   // 針對四個平台，分別建立「正面 (P)」與「負面 (N)」的長條
-  this.platforms.forEach(platform => {
+  this.platforms.forEach((platform: string) => {
     const pLower = platform.toLowerCase();
     
     // 1. 正面資料集 (P) - 帶有輕微透明或特定亮度
@@ -991,7 +1000,7 @@ updateUserCountChart(): void {
   const labels = visibleCandidates.map(c => c.name);
   const datasets: any[] = [];
 
-  this.platforms.forEach(platform => {
+  this.platforms.forEach((platform: string) => {
     const pLower = platform.toLowerCase();
 
     const userCountData = visibleCandidates.map(c => {
