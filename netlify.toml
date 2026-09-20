@@ -1,10 +1,6 @@
 [build]
-  command = "npm run build"
+  command = "ng build --configuration production"
   publish = "dist/legislative-recall/browser"
-
-[build.environment]
-  NPM_FLAGS = "--legacy-peer-deps"
-  NODE_VERSION = "20"
 
 [[redirects]]
   from = "/*"
