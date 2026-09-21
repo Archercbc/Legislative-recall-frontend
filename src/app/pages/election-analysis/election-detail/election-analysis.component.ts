@@ -28,6 +28,16 @@ interface CustomChartDataset {
   pointHoverRadius: number;
 }
 
+/**
+ * ============================================================
+ * 合併說明
+ * ------------------------------------------------------------
+ * 本元件同時支援兩種選舉，由 isLocalElection 判斷走哪一套：
+ *   ▸ 地方選舉 (2026 縣市長) → 「三層地圖戰情室」邏輯（原本你的程式）
+ *   ▸ 其他選舉 (如國民黨黨主席) → 「學長」的邏輯（累計 recent_xxx_days_cumulative）
+ * 兩套邏輯各自放在 xxxLocal / xxxChairman 的方法內，互不呼叫。
+ * ============================================================
+ */
 @Component({
   selector: 'app-election-analysis',
   standalone: true,
@@ -56,22 +66,32 @@ export class ElectionAnalysisComponent implements OnInit {
       this.barChartComponent.chart.resize();
     }
   }
+
+  // ==========================================
+  // 🟢 模式判斷：地方/縣市長選舉 vs 其他（黨主席等）
+  // ==========================================
+  get isLocalElection(): boolean {
+    return this.electionId ? (this.electionId.includes('local') || this.electionId.includes('2026')) : false;
+  }
+
+  // ==========================================
+  // 【地方選舉專用】視圖狀態與地圖
+  // ==========================================
   // 視圖狀態：'map' (第一層) | 'city' (第二層) | 'candidate' (第三層)
   currentView: 'map' | 'city' | 'candidate' = 'map';
   selectedCounty: string | null = null;
   selectedCountyName: string = '';
   selectedCandidate: any = null; // 第三層選中的候選人
 
-  // 修正 viewBox：X=180, Y=20, 寬=420, 高=700，讓台灣垂直水平完整居中填滿
   viewBox: string = "-30 0 850 800";
 
   // 平台清單與代表色（用於候選人×平台長條圖）
   readonly platforms = ['fb', 'threads', 'youtube', 'ptt'];
   platformColors: { [key: string]: string } = {
-    fb: '#1877F2',       // FB 藍
-    threads: '#6b7280',  // Threads 灰黑
-    youtube: '#FF0000',  // YouTube 紅
-    ptt: '#f59e0b'       // PTT 橘
+    fb: '#1877F2',
+    threads: '#6b7280',
+    youtube: '#FF0000',
+    ptt: '#f59e0b'
   };
 
   // 台灣主要縣市清單（對齊 SVG 地圖 ID）
@@ -200,7 +220,43 @@ export class ElectionAnalysisComponent implements OnInit {
     { id: 'tsao-erh-yuan', name: '曹爾元', party: '無黨籍', city: 'lienchiang-county', photo: '/assets/2026縣市長/曹爾元.jpg', color: '#64748b', status: 'potential', positive: 0, negative: 0, visible: true }
   ];
 
-  // 2. 點選縣市時，同步過濾左側候選人清單
+  taiwanMap = taiwan;
+
+  // ==========================================
+  // 【地方選舉專用】政黨代表色（地圖著色用）
+  // 注意：不要動 candidate.color，折線圖 / 圓餅圖仍使用它
+  // ==========================================
+  private readonly PARTY_COLORS: { [party: string]: string } = {
+    '國民黨': '#000080',
+    '民進黨': '#1b9431',
+    '民眾黨': '#28c8c8',
+    '台灣團結聯盟': '#c89600',
+    '台灣麻將最大黨': '#ea580c',
+    '無黨籍': '#64748b'
+  };
+  private readonly DEFAULT_PARTY_COLOR = '#64748b'; // 其他小黨 / 未知
+
+  getPartyColor(party?: string): string {
+    return (party && this.PARTY_COLORS[party]) || this.DEFAULT_PARTY_COLOR;
+  }
+
+  // 依候選人取得政黨色（若 candidate 沒有 party，回頭去本地靜態清單查）
+  getCandidatePartyColor(candidate: any): string {
+    if (!candidate) return this.DEFAULT_PARTY_COLOR;
+
+    let party = candidate.party;
+    if (!party) {
+      const local = this.allMayoralCandidates.find(
+        c => c.id === candidate.id || c.name === candidate.name
+      );
+      party = local?.party;
+    }
+    return this.getPartyColor(party);
+  }
+
+  // ==========================================
+  // 【地方選舉專用】縣市點擊 / 過濾
+  // ==========================================
   onCountyClick(countyId: string, countyName?: string): void {
     this.selectedCounty = countyId;
 
@@ -209,27 +265,20 @@ export class ElectionAnalysisComponent implements OnInit {
     }
   }
 
-  /**
-   * 縣市過濾方法 (第一層點擊左側清單時觸發)
-   */
   filterCandidatesByCounty(countyId: string): void {
     const source = this.allCandidatesWithStats?.length > 0
       ? this.allCandidatesWithStats
       : (this.allMayoralCandidates || []);
 
-    // 改用安全的精確比對
     let filtered = source.filter(c => this.isCountyMatch(c.city, countyId));
 
     // 關鍵安全鎖：若沒過濾到任何人，不讓 candidates 變成空陣列，回退顯示全資料
     this.candidates = filtered.length > 0 ? filtered : source;
     this.totalCandidates = this.candidates.length;
 
-    this.updateCharts(); 
+    this.updateCharts();
   }
 
-  taiwanMap = taiwan;
-  
-  // 依據縣市 ID 動態取得該縣市候選人數量
   getCountyCandidateCount(countyId: string): number {
     if (!this.allMayoralCandidates) return 0;
     return this.allMayoralCandidates.filter(c => c.city === countyId).length;
@@ -242,62 +291,41 @@ export class ElectionAnalysisComponent implements OnInit {
     ).length;
   }
 
-  // ==========================================
-  // 🟢 縣市地圖精確比對邏輯 (修復新竹/嘉義縣市混淆問題)
-  // ==========================================
-
-  /**
-   * 新增：安全且精確的縣市 ID 比對方法
-   */
+  // 安全且精確的縣市 ID 比對（修復新竹/嘉義縣市混淆問題）
   private isCountyMatch(candidateCity: string, targetCountyId: string): boolean {
     if (!candidateCity || !targetCountyId) return false;
-    
-    // 1. 完全相同直接通過
     if (candidateCity === targetCountyId) return true;
-    
-    // 2. 忽略大小寫與特殊符號 (如 - 或 _) 進行精確比對
-    // 這樣 HsinchuCity 與 hsinchu-city 都會變成 hsinchucity，完美對應且互不干擾
+
     const cleanCandidate = candidateCity.toLowerCase().replace(/[^a-z0-9]/g, '');
     const cleanTarget = targetCountyId.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
+
     return cleanCandidate === cleanTarget;
   }
 
-
   // ==========================================
-  // 🟢 全台地圖領先者著色 & 滑鼠懸浮卡片邏輯
+  // 【地方選舉專用】全台地圖領先者著色 & Tooltip
   // ==========================================
-
- hoveredCounty: any = null;
+  hoveredCounty: any = null;
   tooltipPos = { x: 0, y: 0 };
 
-/**
-   * 取得指定縣市的候選人清單 (供地圖著色與 Tooltip 使用)
-   */
   getCandidatesForCounty(countyId: string): any[] {
     const source = this.allCandidatesWithStats?.length > 0
       ? this.allCandidatesWithStats
       : (this.allMayoralCandidates || []);
 
-    // 改用安全的精確比對
     return source.filter(c => this.isCountyMatch(c.city, countyId));
   }
 
-  /**
-   * 根據該縣市目前最高支持度/聲量的候選人，取得對應黨派顏色
-   */
   getCountyColor(countyId: string): string {
-    // 如果當前正在點擊檢視該縣市，維持亮藍色高亮
     if (this.selectedCounty === countyId && this.currentView === 'city') {
       return '#38bdf8';
     }
 
     const countyCandidates = this.getCandidatesForCounty(countyId);
     if (!countyCandidates || countyCandidates.length === 0) {
-      return '#334155'; // 無資料時預設深灰色
+      return '#334155';
     }
 
-    // 依據支持數 (support_count 或 positive) 由大到小排序
     const sorted = [...countyCandidates].sort((a, b) =>
       (b.support_count ?? b.positive ?? 0) - (a.support_count ?? a.positive ?? 0)
     );
@@ -305,68 +333,47 @@ export class ElectionAnalysisComponent implements OnInit {
     const leader = sorted[0];
     const leaderSupport = leader.support_count ?? leader.positive ?? 0;
 
-    // 若第一名有支持數且有設定顏色，則以該候選人顏色填滿地圖
-    if (leaderSupport > 0 && leader.color) {
-      return leader.color;
+    // 有聲量才著色，顏色改用「領先者的政黨色」
+    if (leaderSupport > 0) {
+      return this.getCandidatePartyColor(leader);
     }
 
-    return '#334155'; // 預設深灰色
+    return '#334155';
   }
 
-  /**
-   * 滑鼠移入縣市地圖時觸發
-   */
   onCountyMouseEnter(location: any, event: MouseEvent): void {
     this.hoveredCounty = this.getCountyHoverInfo(location.id, location.name);
     this.updateTooltipPos(event);
   }
 
-  /**
-   * 滑鼠在地圖上移動時持續更新座標
-   */
   onCountyMouseMove(event: MouseEvent): void {
     this.updateTooltipPos(event);
   }
 
-  /**
-   * 滑鼠離開地圖時關閉浮動視窗
-   */
   onCountyMouseLeave(): void {
     this.hoveredCounty = null;
   }
 
-  /**
-   * 計算並更新 Tooltip 的「容器相對絕對座標」
-   */
   private updateTooltipPos(event: MouseEvent): void {
     if (this.mapContainer) {
-      // 取得地圖容器在螢幕上的位置與實際大小
       const rect = this.mapContainer.nativeElement.getBoundingClientRect();
-      
-      // 計算游標相對於地圖容器 (mapContainer) 的原始 X 與 Y 座標
+
       const relativeMouseX = event.clientX - rect.left;
       const relativeMouseY = event.clientY - rect.top;
 
-      // 預設位置：游標右下方 15px
       let x = relativeMouseX + 15;
       let y = relativeMouseY + 15;
 
-      // 預估情報視窗的最大寬高（單行無斷行設計，將預估寬度拉大至 340px 確保安全）
-      const tooltipEstimateWidth = 340; 
-      const tooltipEstimateHeight = 60; 
+      const tooltipEstimateWidth = 340;
+      const tooltipEstimateHeight = 60;
 
-      // 🟢 邊界防護 X 軸：如果右側空間不足，將情報視窗翻轉到游標的「左側」
       if (x + tooltipEstimateWidth > rect.width) {
-        // 移至左側，給予 15px 的游標緩衝距離
         x = relativeMouseX - tooltipEstimateWidth - 15;
-        // 防呆：如果地圖容器太窄，左側也超出去了，就強制貼齊左側邊緣
-        if (x < 10) x = 10; 
+        if (x < 10) x = 10;
       }
 
-      // 🟢 邊界防護 Y 軸：如果下方空間不足（例如滑到高屏地區），翻轉到游標「上方」
       if (y + tooltipEstimateHeight > rect.height) {
         y = relativeMouseY - tooltipEstimateHeight - 15;
-        // 防呆：強制貼齊上方邊緣
         if (y < 10) y = 10;
       }
 
@@ -374,9 +381,6 @@ export class ElectionAnalysisComponent implements OnInit {
     }
   }
 
-  /**
-   * 組裝 Hover 懸浮視窗所需要的詳細資訊
-   */
   private getCountyHoverInfo(countyId: string, countyName: string) {
     const candidates = this.getCandidatesForCounty(countyId);
 
@@ -397,7 +401,6 @@ export class ElectionAnalysisComponent implements OnInit {
     const leader = sorted[0];
     const leaderSupport = leader.support_count ?? leader.positive ?? 0;
 
-    // 計算領先者的得票率 / 支持佔比
     let totalStance = leader.area_total_stance || 0;
     if (!totalStance) {
       totalStance = candidates.reduce((sum, c) => sum + (c.support_count ?? c.positive ?? 0), 0);
@@ -413,33 +416,23 @@ export class ElectionAnalysisComponent implements OnInit {
       totalCandidates: candidates.length
     };
   }
-  // ==========================================
 
-  // 判斷是否為地方/縣市長選舉（依你的 electionId 或 type 判斷）
-  get isLocalElection(): boolean {
-    return this.electionId ? (this.electionId.includes('local') || this.electionId.includes('2026')) : false;
-  }
-
-  // 取得候選人在該縣市的支持/反對佔比（對應後端 support_count / area_total_stance）
+  // 取得候選人在該縣市的支持/反對佔比
   getCandidateSentimentBreakdown(candidate: any) {
     if (!candidate) {
       return { support: 0, oppose: 0, neutral: 0, total: 0, supportPct: 0, opposePct: 0, neutralPct: 0 };
     }
 
-    // 1. 取得該候選人的支持筆數 (對應後端 support_count，即「立場判斷」= 該候選人 的留言數)
     const support = candidate.support_count ?? candidate.positive ?? 0;
 
-    // 2. 取得該縣市（全區）總立場留言筆數 (對應後端 area_total_stance)
     let areaTotal = candidate.area_total_stance || 0;
     if (!areaTotal && this.candidates && this.candidates.length > 0) {
       areaTotal = this.candidates.reduce((sum, c) => sum + (c.support_count ?? c.positive ?? 0), 0);
     }
     if (areaTotal === 0) areaTotal = support + (candidate.negative ?? 0);
 
-    // 3. 反對/支持其他人筆數 = 全區總數 - 該候選人支持數
     const oppose = areaTotal > support ? areaTotal - support : 0;
 
-    // 4. 精確計算佔比 (%)
     const supportPct = areaTotal > 0 ? Number((support / areaTotal * 100).toFixed(1)) : 0;
     const opposePct = areaTotal > 0 ? Number((oppose / areaTotal * 100).toFixed(1)) : 0;
 
@@ -448,7 +441,7 @@ export class ElectionAnalysisComponent implements OnInit {
       oppose: oppose,
       neutral: 0,
       total: areaTotal,
-      supportPct: supportPct, // 得票率 (%)
+      supportPct: supportPct,
       opposePct: opposePct
     };
   }
@@ -466,25 +459,23 @@ export class ElectionAnalysisComponent implements OnInit {
 
     this.candidates = source.filter(c => c.city === countyId);
     this.totalCandidates = this.candidates.length;
-    
-    this.selectedCandidate = null;
-    this.selectedCandidateForTimeChart = null; // 重置時間圖表狀態
 
-    // 🔴 關鍵修復：同時更新 LineChart 和 BarChart，確保折線圖只顯示該縣市候選人
-    this.updateCharts(); 
+    this.selectedCandidate = null;
+    this.selectedCandidateForTimeChart = null;
+
+    this.updateCharts();
   }
 
   // 【進入第三層：候選人個人深度分析】
   enterCandidateDetail(candidate: any): void {
     this.selectedCandidate = candidate;
     this.currentView = 'candidate';
-    // 連動原本底部的時間趨勢折線圖
     if (candidate && candidate.id) {
       this.selectCandidateForTimeChart(candidate.id);
     }
   }
-  
-// 【返回第一層：全台大地圖】
+
+  // 【返回第一層：全台大地圖】
   backToFullMap(): void {
     this.currentView = 'map';
     this.selectedCounty = null;
@@ -492,12 +483,10 @@ export class ElectionAnalysisComponent implements OnInit {
     this.selectedCandidate = null;
     this.selectedCandidateForTimeChart = null;
 
-    // 🔴 重置回全台資料
     this.candidates = this.allCandidatesWithStats.length > 0
       ? this.allCandidatesWithStats
       : this.allMayoralCandidates;
-    
-    // 🔴 確保更新 KPI 數字（候選人總數等）
+
     this.resetTotalKpis();
   }
 
@@ -505,13 +494,13 @@ export class ElectionAnalysisComponent implements OnInit {
   backToCity(): void {
     this.currentView = 'city';
     this.selectedCandidate = null;
-    this.selectedCandidateForTimeChart = null; // 重置為顯示該縣市所有人
-    
-    // 🔴 補上圖表更新
+    this.selectedCandidateForTimeChart = null;
     this.updateCharts();
   }
 
-  // 選舉相關屬性
+  // ==========================================
+  // 共用：選舉相關屬性
+  // ==========================================
   electionId: string = '';
   election: any = null;
   electionData: any = null;
@@ -519,21 +508,19 @@ export class ElectionAnalysisComponent implements OnInit {
   // 候選人數據
   candidates: any[] = [];
   selectedCandidates: string[] = [];
-  // ✅ 存放「後端 Atlas 聚合後」的完整候選人清單（含 platform_breakdown / stance_summary）
-  // filterCandidatesByCounty 等方法要從這裡篩選，不能再從寫死的 allMayoralCandidates 篩
+  // 【地方選舉專用】後端 Atlas 聚合後的完整候選人清單
   allCandidatesWithStats: any[] = [];
 
   // 圖表數據
   lineChartData: ChartData<'line'> = { labels: [], datasets: [] };
   barChartData: ChartData<'bar'> = { labels: [], datasets: [] };
-  // 「網友數比較分析」專用：跟上面「各平台正面/負面情緒聲量分佈」用的是不同統計邏輯，
-  // 不能共用同一份 barChartData（那份是依情緒分正負面，這份是文件ID去重後的支持網友數）
+  // 【地方選舉專用】「網友數比較分析」
   userCountChartData: ChartData<'bar'> = { labels: [], datasets: [] };
 
   // 時間圖表模式控制
   selectedCandidateForTimeChart: string | null = null; // null = 顯示所有候選人總網友數
 
-  // 時間篩選相關屬性 - 參考立委頁面
+  // 時間篩選相關屬性
   currentFilter: string = '1year';
   isLoadingTimeData: boolean = false;
 
@@ -544,7 +531,7 @@ export class ElectionAnalysisComponent implements OnInit {
   // 後端數據相關屬性
   timeSeriesStats: any = null;
 
-  // 動態圖表選項配置（用於 updateChartOptionsForDataPoints）
+  // 動態圖表選項配置
   private dynamicChartOptions: any = {
     maxTicksLimit: 20,
     autoSkip: false,
@@ -559,9 +546,8 @@ export class ElectionAnalysisComponent implements OnInit {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          // 🟢 關鍵修復：改為判斷線條數量（datasets）<= 12 才顯示
-          // 全台模式只有 1 條線，因此會完美顯示標籤說明！
-          display: this.lineChartData.datasets.length <= 12, 
+          // 地方選舉：線條 <= 12 才顯示；黨主席：永遠顯示
+          display: this.isLocalElection ? this.lineChartData.datasets.length <= 12 : true,
           position: 'top' as const,
           align: 'start' as const,
           labels: {
@@ -808,6 +794,8 @@ export class ElectionAnalysisComponent implements OnInit {
     };
   }
 
+  // Y 軸標題會在 loadElectionData() 依模式切換：
+  //   地方選舉 = '網友數量'；黨主席 = '網友數'
   barChartOptions: ChartOptions<'bar'> = {
     responsive: true,
     maintainAspectRatio: false,
@@ -869,7 +857,7 @@ export class ElectionAnalysisComponent implements OnInit {
     }
   };
 
-  // 控制選項 - 簡化為核心功能
+  // 控制選項
   selectedTimeRange: string = '30_days';
   availableIntervals: string[] = [];
   timeRanges = [
@@ -885,7 +873,7 @@ export class ElectionAnalysisComponent implements OnInit {
   totalSentiment = 0;
   averageSentiment = 0;
 
-  // 顏色配置
+  // 顏色配置（非地方選舉時的通用色盤）
   colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
 
   constructor(
@@ -894,21 +882,26 @@ export class ElectionAnalysisComponent implements OnInit {
     private electionService: ElectionService
   ) { }
 
+  // ==========================================
+  // 初始化
+  // ==========================================
   ngOnInit(): void {
     this.route.params.subscribe(params => {
       this.electionId = params['id'];
-      if (this.taiwanMap && (this.taiwanMap as any).viewBox) {
+
+      // 【地方選舉專用】地圖 viewBox
+      if (this.isLocalElection && this.taiwanMap && (this.taiwanMap as any).viewBox) {
         this.viewBox = (this.taiwanMap as any).viewBox;
       }
+
       if (this.electionId) {
-        // 如果是縣市長選舉，預設選取台北市
+        // 【地方選舉專用】預設選取台北市（ID 需與地圖 / countyList 一致：taipei-city）
         if (this.isLocalElection) {
-          this.selectedCounty = 'taipei';
-          this.filterCandidatesByCounty('taipei');
+          this.selectedCounty = 'taipei-city';
+          this.filterCandidatesByCounty('taipei-city');
         }
         this.loadElectionData();
       } else {
-        // 如果沒有ID，重定向到選舉列表
         this.router.navigate(['/election-analysis']);
       }
     });
@@ -917,21 +910,34 @@ export class ElectionAnalysisComponent implements OnInit {
   loadElectionData(): void {
     this.isLoading = true;
 
-    // 直接使用前端配置數據
     const electionConfig = getElectionById(this.electionId);
     if (electionConfig) {
       this.election = electionConfig;
       this.electionData = electionConfig;
 
       // 初始化候選人數據
+      // 地方選舉：color 跟隨政黨色（與地圖著色一致）
+      // 其他選舉（黨主席等）：維持原本的通用色盤，依出場順序分配
       this.candidates = electionConfig.candidates.map((candidate: any, index: number) => ({
         ...candidate,
         visible: true,
-        color: this.colors[index % this.colors.length]
+        color: this.isLocalElection
+          ? this.getPartyColor(candidate.party)
+          : this.colors[index % this.colors.length]
       }));
 
       this.totalCandidates = electionConfig.candidates.length;
-      this.selectedCandidates = this.candidates.map(c => c.name); // 改傳中文名字 (name) 讓 MongoDB 正確搜尋
+
+      // 各自規定：地方選舉傳「中文名字」給 MongoDB；黨主席傳 id
+      this.selectedCandidates = this.isLocalElection
+        ? this.candidates.map(c => c.name)
+        : this.candidates.map(c => c.id);
+
+      // 長條圖 Y 軸標題（各自規定）
+      const yScale: any = (this.barChartOptions.scales as any)?.y;
+      if (yScale?.title) {
+        yScale.title.text = this.isLocalElection ? '網友數量' : '網友數';
+      }
 
       // 初始化日期範圍
       this.updateDateRangeForPeriod(this.currentFilter);
@@ -945,69 +951,212 @@ export class ElectionAnalysisComponent implements OnInit {
     }
   }
 
+  // ==========================================
+  // 載入分析資料（依模式分流）
+  // ==========================================
+  loadElectionAnalysisData(timeRange?: any): void {
+    const days = timeRange || '365';
+    if (this.isLocalElection) {
+      this.loadElectionAnalysisDataLocal(days);
+    } else {
+      this.loadElectionAnalysisDataChairman(days);
+    }
+  }
 
-  loadElectionAnalysisData(timeRange?: any) {
-    // 目前先不使用時間條件篩選整體統計，days 只作為後端 recent_{days}_days_cumulative 的 key
-    let days = timeRange || '365';
+  // 【地方選舉版】
+  private loadElectionAnalysisDataLocal(days: any): void {
     this.isLoading = true;
 
-    // 傳送所有候選人中文姓名
-    const targetCandidateNames = this.allMayoralCandidates.map(c => c.name);
+    const targetCandidateNames = this.candidates.map(c => c.name);
+    console.log('📊 本次選舉候選人：', targetCandidateNames);
 
-    this.electionService.getElectionAnalysisData(targetCandidateNames, days).subscribe({
-      next: (res: any) => {
-        // 萬能解包，支援各種回傳層級
-        const rawList: any[] = res.candidates || res.data || (Array.isArray(res) ? res : []);
+    this.electionService
+      .getElectionAnalysisData(targetCandidateNames, days)
+      .subscribe({
+        next: (res: any) => {
+          const rawList: any[] =
+            res?.candidates ||
+            res?.data ||
+            (Array.isArray(res) ? res : []);
 
-        this.allCandidatesWithStats = rawList.map((backendItem: any) => {
-          // 比對原本寫死的靜態資料（若有的話）
-          const staticInfo = this.allMayoralCandidates?.find(
-            c => c.name === backendItem.name || c.id === backendItem.id || c.name === backendItem.candidate_name
-          ) || {};
+          // 以目前選舉設定為主
+          this.allCandidatesWithStats = this.candidates.map(
+            (configCandidate: any) => {
 
-          // 多重備援取值：防止後端 key 名稱不一致導致 0
-          const pos = backendItem.positive ?? backendItem.positive_count ?? backendItem.support_count ?? staticInfo.positive ?? 0;
-          const neg = backendItem.negative ?? backendItem.negative_count ?? backendItem.oppose_count ?? staticInfo.negative ?? 0;
+              const backendItem = rawList.find(
+                (item: any) =>
+                  item.name === configCandidate.name ||
+                  item.candidate_name === configCandidate.name ||
+                  item.id === configCandidate.id
+              );
 
-          return {
-            ...staticInfo,      // 保留原有前端設定
-            ...backendItem,     // 蓋上後端回傳值
-            positive: pos,      // 強制寫回標準欄位
-            negative: neg,
-            // 多重備援：後端若沒給百分比欄位，改用 P/(P+N) 自行換算，避免顯示 0%
-            // 注意：這裡只能用情緒相關欄位當備援，不可誤用 support_rate（那是得票率，語意不同）
-            positive_rate: backendItem.positive_rate
-              ?? ((pos + neg) > 0 ? Math.round((pos / (pos + neg)) * 1000) / 10 : 0),
-            platform_breakdown: backendItem.platform_breakdown || backendItem.platforms || {
-              fb: backendItem.fb || 0,
-              threads: backendItem.threads || 0,
-              youtube: backendItem.youtube || 0,
-              ptt: backendItem.ptt || 0
-            },
-            // 補上時間趨勢資料：後端回傳的是扁平的 time_series 陣列，
-            // 對齊圖表程式碼所需的 time_series_stats.stats_points 結構
-            time_series_stats: backendItem.time_series_stats || {
-              stats_points: backendItem.time_series || backendItem.stats_points || []
+              if (!backendItem) {
+                return {
+                  ...configCandidate,
+                  positive: 0,
+                  negative: 0,
+                  support_count: 0,
+                  visible: true,
+                  time_series_stats: {
+                    stats_points: []
+                  }
+                };
+              }
+
+              const pos =
+                backendItem.positive ??
+                backendItem.positive_count ??
+                backendItem.support_count ??
+                0;
+
+              const neg =
+                backendItem.negative ??
+                backendItem.negative_count ??
+                backendItem.oppose_count ??
+                0;
+
+              return {
+                ...configCandidate,
+                ...backendItem,
+
+                // 保留前端設定
+                name: configCandidate.name,
+                id: configCandidate.id,
+                party: configCandidate.party,
+                photo: configCandidate.photo,
+
+                positive: pos,
+                negative: neg,
+
+                positive_rate:
+                  backendItem.positive_rate ??
+                  (
+                    pos + neg > 0
+                      ? Math.round((pos / (pos + neg)) * 1000) / 10
+                      : 0
+                  ),
+
+                platform_breakdown:
+                  backendItem.platform_breakdown ||
+                  backendItem.platforms || {
+                    fb: backendItem.fb || 0,
+                    threads: backendItem.threads || 0,
+                    youtube: backendItem.youtube || 0,
+                    ptt: backendItem.ptt || 0
+                  },
+
+                time_series_stats:
+                  backendItem.time_series_stats || {
+                    stats_points:
+                      backendItem.time_series ||
+                      backendItem.stats_points ||
+                      []
+                  },
+
+                visible: true
+              };
             }
+          );
+
+          if (this.selectedCounty) {
+            this.filterCandidatesByCounty(this.selectedCounty);
+          } else {
+            this.candidates = this.allCandidatesWithStats;
+            this.totalCandidates = this.candidates.length;
+            this.updateCharts();
+          }
+
+          this.isLoading = false;
+
+          console.log(
+            '✅ 本次選舉實際顯示候選人：',
+            this.candidates.map(c => c.name)
+          );
+        },
+
+        error: (err: any) => {
+          console.error('❌ 載入選舉分析失敗：', err);
+
+          this.allCandidatesWithStats = this.candidates.map(c => ({
+            ...c,
+            positive: 0,
+            negative: 0,
+            support_count: 0,
+            visible: true,
+            time_series_stats: {
+              stats_points: []
+            }
+          }));
+
+          this.candidates = this.allCandidatesWithStats;
+          this.totalCandidates = this.candidates.length;
+
+          this.updateCharts();
+          this.isLoading = false;
+        }
+      });
+  }
+
+  // 【黨主席版（學長）】
+  
+  private loadElectionAnalysisDataChairman(days: any): void {
+    const candidateNames = this.election.candidates.map((c: any) => c.name);
+    this.electionService.getElectionAnalysisData(candidateNames, days).subscribe({
+      next: (data: any) => {
+        // 1. 安全提取 candidates 陣列（相容多種 API 回傳格式）
+        const candidateList: any[] = 
+          data?.candidates || 
+          data?.data?.candidates || 
+          data?.data || 
+          (Array.isArray(data) ? data : []);
+
+        // 2. 使用安全陣列進行 mapping
+        this.candidates = candidateList.map((candidate: any, index: number) => {
+          const configCandidate = this.election.candidates.find((c: any) => c.name === candidate.name);
+          return {
+            ...candidate,
+            ...configCandidate,
+            visible: true,
+            color: this.colors[index % this.colors.length]
           };
         });
 
-        if (this.selectedCounty) {
-          this.filterCandidatesByCounty(this.selectedCounty);
-        } else {
-          this.candidates = this.allCandidatesWithStats;
-          this.totalCandidates = this.candidates.length;
-          this.updateCharts();
-        }
+        // 3. 安全讀取統計數據
+        this.totalCandidates = data?.statistics?.total_candidates ?? this.candidates.length;
+        this.totalSentiment = data?.statistics?.total_sentiment ?? 0;
+        this.averageSentiment = data?.statistics?.average_sentiment ?? 0;
+
+        this.timeSeriesStats = this.buildTimeSeriesStatsFromCandidates();
+
+        console.log('🔍 選舉分析數據載入:', {
+          hasTimeSeriesStats: !!this.timeSeriesStats,
+          timeSeriesStatsKeys: this.timeSeriesStats ? Object.keys(this.timeSeriesStats) : [],
+          candidatesCount: this.candidates.length
+        });
+
+        this.availableIntervals = ['7_days', '14_days', '30_days', '90_days', '180_days', '365_days'];
+
+        this.processCandidatesTimeSeriesData();
+
+        this.updateBarChart();
+
+        setTimeout(() => {
+          if (this.lineChartComponent?.chart) {
+            this.lineChartComponent.chart.update('resize');
+          }
+          if (this.barChartComponent?.chart) {
+            this.barChartComponent.chart.update('resize');
+          }
+        }, 100);
+
         this.isLoading = false;
       },
-      error: (err: any) => {
-        console.error('載入失敗:', err);
+      error: (error) => {
+        console.error('載入選舉分析數據失敗:', error);
         this.isLoading = false;
       }
     });
   }
-
 
   loadChartData(): void {
     this.updateLineChart();
@@ -1015,7 +1164,25 @@ export class ElectionAnalysisComponent implements OnInit {
     this.updateUserCountChart();
   }
 
+  updateCharts(): void {
+    this.updateLineChart();
+    this.updateBarChart();
+    this.updateUserCountChart();
+  }
+
+  // ==========================================
+  // 折線圖（依模式分流）
+  // ==========================================
   updateLineChart(): void {
+    if (this.isLocalElection) {
+      this.updateLineChartLocal();
+    } else {
+      this.updateLineChartChairman();
+    }
+  }
+
+  // 【地方選舉版】
+  private updateLineChartLocal(): void {
     const visibleCandidates = this.candidates.filter(c => c.visible);
 
     if (visibleCandidates.length === 0) {
@@ -1024,17 +1191,14 @@ export class ElectionAnalysisComponent implements OnInit {
     }
 
     if (this.selectedCandidateForTimeChart) {
-      // 顯示特定候選人的正負面網友數時間圖 - 使用真實數據
       const candidate = visibleCandidates.find(c => c.id === this.selectedCandidateForTimeChart);
 
-      // ✅ 強制改用後端 stats_points 作為唯一依據，捨棄自行組合的舊邏輯
+      // 強制使用後端 stats_points 作為唯一依據
       if (candidate && candidate.time_series_stats && candidate.time_series_stats.stats_points) {
 
         const statsPoints = candidate.time_series_stats.stats_points;
         const labels = statsPoints.map((p: any) => p.date);
 
-        // 建立支持(正面)與反對(負面)的線條
-        // 後端回傳的資料點是扁平結構 { positive, negative }，並非包在 sentiment_counts 底下
         const positiveData = statsPoints.map((p: any) => p.sentiment_counts?.positive ?? p.positive ?? 0);
         const negativeData = statsPoints.map((p: any) => p.sentiment_counts?.negative ?? p.negative ?? 0);
 
@@ -1046,7 +1210,7 @@ export class ElectionAnalysisComponent implements OnInit {
               data: positiveData,
               positiveData: positiveData,
               negativeData: negativeData,
-              borderColor: '#10b981', // 綠色
+              borderColor: '#10b981',
               backgroundColor: 'rgba(16, 185, 129, 0.1)',
               tension: 0.3,
               fill: true,
@@ -1060,7 +1224,7 @@ export class ElectionAnalysisComponent implements OnInit {
               data: negativeData,
               positiveData: positiveData,
               negativeData: negativeData,
-              borderColor: '#ef4444', // 紅色
+              borderColor: '#ef4444',
               backgroundColor: 'rgba(239, 68, 68, 0.1)',
               tension: 0.3,
               fill: true,
@@ -1077,116 +1241,215 @@ export class ElectionAnalysisComponent implements OnInit {
         this.lineChartData = { labels: [], datasets: [] };
       }
     } else {
-      // 顯示所有候選人的總網友數時間圖 - 使用真實數據
       this.processCandidatesTimeSeriesData();
     }
   }
 
+  // 【黨主席版（學長）】
+  private updateLineChartChairman(): void {
+    const visibleCandidates = this.candidates.filter(c => c.visible);
+
+    if (visibleCandidates.length === 0) {
+      this.lineChartData = { labels: [], datasets: [] };
+      return;
+    }
+
+    if (this.selectedCandidateForTimeChart) {
+      const candidate = visibleCandidates.find(c => c.id === this.selectedCandidateForTimeChart);
+      if (candidate && candidate.time_series_stats) {
+        const originalData = candidate.time_series_stats;
+        const pointCount = originalData.labels ? originalData.labels.length : 0;
+        const labels = this.generateTimeAxisLabels(pointCount, this.currentFilter);
+
+        const processedDatasets = (originalData.datasets || []).map((dataset: any) => {
+          if (dataset.label === '支持' || dataset.label === '正面') {
+            return {
+              ...dataset,
+              label: '支持',
+              positiveData: dataset.data,
+              negativeData: []
+            };
+          } else if (dataset.label === '反對' || dataset.label === '負面') {
+            return {
+              ...dataset,
+              label: '反對',
+              positiveData: [],
+              negativeData: dataset.data
+            };
+          }
+          return dataset;
+        });
+
+        if (processedDatasets.length >= 2) {
+          const supportDataset = processedDatasets.find((ds: any) => ds.label === '支持' || ds.label === '正面');
+          const opposeDataset = processedDatasets.find((ds: any) => ds.label === '反對' || ds.label === '負面');
+
+          if (supportDataset && opposeDataset) {
+            supportDataset.positiveData = supportDataset.data;
+            supportDataset.negativeData = opposeDataset.data;
+            opposeDataset.positiveData = supportDataset.data;
+            opposeDataset.negativeData = opposeDataset.data;
+          }
+        }
+
+        this.lineChartData = {
+          labels: labels,
+          datasets: processedDatasets
+        };
+
+        this.updateChartOptionsForDataPoints(labels.length);
+      } else {
+        this.lineChartData = { labels: [], datasets: [] };
+      }
+    } else {
+      this.processCandidatesTimeSeriesData();
+    }
+  }
+
+  // ==========================================
+  // 長條圖（依模式分流）
+  // ==========================================
   updateBarChart(): void {
-  const visibleCandidates = this.candidates.filter(c => c.visible);
-
-  if (visibleCandidates.length === 0) {
-    this.barChartData = { labels: [], datasets: [] };
-    return;
+    if (this.isLocalElection) {
+      this.updateBarChartLocal();
+    } else {
+      this.updateBarChartChairman();
+    }
   }
 
-  const labels = visibleCandidates.map(c => c.name);
-  const datasets: any[] = [];
+  // 【地方選舉版】各平台正/負面 (P/N)
+  private updateBarChartLocal(): void {
+    const visibleCandidates = this.candidates.filter(c => c.visible);
 
-  // 針對四個平台，分別建立「正面 (P)」與「負面 (N)」的長條
-  this.platforms.forEach(platform => {
-    const pLower = platform.toLowerCase();
-    
-    // 1. 正面資料集 (P) - 帶有輕微透明或特定亮度
-    const positiveData = visibleCandidates.map(c => {
-      const breakdown = c.platform_breakdown?.[pLower] || c.platforms?.[pLower];
-      if (typeof breakdown === 'object' && breakdown !== null) {
-        return Number(breakdown.positive ?? breakdown.p ?? 0);
-      }
-      // 容錯：若後端結構直接是數字，則預設給正面或不處理
-      return 0;
+    if (visibleCandidates.length === 0) {
+      this.barChartData = { labels: [], datasets: [] };
+      return;
+    }
+
+    const labels = visibleCandidates.map(c => c.name);
+    const datasets: any[] = [];
+
+    this.platforms.forEach(platform => {
+      const pLower = platform.toLowerCase();
+
+      const positiveData = visibleCandidates.map(c => {
+        const breakdown = c.platform_breakdown?.[pLower] || c.platforms?.[pLower];
+        if (typeof breakdown === 'object' && breakdown !== null) {
+          return Number(breakdown.positive ?? breakdown.p ?? 0);
+        }
+        return 0;
+      });
+
+      const negativeData = visibleCandidates.map(c => {
+        const breakdown = c.platform_breakdown?.[pLower] || c.platforms?.[pLower];
+        if (typeof breakdown === 'object' && breakdown !== null) {
+          return Number(breakdown.negative ?? breakdown.n ?? 0);
+        }
+        return 0;
+      });
+
+      const baseColor = this.platformColors[platform] || '#38bdf8';
+
+      datasets.push({
+        label: `${platform.toUpperCase()} - 正面 (P)`,
+        data: positiveData,
+        backgroundColor: baseColor,
+        borderColor: baseColor,
+        borderWidth: 1
+      });
+
+      datasets.push({
+        label: `${platform.toUpperCase()} - 負面 (N)`,
+        data: negativeData,
+        backgroundColor: this.adjustColorOpacity(baseColor, 0.4),
+        borderColor: baseColor,
+        borderWidth: 1
+      });
     });
 
-    // 2. 負面資料集 (N)
-    const negativeData = visibleCandidates.map(c => {
-      const breakdown = c.platform_breakdown?.[pLower] || c.platforms?.[pLower];
-      if (typeof breakdown === 'object' && breakdown !== null) {
-        return Number(breakdown.negative ?? breakdown.n ?? 0);
-      }
-      return 0;
-    });
-
-    const baseColor = this.platformColors[platform] || '#38bdf8';
-
-    // 推入該平台的「正面」長條
-    datasets.push({
-      label: `${platform.toUpperCase()} - 正面 (P)`,
-      data: positiveData,
-      backgroundColor: baseColor, // 使用平台原色
-      borderColor: baseColor,
-      borderWidth: 1
-    });
-
-    // 推入該平台的「負面」長條 (以較暗或帶點紅/灰的對比色區隔，或使用半透明)
-    datasets.push({
-      label: `${platform.toUpperCase()} - 負面 (N)`,
-      data: negativeData,
-      backgroundColor: this.adjustColorOpacity(baseColor, 0.4), // 較低透明度區分正負面
-      borderColor: baseColor,
-      borderWidth: 1
-    });
-  });
-
-  this.barChartData = { labels, datasets };
-}
-
-// 「網友數比較分析」：不分情緒正負面，只看「文件ID去重後」且 target=候選人 AND 立場判斷=投給候選人 的不重複網友數
-// 每個候選人 × 每個平台各一根柱子（不像上面 P/N 圖那樣一個平台拆兩根）
-updateUserCountChart(): void {
-  const visibleCandidates = this.candidates.filter(c => c.visible);
-
-  if (visibleCandidates.length === 0) {
-    this.userCountChartData = { labels: [], datasets: [] };
-    return;
+    this.barChartData = { labels, datasets };
   }
 
-  const labels = visibleCandidates.map(c => c.name);
-  const datasets: any[] = [];
+  // 【黨主席版（學長）】正/負面網友數
+  private updateBarChartChairman(): void {
+    const visibleCandidates = this.candidates.filter(c => c.visible);
 
-  this.platforms.forEach(platform => {
-    const pLower = platform.toLowerCase();
+    if (visibleCandidates.length === 0) {
+      this.barChartData = { labels: [], datasets: [] };
+      return;
+    }
 
-    const userCountData = visibleCandidates.map(c => {
-      const counts = c.platform_user_counts;
-      if (counts && typeof counts === 'object') {
-        return Number(counts[pLower] ?? 0);
-      }
-      return 0;
+    const labels = visibleCandidates.map(c => c.name);
+    const positiveData = visibleCandidates.map(c => c.positive ?? 0);
+    const negativeData = visibleCandidates.map(c => c.negative ?? 0);
+
+    this.barChartData = {
+      labels,
+      datasets: [
+        {
+          label: '正面網友數',
+          data: positiveData,
+          backgroundColor: '#28a745',
+          borderColor: '#28a745'
+        },
+        {
+          label: '負面網友數',
+          data: negativeData,
+          backgroundColor: '#dc3545',
+          borderColor: '#dc3545'
+        }
+      ]
+    };
+  }
+
+  // 【地方選舉專用】「網友數比較分析」；黨主席模式不使用，直接略過
+  updateUserCountChart(): void {
+    if (!this.isLocalElection) {
+      return;
+    }
+
+    const visibleCandidates = this.candidates.filter(c => c.visible);
+
+    if (visibleCandidates.length === 0) {
+      this.userCountChartData = { labels: [], datasets: [] };
+      return;
+    }
+
+    const labels = visibleCandidates.map(c => c.name);
+    const datasets: any[] = [];
+
+    this.platforms.forEach(platform => {
+      const pLower = platform.toLowerCase();
+
+      const userCountData = visibleCandidates.map(c => {
+        const counts = c.platform_user_counts;
+        if (counts && typeof counts === 'object') {
+          return Number(counts[pLower] ?? 0);
+        }
+        return 0;
+      });
+
+      const baseColor = this.platformColors[platform] || '#38bdf8';
+
+      datasets.push({
+        label: `${platform.toUpperCase()} - 支持網友數`,
+        data: userCountData,
+        backgroundColor: baseColor,
+        borderColor: baseColor,
+        borderWidth: 1
+      });
     });
 
-    const baseColor = this.platformColors[platform] || '#38bdf8';
+    this.userCountChartData = { labels, datasets };
+  }
 
-    datasets.push({
-      label: `${platform.toUpperCase()} - 支持網友數`,
-      data: userCountData,
-      backgroundColor: baseColor,
-      borderColor: baseColor,
-      borderWidth: 1
-    });
-  });
-
-  this.userCountChartData = { labels, datasets };
-}
-
-// 輔助函式：用來動態調整顏色透明度以區分正負面
-private adjustColorOpacity(hex: string, alpha: number): string {
-  let c = hex.replace('#', '');
-  if (c.length === 3) c = c.split('').map(x => x + x).join('');
-  const num = parseInt(c, 16);
-  return `rgba(${num >> 16}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
-}
-
-
+  // 輔助函式：動態調整顏色透明度
+  private adjustColorOpacity(hex: string, alpha: number): string {
+    let c = hex.replace('#', '');
+    if (c.length === 3) c = c.split('').map(x => x + x).join('');
+    const num = parseInt(c, 16);
+    return `rgba(${num >> 16}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
+  }
 
   // 處理後端回傳的 time_series 數據 - 合併兩條線為總網友數（累計趨勢）
   private processTimeSeriesData(timeSeriesData: any): void {
@@ -1196,8 +1459,8 @@ private adjustColorOpacity(hex: string, alpha: number): string {
     }
 
     const labels = timeSeriesData.labels;
-    const negativeData = timeSeriesData.datasets[0].data; // 負面網友數（累計）
-    const positiveData = timeSeriesData.datasets[1].data; // 正面網友數（累計）
+    const negativeData = timeSeriesData.datasets[0].data;
+    const positiveData = timeSeriesData.datasets[1].data;
 
     const totalData = [];
     for (let i = 0; i < labels.length; i++) {
@@ -1230,15 +1493,21 @@ private adjustColorOpacity(hex: string, alpha: number): string {
     }
   }
 
-  // 點擊候選人切換時間圖表模式
+  // 點擊候選人切換時間圖表模式（依模式分流）
   selectCandidateForTimeChart(candidateId: string | null): void {
     this.selectedCandidateForTimeChart = candidateId;
 
-    // 主要清單 API（loadElectionAnalysisData）已經把每位候選人完整的
-    // 正負面時間序列帶回來了（time_series_stats.stats_points），直接用它畫圖就好。
-    // 之前會另外呼叫 getCandidateTimeSeriesData 這支專屬端點，但它不是回傳空陣列
-    // 就是資料結構跟這裡預期的不同，導致「成功」但沒資料，反而把已經畫好的圖表洗成空白。
-    this.updateLineChart();
+    if (this.isLocalElection) {
+      // 【地方選舉版】主清單 API 已含完整時間序列，直接畫圖，不再呼叫專屬端點
+      this.updateLineChart();
+    } else {
+      // 【黨主席版】選了候選人就載入該候選人詳細時間序列
+      if (candidateId) {
+        this.loadCandidateTimeSeriesData(candidateId);
+      } else {
+        this.updateLineChart();
+      }
+    }
   }
 
   // 返回總覽
@@ -1283,7 +1552,6 @@ private adjustColorOpacity(hex: string, alpha: number): string {
     this.loadElectionAnalysisData(timeRange);
   }
 
-
   toggleAllCandidates(): void {
     const allVisible = this.candidates.every(c => c.visible);
     this.candidates.forEach(c => c.visible = !allVisible);
@@ -1296,51 +1564,50 @@ private adjustColorOpacity(hex: string, alpha: number): string {
     this.loadChartData();
   }
 
-  updateCharts(): void {
-    this.updateLineChart();
-    this.updateBarChart();
-    this.updateUserCountChart();
-  }
-
+  // ==========================================
+  // 支持率（依模式分流）
+  // ==========================================
   getSupportPercentage(candidate: any): string {
     if (!candidate) return '0.0';
 
-    // 1. 優先使用後端算好的「得票率」欄位
-    // 注意：不可誤用 positive_rate，那是「情緒正負面佔比」(好感度戰力指標)，
-    // 跟這裡的「網友得票分布」是完全不同的統計，不能互相取代。
-    const rate = candidate.support_rate ?? candidate.support_percentage;
-    if (rate !== undefined && rate !== null && !isNaN(Number(rate))) {
-      return Number(rate).toFixed(1);
+    if (this.isLocalElection) {
+      // 【地方選舉版】得票率（不可誤用 positive_rate）
+      const rate = candidate.support_rate ?? candidate.support_percentage;
+      if (rate !== undefined && rate !== null && !isNaN(Number(rate))) {
+        return Number(rate).toFixed(1);
+      }
+
+      const support = candidate.support_count ?? candidate.positive ?? 0;
+      const total = candidate.area_total_stance || (support + (candidate.oppose_count ?? candidate.negative ?? 0));
+
+      return total > 0 ? (support / total * 100).toFixed(1) : '0.0';
     }
 
-    // 2. 欄位取不到時，自動用支持數/縣市總數現場計算
-    const support = candidate.support_count ?? candidate.positive ?? 0;
-    const total = candidate.area_total_stance || (support + (candidate.oppose_count ?? candidate.negative ?? 0));
+    // 【黨主席版（學長）】正面 / (正面 + 負面)
+    const positive = candidate.positive ?? 0;
+    const negative = candidate.negative ?? 0;
+    const total = positive + negative;
 
-    return total > 0 ? (support / total * 100).toFixed(1) : '0.0';
+    if (total === 0) return '0.0';
+
+    return ((positive / total) * 100).toFixed(1);
   }
 
   // ==========================================
-  // 🟢 新增解決圓餅圖 (NG9) 錯誤所需的三個方法
+  // 【地方選舉專用】縣市圓餅圖
   // ==========================================
-
-  /**
-   * 計算當前縣市所有候選人的聲量/得票分佈數據 (包含中立)
-   */
   getCurrentCountyBreakdown(): Array<{ candidate_name: string, count: number, percentage: number }> {
     if (!this.candidates || this.candidates.length === 0) return [];
 
     let areaTotal = 0;
     let totalCandidateSupport = 0;
 
-    // 1. 取得各候選人數據
     const breakdown = this.candidates.map(c => {
       const count = c.support_count ?? c.positive ?? 0;
       const percentageStr = this.getSupportPercentage(c);
-      
+
       totalCandidateSupport += count;
 
-      // 取得該選區的總留言量 (每一位候選人的 area_total_stance 應該都是一樣的)
       if (!areaTotal) {
         areaTotal = c.area_total_stance || 0;
       }
@@ -1350,17 +1617,14 @@ private adjustColorOpacity(hex: string, alpha: number): string {
         count: count,
         percentage: Number(percentageStr)
       };
-    }).sort((a, b) => b.count - a.count); // 依數量由大到小排序
+    }).sort((a, b) => b.count - a.count);
 
-    // 防呆：如果 API 沒給 area_total_stance，就現場算 (支持+反對)
     if (!areaTotal) {
       areaTotal = this.candidates.reduce((sum, c) => sum + (c.support_count ?? c.positive ?? 0) + (c.oppose_count ?? c.negative ?? 0), 0);
     }
 
-    // 2. 計算「中立 / 其他」的剩餘數據
     const neutralCount = areaTotal > totalCandidateSupport ? (areaTotal - totalCandidateSupport) : 0;
-    
-    // 如果有中立數據，把它加進陣列的最下方
+
     if (neutralCount > 0) {
       const neutralPercentage = Number(((neutralCount / areaTotal) * 100).toFixed(1));
       breakdown.push({
@@ -1373,24 +1637,17 @@ private adjustColorOpacity(hex: string, alpha: number): string {
     return breakdown;
   }
 
-  /**
-   * 根據候選人姓名取得對應的陣營顏色 (為中立補上專屬灰色)
-   */
   getColorForCandidateName(name: string): string {
     if (name === '中立 / 未表態') {
-      return '#475569'; // 專屬的中立灰色 (slate-600)
+      return '#475569';
     }
     const candidate = this.candidates.find(c => c.name === name);
-    return candidate?.color || '#64748b'; // 預設顏色
+    return candidate?.color || '#64748b';
   }
 
-  /**
-   * 動態生成圓餅圖的 CSS conic-gradient 語法
-   */
   getCountyConicGradientStyle(): string {
     const breakdown = this.getCurrentCountyBreakdown();
-    
-    // 若無資料，回傳預設的深色背景
+
     if (breakdown.length === 0) {
       return 'conic-gradient(#1e293b 0% 100%)';
     }
@@ -1401,11 +1658,10 @@ private adjustColorOpacity(hex: string, alpha: number): string {
       const start = currentPercentage;
       const end = currentPercentage + item.percentage;
       currentPercentage = end;
-      
+
       return `${color} ${start}% ${end}%`;
     });
 
-    // 小數點進位可能會有 0.1% 的微小誤差，用底色把最後的縫隙填滿
     if (currentPercentage < 100) {
       gradientParts.push(`#1e293b ${currentPercentage}% 100%`);
     }
@@ -1413,42 +1669,48 @@ private adjustColorOpacity(hex: string, alpha: number): string {
     return `conic-gradient(${gradientParts.join(', ')})`;
   }
 
+  // ==========================================
+  // 返回（依模式分流）
+  // ==========================================
   goBack(): void {
+    // 【黨主席版（學長）】直接回選舉分析中心
+    if (!this.isLocalElection) {
+      this.router.navigate(['/election-analysis']);
+      return;
+    }
+
+    // 【地方選舉版】三層返回
     if (this.currentView === 'candidate') {
-      // 1. 第三層（個人戰情室）-> 返回第二層（縣市戰情室）
       this.currentView = 'city';
       this.selectedCandidate = null;
       this.selectedCandidateForTimeChart = null;
-      this.updateCharts(); 
+      this.updateCharts();
 
     } else if (this.currentView === 'city') {
-      // 2. 第二層（縣市戰情室）-> 返回第一層（全台地圖）
       this.currentView = 'map';
       this.selectedCounty = null;
       this.selectedCountyName = '';
       this.selectedCandidate = null;
       this.selectedCandidateForTimeChart = null;
-      
-      // 🔴 恢復全台資料與 KPI
+
       this.candidates = this.allCandidatesWithStats.length > 0
         ? this.allCandidatesWithStats
         : this.allMayoralCandidates;
       this.resetTotalKpis();
 
     } else {
-      // 3. 第一層 -> 返回「選舉分析中心」入口頁
       this.router.navigate(['/election-analysis']);
     }
   }
 
-  // 🔴 修正重設全台 KPI 的函式，使用 API 獲取的全台真實資料源
+  // 【地方選舉專用】重設全台 KPI
   resetTotalKpis(): void {
-    const source = this.allCandidatesWithStats && this.allCandidatesWithStats.length > 0 
-      ? this.allCandidatesWithStats 
+    const source = this.allCandidatesWithStats && this.allCandidatesWithStats.length > 0
+      ? this.allCandidatesWithStats
       : this.allMayoralCandidates;
 
     if (source && source.length > 0) {
-      this.totalCandidates = source.length; // 正確重置為全台總數
+      this.totalCandidates = source.length;
       this.totalSentiment = source.reduce(
         (sum, c) => sum + (c.positive || 0) + (c.negative || 0),
         0
@@ -1459,7 +1721,7 @@ private adjustColorOpacity(hex: string, alpha: number): string {
     }
   }
 
-  // 載入特定候選人的時間序列數據
+  // 載入特定候選人的時間序列數據（依模式分流）
   private loadCandidateTimeSeriesData(candidateId: string): void {
     const candidate = this.candidates.find(c => c.id === candidateId);
     if (!candidate) {
@@ -1467,21 +1729,53 @@ private adjustColorOpacity(hex: string, alpha: number): string {
       return;
     }
 
-    // 主要清單 API 其實已經內含每位候選人的完整時間序列 (time_series_stats)，
-    // 先以此為預設值繪圖，避免在專屬端點沒有回應/尚未串接時整張圖空白。
-    if (candidate.time_series_stats && candidate.time_series_stats.stats_points?.length) {
-      this.updateLineChart();
+    if (this.isLocalElection) {
+      // 【地方選舉版】先用主清單資料繪圖，專屬端點失敗也不清空圖表
+      if (candidate.time_series_stats && candidate.time_series_stats.stats_points?.length) {
+        this.updateLineChart();
+      }
+
+      this.isLoadingTimeData = true;
+      const days = this.getDaysFromTimeRange();
+
+      this.electionService.getCandidateTimeSeriesData(candidate.name, days).subscribe({
+        next: (data) => {
+          if (data && data.time_series) {
+            candidate.time_series_stats = data.time_series;
+            this.updateLineChart();
+          } else if (!candidate.time_series_stats?.stats_points?.length) {
+            console.warn('候選人時間序列數據為空:', candidate.name);
+            this.lineChartData = { labels: [], datasets: [] };
+          }
+
+          this.isLoadingTimeData = false;
+        },
+        error: (error) => {
+          console.error('載入候選人時間序列數據失敗，改用主清單既有資料:', error);
+          this.isLoadingTimeData = false;
+        }
+      });
+      return;
     }
 
+    // 【黨主席版（學長）】
     this.isLoadingTimeData = true;
     const days = this.getDaysFromTimeRange();
 
+    console.log('🔍 載入候選人個人數據:', {
+      candidateName: candidate.name,
+      days: days,
+      currentFilter: this.currentFilter
+    });
+
     this.electionService.getCandidateTimeSeriesData(candidate.name, days).subscribe({
       next: (data) => {
+        console.log('🔍 候選人時間序列數據載入:', candidate.name, data);
+
         if (data && data.time_series) {
           candidate.time_series_stats = data.time_series;
           this.updateLineChart();
-        } else if (!candidate.time_series_stats?.stats_points?.length) {
+        } else {
           console.warn('候選人時間序列數據為空:', candidate.name);
           this.lineChartData = { labels: [], datasets: [] };
         }
@@ -1489,8 +1783,8 @@ private adjustColorOpacity(hex: string, alpha: number): string {
         this.isLoadingTimeData = false;
       },
       error: (error) => {
-        console.error('載入候選人時間序列數據失敗，改用主清單既有資料:', error);
-        // 專屬端點失敗時，不要清空圖表；沿用主清單資料已在上方繪製過
+        console.error('載入候選人時間序列數據失敗:', error);
+        this.lineChartData = { labels: [], datasets: [] };
         this.isLoadingTimeData = false;
       }
     });
@@ -1509,8 +1803,6 @@ private adjustColorOpacity(hex: string, alpha: number): string {
     }
   }
 
-
-
   // 從候選人數據構建時間序列統計
   private buildTimeSeriesStatsFromCandidates(): any {
     if (!this.candidates || this.candidates.length === 0) {
@@ -1525,15 +1817,25 @@ private adjustColorOpacity(hex: string, alpha: number): string {
     return firstCandidate.time_series_stats;
   }
 
-  // 🟢 確保整個檔案中，只有這「唯一一個」 processCandidatesTimeSeriesData 函式
+  // ==========================================
+  // 全體時間序列（依模式分流）
+  // ==========================================
   private processCandidatesTimeSeriesData(): void {
+    if (this.isLocalElection) {
+      this.processCandidatesTimeSeriesDataLocal();
+    } else {
+      this.processCandidatesTimeSeriesDataChairman();
+    }
+  }
+
+  // 【地方選舉版】stats_points 結構
+  private processCandidatesTimeSeriesDataLocal(): void {
     if (!this.candidates || this.candidates.length === 0) {
       this.lineChartData = { labels: [], datasets: [] };
       return;
     }
 
-    // 過濾出真的有歷史資料的候選人
-    const candidatesWithData = this.candidates.filter(c => 
+    const candidatesWithData = this.candidates.filter(c =>
       c.visible && c.time_series_stats && c.time_series_stats.stats_points && c.time_series_stats.stats_points.length > 0
     );
 
@@ -1543,11 +1845,10 @@ private adjustColorOpacity(hex: string, alpha: number): string {
       return;
     }
 
-    // 🟢【第一層：全台選情地圖】加總所有候選人數據，繪製「全台總加總曲線」
+    // 【第一層：全台選情地圖】加總所有候選人數據
     if (this.currentView === 'map') {
       const dateMap = new Map<string, number>();
 
-      // 將全台所有候選人在各日期的網友聲量進行累加
       candidatesWithData.forEach(candidate => {
         const points = candidate.time_series_stats.stats_points || [];
         points.forEach((p: any) => {
@@ -1558,7 +1859,6 @@ private adjustColorOpacity(hex: string, alpha: number): string {
         });
       });
 
-      // 依日期時間排序
       const sortedDates = Array.from(dateMap.keys()).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
       const totalData = sortedDates.map(date => dateMap.get(date) || 0);
 
@@ -1566,10 +1866,10 @@ private adjustColorOpacity(hex: string, alpha: number): string {
         labels: sortedDates,
         datasets: [
           {
-            label: '全台累計評論總網友數', // 清楚標註這條曲線代表什麼
+            label: '全台累計評論總網友數',
             data: totalData,
-            borderColor: '#22d3ee', // HUD 亮青色線條
-            backgroundColor: 'rgba(34, 211, 238, 0.15)', // 漸層填滿底色
+            borderColor: '#22d3ee',
+            backgroundColor: 'rgba(34, 211, 238, 0.15)',
             tension: 0.35,
             fill: true,
             pointBackgroundColor: '#22d3ee',
@@ -1584,7 +1884,7 @@ private adjustColorOpacity(hex: string, alpha: number): string {
       return;
     }
 
-    // 🟢【第二層：縣市戰情室】維持各候選人獨立線條顯示
+    // 【第二層：縣市戰情室】各候選人獨立線條
     const firstCandidate = candidatesWithData[0];
     const statsPoints = firstCandidate.time_series_stats.stats_points;
     const labels = statsPoints.map((p: any) => p.date);
@@ -1611,7 +1911,97 @@ private adjustColorOpacity(hex: string, alpha: number): string {
     this.updateChartOptionsForDataPoints(labels.length);
   }
 
-  // 根據數據點數量動態調整圖表選項 - 優化以避免滾動條
+  // 【黨主席版（學長）】recent_xxx_days_cumulative 結構
+  private processCandidatesTimeSeriesDataChairman(): void {
+    if (!this.candidates || this.candidates.length === 0) {
+      this.lineChartData = { labels: [], datasets: [] };
+      return;
+    }
+
+    console.log('🔍 處理候選人時間序列數據:', this.candidates.length);
+
+    const candidatesWithData = this.candidates.filter(c => c.time_series_stats && Object.keys(c.time_series_stats).length > 0);
+
+    if (candidatesWithData.length === 0) {
+      console.warn('沒有候選人有時間序列數據');
+      this.lineChartData = { labels: [], datasets: [] };
+      return;
+    }
+
+    const keyMap: { [key: string]: string } = {
+      'week': 'recent_7_days_cumulative',
+      '2weeks': 'recent_14_days_cumulative',
+      'month': 'recent_30_days_cumulative',
+      '3months': 'recent_90_days_cumulative',
+      '6months': 'recent_180_days_cumulative',
+      '1year': 'recent_365_days_cumulative'
+    };
+
+    const targetKey = keyMap[this.currentFilter] || 'recent_365_days_cumulative';
+    console.log('🔍 使用時間範圍鍵:', targetKey);
+
+    const firstCandidate = candidatesWithData[0];
+    const firstCandidateStats = firstCandidate.time_series_stats[targetKey];
+
+    if (!firstCandidateStats || !firstCandidateStats.stats_points) {
+      console.warn('沒有找到對應的時間序列數據:', targetKey);
+      this.lineChartData = { labels: [], datasets: [] };
+      return;
+    }
+
+    const pointCount = firstCandidateStats.stats_points.length;
+    const labels = this.generateTimeAxisLabels(pointCount, this.currentFilter);
+
+    const datasets = this.candidates
+      .filter(c => c.visible)
+      .map(candidate => {
+        const candidateStats = candidate.time_series_stats[targetKey];
+
+        if (!candidateStats || !candidateStats.stats_points) {
+          return {
+            label: candidate.name,
+            data: [],
+            borderColor: candidate.color,
+            backgroundColor: candidate.color + '20',
+            tension: 0.3,
+            fill: false
+          };
+        }
+
+        const candidateData = candidateStats.stats_points.map((point: any) => {
+          const sentiment = point.sentiment_counts || {};
+          return (sentiment.positive || 0) + (sentiment.negative || 0);
+        });
+
+        return {
+          label: candidate.name,
+          data: candidateData,
+          borderColor: candidate.color,
+          backgroundColor: candidate.color + '20',
+          tension: 0.3,
+          fill: false,
+          pointBackgroundColor: candidate.color,
+          pointBorderColor: candidate.color,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        };
+      });
+
+    this.lineChartData = {
+      labels: labels,
+      datasets: datasets
+    };
+
+    this.updateChartOptionsForDataPoints(labels.length);
+
+    console.log('🔍 總覽圖表數據更新:', {
+      labelsCount: labels.length,
+      datasetsCount: datasets.length,
+      targetKey: targetKey
+    });
+  }
+
+  // 根據數據點數量動態調整圖表選項
   private updateChartOptionsForDataPoints(dataPointCount: number): void {
     let maxTicksLimit: number;
     let autoSkip: boolean;
@@ -1655,8 +2045,7 @@ private adjustColorOpacity(hex: string, alpha: number): string {
     }, 100);
   }
 
-
-  // 時間篩選方法 - 保持當前選擇狀態
+  // 時間篩選方法（依模式分流）
   setQuickFilter(period: string): void {
     this.currentFilter = period;
     this.isLoadingTimeData = true;
@@ -1675,13 +2064,24 @@ private adjustColorOpacity(hex: string, alpha: number): string {
 
     const timeRange = timeRangeMap[period] || '365';
 
-    // 不論目前是否選了特定候選人查看趨勢，都用主要清單 API 重新載入該時間範圍的資料；
-    // loadElectionAnalysisData 內部的 updateCharts() 會自動依 selectedCandidateForTimeChart
-    // 重新畫出正確的折線圖，不需要再呼叫另一支容易回傳空資料的專屬端點。
-    this.loadElectionAnalysisData(timeRange);
+    if (this.isLocalElection) {
+      // 【地方選舉版】一律用主清單 API 重新載入；內部 updateCharts() 會依目前模式重畫
+      this.loadElectionAnalysisData(timeRange);
 
-    this.updateBarChart();
-    this.updateUserCountChart();
+      this.updateBarChart();
+      this.updateUserCountChart();
+    } else {
+      // 【黨主席版（學長）】選了個人就只重載該候選人，否則重載全部
+      if (this.selectedCandidateForTimeChart) {
+        console.log('🔍 時間篩選：保持個人分析模式，重新載入候選人數據');
+        this.loadCandidateTimeSeriesData(this.selectedCandidateForTimeChart);
+      } else {
+        console.log('🔍 時間篩選：總覽模式，重新載入所有候選人數據');
+        this.loadElectionAnalysisData(timeRange);
+      }
+
+      this.updateBarChart();
+    }
 
     setTimeout(() => {
       this.isLoadingTimeData = false;
@@ -1733,7 +2133,7 @@ private adjustColorOpacity(hex: string, alpha: number): string {
     this.startDate = startDate.toISOString().split('T')[0];
   }
 
-  // 動態計算顯示期間（基於 currentFilter 和選舉的 end_date）
+  // 動態計算顯示期間
   getDisplayPeriod(): string {
     if (!this.startDate || !this.endDate) {
       this.updateDateRangeForPeriod(this.currentFilter);
@@ -1744,7 +2144,6 @@ private adjustColorOpacity(hex: string, alpha: number): string {
     return `${this.startDate} - ${this.endDate} (${days}天)`;
   }
 
-  // 計算兩個日期之間的天數差異
   private calculateDaysDifference(startDate: string, endDate: string): number {
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -1754,7 +2153,7 @@ private adjustColorOpacity(hex: string, alpha: number): string {
     return diffDays;
   }
 
-  // 根據數據點數量和時間範圍生成 X 軸時間標籤（與立委頁面邏輯一致）
+  // 根據數據點數量和時間範圍生成 X 軸時間標籤（兩邊邏輯相同，共用）
   private generateTimeAxisLabels(pointCount: number, filter: string): string[] {
     if (!this.startDate || !this.endDate) {
       this.updateDateRangeForPeriod(this.currentFilter);
@@ -1809,146 +2208,39 @@ private adjustColorOpacity(hex: string, alpha: number): string {
 
     const daysPerPoint = totalDays / pointCount;
 
-    switch (filter) {
-      case 'week':
-        if (pointCount === 7) {
-          for (let i = 0; i < pointCount; i++) {
-            const date = new Date(startDate);
-            date.setDate(startDate.getDate() + i);
-            labels.push(date.toLocaleDateString('zh-TW', {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit'
-            }));
-          }
-        } else {
-          for (let i = 0; i < pointCount; i++) {
-            const date = new Date(startDate);
-            date.setDate(startDate.getDate() + (i * daysPerPoint));
-            labels.push(date.toLocaleDateString('zh-TW', {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit'
-            }));
-          }
-        }
-        break;
+    const fmt = (d: Date) => d.toLocaleDateString('zh-TW', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
 
-      case '2weeks':
-        if (pointCount === 14) {
-          for (let i = 0; i < pointCount; i++) {
-            const date = new Date(startDate);
-            date.setDate(startDate.getDate() + i);
-            labels.push(date.toLocaleDateString('zh-TW', {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit'
-            }));
-          }
-        } else {
-          for (let i = 0; i < pointCount; i++) {
-            const date = new Date(startDate);
-            date.setDate(startDate.getDate() + (i * daysPerPoint));
-            labels.push(date.toLocaleDateString('zh-TW', {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit'
-            }));
-          }
-        }
-        break;
+    // 每天一點的情境（week=7、2weeks=14、month=30）
+    const dailyCountMap: { [key: string]: number } = { week: 7, '2weeks': 14, month: 30 };
 
-      case 'month':
-        if (pointCount === 30) {
-          for (let i = 0; i < pointCount; i++) {
-            const date = new Date(startDate);
-            date.setDate(startDate.getDate() + i);
-            labels.push(date.toLocaleDateString('zh-TW', {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit'
-            }));
-          }
-        } else {
-          for (let i = 0; i < pointCount; i++) {
-            const date = new Date(startDate);
-            date.setDate(startDate.getDate() + (i * daysPerPoint));
-            labels.push(date.toLocaleDateString('zh-TW', {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit'
-            }));
-          }
-        }
-        break;
-
-      case '3months':
-        for (let i = 0; i < pointCount; i++) {
-          const date = new Date(startDate);
-          date.setDate(startDate.getDate() + (i * daysPerPoint));
-          labels.push(date.toLocaleDateString('zh-TW', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-          }));
-        }
-        break;
-
-      case '6months':
-        for (let i = 0; i < pointCount; i++) {
-          const date = new Date(startDate);
-          date.setDate(startDate.getDate() + (i * daysPerPoint));
-          labels.push(date.toLocaleDateString('zh-TW', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-          }));
-        }
-        break;
-
-      case '1year':
-      case 'all':
-        if (pointCount === 12) {
-          for (let i = 0; i < pointCount; i++) {
-            const date = new Date(startDate);
-            date.setMonth(startDate.getMonth() + i);
-            labels.push(date.toLocaleDateString('zh-TW', {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit'
-            }));
-          }
-        } else {
-          for (let i = 0; i < pointCount; i++) {
-            const date = new Date(startDate);
-            date.setDate(startDate.getDate() + (i * daysPerPoint));
-            labels.push(date.toLocaleDateString('zh-TW', {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit'
-            }));
-          }
-        }
-        break;
-
-      default:
-        for (let i = 0; i < pointCount; i++) {
-          const date = new Date(startDate);
-          date.setDate(startDate.getDate() + (i * daysPerPoint));
-          labels.push(date.toLocaleDateString('zh-TW', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-          }));
-        }
+    if (dailyCountMap[filter] !== undefined && pointCount === dailyCountMap[filter]) {
+      for (let i = 0; i < pointCount; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+        labels.push(fmt(date));
+      }
+    } else if ((filter === '1year' || filter === 'all') && pointCount === 12) {
+      // 一年：12 點 = 每月一點
+      for (let i = 0; i < pointCount; i++) {
+        const date = new Date(startDate);
+        date.setMonth(startDate.getMonth() + i);
+        labels.push(fmt(date));
+      }
+    } else {
+      // 其餘：按比例分配
+      for (let i = 0; i < pointCount; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + (i * daysPerPoint));
+        labels.push(fmt(date));
+      }
     }
 
     if (labels.length > 0) {
-      labels[labels.length - 1] = endDate.toLocaleDateString('zh-TW', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      });
+      labels[labels.length - 1] = fmt(endDate);
     }
 
     return labels;
