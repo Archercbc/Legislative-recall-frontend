@@ -54,8 +54,8 @@
       </div>
     </header>
 
-    <!-- KPI 三格 -->
-    <div class="kpi-strip" *ngIf="currentView !== 'candidate'">
+    <!-- KPI 三格：候選人個人戰情室（第三層）時不顯示，避免跟黨主席流程混淆 -->
+    <div class="kpi-strip" *ngIf="!isLocalElection || currentView !== 'candidate'">
       <div class="progress-item hud-panel">
         <div class="progress-label">候選人總數</div>
         <div class="progress-value">{{ totalCandidates }}</div>
@@ -70,7 +70,7 @@
       </div>
     </div>
 
-    <!-- ==================== 【第一層：全台選情總覽】 ==================== -->
+    <!-- ==================== 【第一層：全台選情總覽】（僅縣市長選舉） ==================== -->
     <div *ngIf="isLocalElection && currentView === 'map'" style="display: flex; gap: 24px; margin-bottom: 28px; flex-wrap: wrap;">
       
       <!-- 左側：縣市選情列表（大罷免風格） -->
@@ -203,7 +203,7 @@
       <!-- 全台大型互動地圖 section 結束 -->
     </div> <!-- 第一層在這裡正式結束閉合 -->
 
-    <!-- ==================== 【第二層：單一縣市戰情室】 ==================== -->
+    <!-- ==================== 【第二層：單一縣市戰情室 / 黨主席候選人清單】 ==================== -->
     <div *ngIf="!isLocalElection || currentView === 'city'">
       
       <!-- 返回全台按鈕列（僅在縣市長選舉顯示） -->
@@ -231,52 +231,99 @@
 
         <div class="panel-head panel-head--sm">
           <i class="cil-people" aria-hidden="true"></i>
-          <span>候選人對決清單</span>
+          <span>{{ isLocalElection ? '候選人對決清單' : '候選人列表' }}</span>
           <span class="panel-code">ROSTER</span>
         </div>
 
         <div class="panel-body panel-body--sm">
+          <!-- 黨主席版才顯示的操作提示，維持學長原本行為 -->
+          <p class="hint" *ngIf="!isLocalElection">點選姓名可鎖定其趨勢；右側開關控制圖表可見性</p>
+
           <div class="candidates-grid" *ngIf="candidates.length > 0">
-            <article
-              class="candidate-card"
-              *ngFor="let candidate of candidates"
-              (click)="enterCandidateDetail(candidate)"
-              [class.is-hidden]="!candidate.visible"
-              [style.--accent]="candidate.color"
-              style="cursor: pointer;">
-              <div class="candidate-header">
-                <img
-                  [src]="candidate.photo"
-                  [alt]="candidate.name"
-                  class="candidate-photo"
-                  onerror="this.src='/assets/images/default-candidate.jpg'">
-                <div class="candidate-info">
-                  <h4>{{ candidate.name }}</h4>
-                  <p>{{ candidate.party }}</p>
+
+            <!-- 2026 縣市長版：整張卡片可點擊，進入第三層個人戰情室 -->
+            <ng-container *ngIf="isLocalElection">
+              <article
+                class="candidate-card"
+                *ngFor="let candidate of candidates"
+                (click)="enterCandidateDetail(candidate)"
+                [class.is-hidden]="!candidate.visible"
+                [style.--accent]="candidate.color"
+                style="cursor: pointer;">
+                <div class="candidate-header">
+                  <img
+                    [src]="candidate.photo"
+                    [alt]="candidate.name"
+                    class="candidate-photo"
+                    onerror="this.src='/assets/images/default-candidate.jpg'">
+                  <div class="candidate-info">
+                    <h4>{{ candidate.name }}</h4>
+                    <p>{{ candidate.party }}</p>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn-toggle"
+                    [class.active]="candidate.visible"
+                    [style.background-color]="candidate.visible ? candidate.color : 'transparent'"
+                    [style.border-color]="candidate.visible ? candidate.color : 'rgba(148,163,184,0.35)'"
+                    (click)="$event.stopPropagation(); toggleCandidateVisibility(candidate.id)">
+                    <i class="cil-check" *ngIf="candidate.visible"></i>
+                    <i class="cil-x" *ngIf="!candidate.visible"></i>
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  class="btn-toggle"
-                  [class.active]="candidate.visible"
-                  [style.background-color]="candidate.visible ? candidate.color : 'transparent'"
-                  [style.border-color]="candidate.visible ? candidate.color : 'rgba(148,163,184,0.35)'"
-                  (click)="$event.stopPropagation(); toggleCandidateVisibility(candidate.id)">
-                  <i class="cil-check" *ngIf="candidate.visible"></i>
-                  <i class="cil-x" *ngIf="!candidate.visible"></i>
-                </button>
-              </div>
-              <div class="candidate-stats">
-                <div><span>支持</span><strong>{{ (candidate.support_count ?? 0) | number }}</strong></div>
-                <div><span>反對</span><strong>{{ (candidate.oppose_count ?? 0) | number }}</strong></div>
-                <div><span>得票率</span><strong>{{ getSupportPercentage(candidate) }}%</strong></div>
-              </div>
-            </article>
+                <div class="candidate-stats">
+                  <div><span>支持</span><strong>{{ (candidate.support_count ?? 0) | number }}</strong></div>
+                  <div><span>反對</span><strong>{{ (candidate.oppose_count ?? 0) | number }}</strong></div>
+                  <div><span>得票率</span><strong>{{ getSupportPercentage(candidate) }}%</strong></div>
+                </div>
+              </article>
+            </ng-container>
+
+            <!-- 黨主席版：完全照學長原本邏輯，原地切換趨勢圖，不導頁 -->
+            <ng-container *ngIf="!isLocalElection">
+              <article
+                class="candidate-card"
+                *ngFor="let candidate of candidates"
+                [class.is-hidden]="!candidate.visible"
+                [class.is-selected]="selectedCandidateForTimeChart === candidate.id"
+                [style.--accent]="candidate.color">
+                <div class="candidate-header">
+                  <img
+                    [src]="candidate.photo"
+                    [alt]="candidate.name"
+                    class="candidate-photo"
+                    onerror="this.src='/assets/images/default-candidate.jpg'">
+                  <button type="button" class="candidate-info" (click)="selectCandidateForTimeChart(candidate.id)">
+                    <h4>{{ candidate.name }}</h4>
+                    <p>{{ candidate.party }}</p>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-toggle"
+                    [class.active]="candidate.visible"
+                    [style.background-color]="candidate.visible ? candidate.color : 'transparent'"
+                    [style.border-color]="candidate.visible ? candidate.color : 'rgba(148,163,184,0.35)'"
+                    (click)="toggleCandidateVisibility(candidate.id)"
+                    [attr.aria-label]="candidate.visible ? '隱藏' : '顯示'">
+                    <i class="cil-check" *ngIf="candidate.visible" aria-hidden="true"></i>
+                    <i class="cil-x" *ngIf="!candidate.visible" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <div class="candidate-stats">
+                  <div><span>正面</span><strong>{{ (candidate.positive ?? 0) | number }}</strong></div>
+                  <div><span>負面</span><strong>{{ (candidate.negative ?? 0) | number }}</strong></div>
+                  <div><span>支持率</span><strong>{{ getSupportPercentage(candidate) }}%</strong></div>
+                </div>
+              </article>
+            </ng-container>
+
           </div>
 
           <div *ngIf="candidates.length === 0" class="coming-soon">
             <i class="cil-calendar-check" aria-hidden="true"></i>
             <h2>敬請期待</h2>
-            <p>{{ selectedCountyName }} 候選人輿情分析即將推出</p>
+            <p *ngIf="isLocalElection">{{ selectedCountyName }} 候選人輿情分析即將推出</p>
+            <p *ngIf="!isLocalElection">相關分析資料即將推出</p>
           </div>
         </div>
       </section>
@@ -284,8 +331,8 @@
     </div> <!-- 第二層在這裡正式結束閉合 -->
 
 
-    <!-- ==================== 【第三層：候選人個人深度分析 (立委同款 HUD)】 ==================== -->
-    <div *ngIf="currentView === 'candidate' && selectedCandidate">
+    <!-- ==================== 【第三層：候選人個人深度分析】（僅縣市長選舉；黨主席永遠不會進入這裡） ==================== -->
+    <div *ngIf="isLocalElection && currentView === 'candidate' && selectedCandidate">
       
       <!-- 1. 頂部情報個人面板 -->
       <header class="ops-subject hud-panel" style="margin-bottom: 20px;">
@@ -467,96 +514,100 @@
 
     </div>
     
-    <!-- 原版的最底層時間工具列與連動圖表 -->
-    <div class="ops-toolbar hud-panel">
-      <span class="toolbar-label"><i class="cil-clock" aria-hidden="true"></i> T-RANGE</span>
-      <div class="filter-buttons">
-        <button type="button" class="filter-btn" [class.active-filter]="currentFilter === 'week'" (click)="setQuickFilter('week')" [disabled]="isLoadingTimeData">一週</button>
-        <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '2weeks'" (click)="setQuickFilter('2weeks')" [disabled]="isLoadingTimeData">兩週</button>
-        <button type="button" class="filter-btn" [class.active-filter]="currentFilter === 'month'" (click)="setQuickFilter('month')" [disabled]="isLoadingTimeData">一月</button>
-        <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '3months'" (click)="setQuickFilter('3months')" [disabled]="isLoadingTimeData">三月</button>
-        <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '6months'" (click)="setQuickFilter('6months')" [disabled]="isLoadingTimeData">半年</button>
-        <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '1year'" (click)="setQuickFilter('1year')" [disabled]="isLoadingTimeData">一年</button>
+    <!-- ==================== 原版的最底層時間工具列與連動圖表（黨主席版，以及縣市長版非第三層時） ==================== -->
+    <ng-container *ngIf="!isLocalElection || currentView !== 'candidate'">
+
+      <div class="ops-toolbar hud-panel">
+        <span class="toolbar-label"><i class="cil-clock" aria-hidden="true"></i> T-RANGE</span>
+        <div class="filter-buttons">
+          <button type="button" class="filter-btn" [class.active-filter]="currentFilter === 'week'" (click)="setQuickFilter('week')" [disabled]="isLoadingTimeData">一週</button>
+          <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '2weeks'" (click)="setQuickFilter('2weeks')" [disabled]="isLoadingTimeData">兩週</button>
+          <button type="button" class="filter-btn" [class.active-filter]="currentFilter === 'month'" (click)="setQuickFilter('month')" [disabled]="isLoadingTimeData">一月</button>
+          <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '3months'" (click)="setQuickFilter('3months')" [disabled]="isLoadingTimeData">三月</button>
+          <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '6months'" (click)="setQuickFilter('6months')" [disabled]="isLoadingTimeData">半年</button>
+          <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '1year'" (click)="setQuickFilter('1year')" [disabled]="isLoadingTimeData">一年</button>
+        </div>
+        <span class="date-inline">{{ getDisplayPeriod() }}</span>
+        <div class="loading-indicator" *ngIf="isLoadingTimeData">
+          <div class="spinner-border spinner-border-sm text-primary"></div>
+        </div>
       </div>
-      <span class="date-inline">{{ getDisplayPeriod() }}</span>
-      <div class="loading-indicator" *ngIf="isLoadingTimeData">
-        <div class="spinner-border spinner-border-sm text-primary"></div>
+
+      <div class="charts-board">
+        <section class="hud-panel chart-panel">
+          <span class="hud-corner tl" aria-hidden="true"></span>
+          <span class="hud-corner tr" aria-hidden="true"></span>
+          <span class="hud-corner bl" aria-hidden="true"></span>
+          <span class="hud-corner br" aria-hidden="true"></span>
+
+          <div class="panel-head panel-head--sm panel-head--wrap">
+            <div class="head-left">
+              <i class="cil-chart-line" aria-hidden="true"></i>
+              <span>{{ selectedCandidateForTimeChart ? '候選人正負面趨勢' : '累計評論總網友數' }}</span>
+              <span class="panel-code">TREND</span>
+            </div>
+            <button
+              *ngIf="selectedCandidateForTimeChart"
+              type="button"
+              class="btn-overview"
+              (click)="returnToOverview()">
+              <i class="cil-arrow-left" aria-hidden="true"></i>
+              返回總覽
+            </button>
+          </div>
+          <div class="panel-body panel-body--sm">
+            <div *ngIf="!isLoadingTimeData" class="chart-stage chart-stage--line">
+              <c-chart #lineChart [data]="lineChartData" type="line" [options]="lineChartOptions"></c-chart>
+            </div>
+            <div *ngIf="isLoadingTimeData" class="loading-placeholder">
+              <div class="spinner-border text-primary"></div>
+              <p>載入趨勢中...</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="hud-panel chart-panel">
+          <span class="hud-corner tl" aria-hidden="true"></span>
+          <span class="hud-corner tr" aria-hidden="true"></span>
+          <span class="hud-corner bl" aria-hidden="true"></span>
+          <span class="hud-corner br" aria-hidden="true"></span>
+
+          <div class="panel-head panel-head--sm">
+            <i class="cil-chart-bar" aria-hidden="true"></i>
+            <span>網友數比較分析</span>
+            <span class="panel-code">SIG-BAR</span>
+          </div>
+
+          <!-- 專屬時間區間過濾條，方便直接在這張圖上切換時間範圍，不用捲到最上面 -->
+          <div class="ops-toolbar hud-panel" style="margin: 0 0 12px;">
+            <span class="toolbar-label"><i class="cil-clock" aria-hidden="true"></i> T-RANGE</span>
+            <div class="filter-buttons">
+              <button type="button" class="filter-btn" [class.active-filter]="currentFilter === 'week'" (click)="setQuickFilter('week')" [disabled]="isLoadingTimeData">一週</button>
+              <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '2weeks'" (click)="setQuickFilter('2weeks')" [disabled]="isLoadingTimeData">兩週</button>
+              <button type="button" class="filter-btn" [class.active-filter]="currentFilter === 'month'" (click)="setQuickFilter('month')" [disabled]="isLoadingTimeData">一月</button>
+              <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '3months'" (click)="setQuickFilter('3months')" [disabled]="isLoadingTimeData">三月</button>
+              <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '6months'" (click)="setQuickFilter('6months')" [disabled]="isLoadingTimeData">半年</button>
+              <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '1year'" (click)="setQuickFilter('1year')" [disabled]="isLoadingTimeData">一年</button>
+            </div>
+            <span class="date-inline">{{ getDisplayPeriod() }}</span>
+            <div class="loading-indicator" *ngIf="isLoadingTimeData">
+              <div class="spinner-border spinner-border-sm text-primary"></div>
+            </div>
+          </div>
+
+          <div class="panel-body panel-body--sm">
+            <div *ngIf="!isLoadingTimeData" class="chart-stage chart-stage--bar">
+              <c-chart #barChart type="bar" [data]="userCountChartData" [options]="barChartOptions"></c-chart>
+            </div>
+            <div *ngIf="isLoadingTimeData" class="loading-placeholder">
+              <div class="spinner-border text-primary"></div>
+              <p>載入比較中...</p>
+            </div>
+          </div>
+        </section>
       </div>
-    </div>
 
-    <div class="charts-board">
-      <section class="hud-panel chart-panel">
-        <span class="hud-corner tl" aria-hidden="true"></span>
-        <span class="hud-corner tr" aria-hidden="true"></span>
-        <span class="hud-corner bl" aria-hidden="true"></span>
-        <span class="hud-corner br" aria-hidden="true"></span>
-
-        <div class="panel-head panel-head--sm panel-head--wrap">
-          <div class="head-left">
-            <i class="cil-chart-line" aria-hidden="true"></i>
-            <span>{{ selectedCandidateForTimeChart ? '候選人正負面趨勢' : '累計評論總網友數' }}</span>
-            <span class="panel-code">TREND</span>
-          </div>
-          <button
-            *ngIf="selectedCandidateForTimeChart"
-            type="button"
-            class="btn-overview"
-            (click)="returnToOverview()">
-            <i class="cil-arrow-left" aria-hidden="true"></i>
-            返回總覽
-          </button>
-        </div>
-        <div class="panel-body panel-body--sm">
-          <div *ngIf="!isLoadingTimeData" class="chart-stage chart-stage--line">
-            <c-chart #lineChart [data]="lineChartData" type="line" [options]="lineChartOptions"></c-chart>
-          </div>
-          <div *ngIf="isLoadingTimeData" class="loading-placeholder">
-            <div class="spinner-border text-primary"></div>
-            <p>載入趨勢中...</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="hud-panel chart-panel">
-        <span class="hud-corner tl" aria-hidden="true"></span>
-        <span class="hud-corner tr" aria-hidden="true"></span>
-        <span class="hud-corner bl" aria-hidden="true"></span>
-        <span class="hud-corner br" aria-hidden="true"></span>
-
-        <div class="panel-head panel-head--sm">
-          <i class="cil-chart-bar" aria-hidden="true"></i>
-          <span>網友數比較分析</span>
-          <span class="panel-code">SIG-BAR</span>
-        </div>
-
-        <!-- 專屬時間區間過濾條，方便直接在這張圖上切換時間範圍，不用捲到最上面 -->
-        <div class="ops-toolbar hud-panel" style="margin: 0 0 12px;">
-          <span class="toolbar-label"><i class="cil-clock" aria-hidden="true"></i> T-RANGE</span>
-          <div class="filter-buttons">
-            <button type="button" class="filter-btn" [class.active-filter]="currentFilter === 'week'" (click)="setQuickFilter('week')" [disabled]="isLoadingTimeData">一週</button>
-            <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '2weeks'" (click)="setQuickFilter('2weeks')" [disabled]="isLoadingTimeData">兩週</button>
-            <button type="button" class="filter-btn" [class.active-filter]="currentFilter === 'month'" (click)="setQuickFilter('month')" [disabled]="isLoadingTimeData">一月</button>
-            <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '3months'" (click)="setQuickFilter('3months')" [disabled]="isLoadingTimeData">三月</button>
-            <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '6months'" (click)="setQuickFilter('6months')" [disabled]="isLoadingTimeData">半年</button>
-            <button type="button" class="filter-btn" [class.active-filter]="currentFilter === '1year'" (click)="setQuickFilter('1year')" [disabled]="isLoadingTimeData">一年</button>
-          </div>
-          <span class="date-inline">{{ getDisplayPeriod() }}</span>
-          <div class="loading-indicator" *ngIf="isLoadingTimeData">
-            <div class="spinner-border spinner-border-sm text-primary"></div>
-          </div>
-        </div>
-
-        <div class="panel-body panel-body--sm">
-          <div *ngIf="!isLoadingTimeData" class="chart-stage chart-stage--bar">
-            <c-chart #barChart type="bar" [data]="userCountChartData" [options]="barChartOptions"></c-chart>
-          </div>
-          <div *ngIf="isLoadingTimeData" class="loading-placeholder">
-            <div class="spinner-border text-primary"></div>
-            <p>載入比較中...</p>
-          </div>
-        </div>
-      </section>
-    </div>
+    </ng-container>
 
   </ng-container>
 
