@@ -7,12 +7,6 @@
   </div>
 
   <ng-container *ngIf="!isLoading && election">
-    <!-- 全域麵包屑導航 -->
-    <nav *ngIf="isLocalElection" style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px; font-size: 14px; background: rgba(15, 23, 42, 0.7); padding: 8px 16px; border-radius: 6px; border: 1px solid rgba(148, 163, 184, 0.2);">
-      <button type="button" (click)="backToFullMap()" [style.color]="currentView === 'map' ? '#f8fafc' : '#38bdf8'" style="background: none; border: none; cursor: pointer;">
-        全台選情地圖
-      </button>
-
       <ng-container *ngIf="currentView === 'city' || currentView === 'candidate'">
         <span style="color: #64748b;">/</span>
         <button type="button" (click)="backToCity()" [style.color]="currentView === 'city' ? '#f8fafc' : '#38bdf8'" style="background: none; border: none; cursor: pointer;">
@@ -27,7 +21,6 @@
           {{ selectedCandidate?.name }} 個人戰情室
         </span>
       </ng-container>
-    </nav>   
     
     <header class="ops-subject hud-panel">
       <span class="hud-corner tl" aria-hidden="true"></span>
@@ -70,70 +63,11 @@
       </div>
     </div>
 
-    <!-- ==================== 【第一層：全台選情總覽】（僅縣市長選舉） ==================== -->
-    <div *ngIf="isLocalElection && currentView === 'map'" style="display: flex; gap: 24px; margin-bottom: 28px; flex-wrap: wrap;">
-      
-      <!-- 左側：縣市選情列表（大罷免風格） -->
-      <section class="hud-panel" style="flex: 1 1 360px; min-width: 300px; margin: 0;">
-        <span class="hud-corner tl" aria-hidden="true"></span>
-        <span class="hud-corner tr" aria-hidden="true"></span>
-        <span class="hud-corner bl" aria-hidden="true"></span>
-        <span class="hud-corner br" aria-hidden="true"></span>
+    <!-- ==================== 【第一層：全台選情總覽】地圖為主、縣市列表為輔 ==================== -->
+    <div *ngIf="isLocalElection && currentView === 'map'" class="map-overview">
 
-        <div class="panel-head panel-head--sm">
-          <i class="cil-list" aria-hidden="true"></i>
-          <span>各縣市選區列表</span>
-          <span class="panel-code">COUNTIES</span>
-        </div>
-
-        <div class="panel-body panel-body--sm" style="flex: 1; max-height: 520px; overflow-y: auto; padding: 12px;">
-          <div
-            *ngFor="let item of countyList"
-            (click)="enterCityBattle(item.id, item.name)"
-            style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; margin-bottom: 8px; background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(148, 163, 184, 0.15); border-radius: 4px; cursor: pointer; transition: all 0.2s ease;">
-            
-            <div>
-              <div style="font-size: 15px; font-weight: 600; color: #f8fafc;">{{ item.name }}</div>
-              <div style="font-size: 11px; color: #64748b;">{{ item.id }}</div>
-            </div>
-
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <div class="candidate-badges" style="display: flex; gap: 6px; align-items: center;">
-                <!-- 現任爭取連任 (綠) -->
-                <span 
-                  *ngIf="getCandidateCountByType(item.id, 'incumbent') > 0"
-                  style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 12px; padding: 2px 8px; border-radius: 9999px;">
-                  ● {{ getCandidateCountByType(item.id, 'incumbent') }} 連任
-                </span>
-
-                <!-- 宣布參選 (橘) -->
-                <span 
-                  *ngIf="getCandidateCountByType(item.id, 'announced') > 0"
-                  style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); font-size: 12px; padding: 2px 8px; border-radius: 9999px;">
-                  ● {{ getCandidateCountByType(item.id, 'announced') }} 參選
-                </span>
-
-                <!-- 潛在人選 (藍) -->
-                <span 
-                  *ngIf="getCandidateCountByType(item.id, 'potential') > 0"
-                  style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-size: 12px; padding: 2px 8px; border-radius: 9999px;">
-                  ● {{ getCandidateCountByType(item.id, 'potential') }} 潛在
-                </span>
-              </div>
-
-              <span *ngIf="getCountyCandidateCount(item.id) === 0" style="color: #64748b; font-size: 12px;">
-                籌備中
-              </span>
-
-              <i class="cil-chevron-right" style="color: #64748b;"></i>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      <!-- 右側：全台大型互動地圖 -->
-      <section class="hud-panel" style="flex: 1 1 500px; min-width: 320px; display: flex; flex-direction: column; margin: 0;">
+      <!-- 地圖先放，佔較大面積 -->
+      <section class="hud-panel map-overview__map">
         <span class="hud-corner tl" aria-hidden="true"></span>
         <span class="hud-corner tr" aria-hidden="true"></span>
         <span class="hud-corner bl" aria-hidden="true"></span>
@@ -145,11 +79,10 @@
           <span class="panel-code">INTERACTIVE-MAP</span>
         </div>
 
-        <!-- 🟢 加上 #mapContainer -->
-        <div #mapContainer class="panel-body panel-body--sm" style="display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 16px; height: 540px; position: relative;">
+        <div #mapContainer class="panel-body panel-body--sm map-canvas">
           <svg
+            class="taiwan-map-svg"
             viewBox="-60 -180 1200 1450"
-            style="width: 100%; height: 100%; max-height: 520px; cursor: pointer; display: block;"
             preserveAspectRatio="xMidYMid meet"
             (mouseleave)="onCountyMouseLeave()">
             <g *ngFor="let location of taiwanMap.locations">
@@ -200,8 +133,50 @@
         <!-- panel-body 結束 -->
 
       </section>
-      <!-- 全台大型互動地圖 section 結束 -->
-    </div> <!-- 第一層在這裡正式結束閉合 -->
+
+      <!-- 縣市列表：窄欄，點進去才進戰情室 -->
+      <section class="hud-panel map-overview__list">
+        <span class="hud-corner tl" aria-hidden="true"></span>
+        <span class="hud-corner tr" aria-hidden="true"></span>
+        <span class="hud-corner bl" aria-hidden="true"></span>
+        <span class="hud-corner br" aria-hidden="true"></span>
+
+        <div class="panel-head panel-head--sm">
+          <i class="cil-list" aria-hidden="true"></i>
+          <span>各縣市選區列表</span>
+          <span class="panel-code">COUNTIES</span>
+        </div>
+
+        <div class="panel-body panel-body--sm county-scroll">
+          <button
+            type="button"
+            class="county-row"
+            *ngFor="let item of countyList"
+            (click)="enterCityBattle(item.id, item.name)">
+            <span class="county-name">{{ item.name }}</span>
+            <span class="county-meta">
+              <span
+                *ngIf="getCandidateCountByType(item.id, 'incumbent') > 0"
+                class="county-chip county-chip--incumbent">
+                {{ getCandidateCountByType(item.id, 'incumbent') }} 連任
+              </span>
+              <span
+                *ngIf="getCandidateCountByType(item.id, 'announced') > 0"
+                class="county-chip county-chip--announced">
+                {{ getCandidateCountByType(item.id, 'announced') }} 參選
+              </span>
+              <span
+                *ngIf="getCandidateCountByType(item.id, 'potential') > 0"
+                class="county-chip county-chip--potential">
+                {{ getCandidateCountByType(item.id, 'potential') }} 潛在
+              </span>
+              <span *ngIf="getCountyCandidateCount(item.id) === 0" class="county-empty">籌備中</span>
+              <i class="cil-chevron-right" aria-hidden="true"></i>
+            </span>
+          </button>
+        </div>
+      </section>
+    </div>
 
     <!-- ==================== 【第二層：單一縣市戰情室 / 黨主席候選人清單】 ==================== -->
     <div *ngIf="!isLocalElection || currentView === 'city'">
@@ -515,7 +490,8 @@
     </div>
     
     <!-- ==================== 原版的最底層時間工具列與連動圖表（黨主席版，以及縣市長版非第三層時） ==================== -->
-    <ng-container *ngIf="!isLocalElection || currentView !== 'candidate'">
+    <!-- 地方選舉總覽頁不顯示 T-RANGE / TREND / SIG-BAR，只在縣市戰情室或黨主席流程出現 -->
+    <ng-container *ngIf="!isLocalElection || currentView === 'city'">
 
       <div class="ops-toolbar hud-panel">
         <span class="toolbar-label"><i class="cil-clock" aria-hidden="true"></i> T-RANGE</span>

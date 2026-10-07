@@ -86,19 +86,38 @@
 
         <div class="candidates-preview" *ngIf="!election.disabled && election.candidates?.length">
           <div class="preview-head">
-            <span>候選人預覽</span>
+            <span>{{ election.type === 'local' ? '選區概況' : '候選人預覽' }}</span>
             <span>{{ getCandidateCount(election) }} 人</span>
           </div>
-          <div class="candidates-list">
-            <div class="candidate-item" *ngFor="let candidate of election.candidates">
-              <img [src]="candidate.photo" [alt]="candidate.name" class="candidate-photo"
-                   onerror="this.src='/assets/images/default-candidate.jpg'">
-              <div class="candidate-info">
-                <span class="candidate-name">{{ candidate.name }}</span>
-                <span class="candidate-party">{{ candidate.party }}</span>
-              </div>
+
+          <!-- 縣市長名單太長，改縣市數 + 頭像列，避免卡片被撐爆 -->
+          <div class="local-preview" *ngIf="election.type === 'local'; else namePreview">
+            <span class="local-stat">{{ getCountyCount(election) }} 縣市</span>
+            <div class="avatar-row">
+              <img
+                *ngFor="let candidate of election.candidates.slice(0, 8)"
+                [src]="candidate.photo"
+                [alt]="candidate.name"
+                [title]="candidate.name"
+                class="avatar-chip"
+                onerror="this.src='/assets/images/default-candidate.jpg'">
+              <span class="more-avatars" *ngIf="election.candidates.length > 8">
+                +{{ election.candidates.length - 8 }}
+              </span>
             </div>
           </div>
+          <ng-template #namePreview>
+            <div class="candidates-list">
+              <div class="candidate-item" *ngFor="let candidate of election.candidates">
+                <img [src]="candidate.photo" [alt]="candidate.name" class="candidate-photo"
+                     onerror="this.src='/assets/images/default-candidate.jpg'">
+                <div class="candidate-info">
+                  <span class="candidate-name">{{ candidate.name }}</span>
+                  <span class="candidate-party">{{ candidate.party }}</span>
+                </div>
+              </div>
+            </div>
+          </ng-template>
         </div>
 
         <div class="issues-tags" *ngIf="election.key_issues?.length">

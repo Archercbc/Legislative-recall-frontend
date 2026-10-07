@@ -274,7 +274,7 @@ export class ElectionAnalysisComponent implements OnInit {
 
     // 關鍵安全鎖：若沒過濾到任何人，不讓 candidates 變成空陣列，回退顯示全資料
     this.candidates = filtered.length > 0 ? filtered : source;
-    this.totalCandidates = this.candidates.length;
+    this.applyKpisFrom(this.candidates);
 
     this.updateCharts();
   }
@@ -458,7 +458,7 @@ export class ElectionAnalysisComponent implements OnInit {
       : this.allMayoralCandidates;
 
     this.candidates = source.filter(c => c.city === countyId);
-    this.totalCandidates = this.candidates.length;
+    this.applyKpisFrom(this.candidates);
 
     this.selectedCandidate = null;
     this.selectedCandidateForTimeChart = null;
@@ -895,11 +895,7 @@ export class ElectionAnalysisComponent implements OnInit {
       }
 
       if (this.electionId) {
-        // 【地方選舉專用】預設選取台北市（ID 需與地圖 / countyList 一致：taipei-city）
-        if (this.isLocalElection) {
-          this.selectedCounty = 'taipei-city';
-          this.filterCandidatesByCounty('taipei-city');
-        }
+        // 地方選舉第一層是全台地圖，不要預設台北，否則 KPI 會變成 3 人
         this.loadElectionData();
       } else {
         this.router.navigate(['/election-analysis']);
@@ -1058,12 +1054,11 @@ export class ElectionAnalysisComponent implements OnInit {
             }
           );
 
-          if (this.selectedCounty) {
+          if (this.currentView === 'city' && this.selectedCounty) {
             this.filterCandidatesByCounty(this.selectedCounty);
           } else {
             this.candidates = this.allCandidatesWithStats;
-            this.totalCandidates = this.candidates.length;
-            this.updateCharts();
+            this.resetTotalKpis();
           }
 
           this.isLoading = false;
@@ -1089,9 +1084,7 @@ export class ElectionAnalysisComponent implements OnInit {
           }));
 
           this.candidates = this.allCandidatesWithStats;
-          this.totalCandidates = this.candidates.length;
-
-          this.updateCharts();
+          this.resetTotalKpis();
           this.isLoading = false;
         }
       });
@@ -1708,17 +1701,30 @@ export class ElectionAnalysisComponent implements OnInit {
     const source = this.allCandidatesWithStats && this.allCandidatesWithStats.length > 0
       ? this.allCandidatesWithStats
       : this.allMayoralCandidates;
+    this.applyKpisFrom(source);
+  }
 
-    if (source && source.length > 0) {
-      this.totalCandidates = source.length;
-      this.totalSentiment = source.reduce(
-        (sum, c) => sum + (c.positive || 0) + (c.negative || 0),
-        0
-      );
-      this.averageSentiment = this.totalCandidates > 0
-        ? Math.round(this.totalSentiment / this.totalCandidates)
-        : 0;
+  // 從候選人清單算出 KPI：人數、累計評論、平均
+  private applyKpisFrom(source: any[]): void {
+    if (!source || source.length === 0) {
+      this.totalCandidates = 0;
+      this.totalSentiment = 0;
+      this.averageSentiment = 0;
+      return;
     }
+
+    this.totalCandidates = source.length;
+    this.totalSentiment = source.reduce((sum, c) => sum + this.candidateVolume(c), 0);
+    this.averageSentiment = Math.round(this.totalSentiment / this.totalCandidates);
+  }
+
+  // 優先用 API 的 total（含中立），再退回正負面或支持數
+  private candidateVolume(c: any): number {
+    const pn =
+      (Number(c.positive) || 0) +
+      (Number(c.negative) || 0) +
+      (Number(c.neutral) || 0);
+    return Number(c.total) || pn || Number(c.support_count) || 0;
   }
 
   // 載入特定候選人的時間序列數據（依模式分流）
