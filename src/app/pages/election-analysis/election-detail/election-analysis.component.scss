@@ -388,8 +388,18 @@
     height: 100% !important;
   }
 }
-.chart-stage--line { height: 260px; }
-.chart-stage--bar { height: 280px; }
+.chart-stage--line { height: 320px; overflow: hidden; }
+.chart-stage--bar { height: 300px; overflow: hidden; }
+
+.city-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: 0.4px;
+
+  span { color: #38bdf8; }
+}
 
 .loading-container,
 .loading-placeholder {
