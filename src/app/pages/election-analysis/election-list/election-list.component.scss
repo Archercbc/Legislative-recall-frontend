@@ -251,38 +251,6 @@
   font-family: ui-monospace, "Cascadia Mono", monospace;
   letter-spacing: 0.06em;
 }
-.local-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-.local-stat {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #5eead4;
-}
-.avatar-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0;
-}
-.avatar-chip {
-  width: 28px;
-  height: 28px;
-  border-radius: 2px;
-  object-fit: cover;
-  border: 1px solid rgba(45, 212, 191, 0.45);
-  margin-right: -6px;
-  background: #07202a;
-}
-.more-avatars {
-  margin-left: 0.55rem;
-  font-size: 0.72rem;
-  color: var(--ops-muted);
-  font-family: ui-monospace, "Cascadia Mono", monospace;
-}
-
 .candidates-list {
   display: grid;
   gap: 0.4rem;

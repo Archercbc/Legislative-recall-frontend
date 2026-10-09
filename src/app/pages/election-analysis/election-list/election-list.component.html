@@ -86,24 +86,17 @@
 
         <div class="candidates-preview" *ngIf="!election.disabled && election.candidates?.length">
           <div class="preview-head">
-            <span>{{ election.type === 'local' ? '選區概況' : '候選人預覽' }}</span>
+            <span>候選人預覽</span>
             <span>{{ getCandidateCount(election) }} 人</span>
           </div>
-
-          <!-- 兩張卡都用頭像列，高度才會對齊 -->
-          <div class="local-preview">
-            <span class="local-stat" *ngIf="election.type === 'local'">{{ getCountyCount(election) }} 縣市</span>
-            <div class="avatar-row">
-              <img
-                *ngFor="let candidate of election.candidates.slice(0, 8)"
-                [src]="candidate.photo"
-                [alt]="candidate.name"
-                [title]="candidate.name"
-                class="avatar-chip"
-                onerror="this.src='/assets/images/default-candidate.jpg'">
-              <span class="more-avatars" *ngIf="election.candidates.length > 8">
-                +{{ election.candidates.length - 8 }}
-              </span>
+          <div class="candidates-list">
+            <div class="candidate-item" *ngFor="let candidate of election.candidates">
+              <img [src]="candidate.photo" [alt]="candidate.name" class="candidate-photo"
+                   onerror="this.src='/assets/images/default-candidate.jpg'">
+              <div class="candidate-info">
+                <span class="candidate-name">{{ candidate.name }}</span>
+                <span class="candidate-party">{{ candidate.party }}</span>
+              </div>
             </div>
           </div>
         </div>

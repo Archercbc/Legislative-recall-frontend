@@ -35,4 +35,4 @@ bootstrapApplication(AppComponent, {
     cilList, cilClock, cilXCircle, cilWarning, cilBan, cilCheckCircle,
     cilChartLine, cilCheck, cilFilter, cilMap, cilPeople
   };
-});    
+});

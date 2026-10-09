@@ -274,7 +274,7 @@ export class ElectionAnalysisComponent implements OnInit {
 
     // 關鍵安全鎖：若沒過濾到任何人，不讓 candidates 變成空陣列，回退顯示全資料
     this.candidates = filtered.length > 0 ? filtered : source;
-    this.applyKpisFrom(this.candidates);
+    this.totalCandidates = this.candidates.length;
 
     this.updateCharts();
   }
@@ -458,7 +458,7 @@ export class ElectionAnalysisComponent implements OnInit {
       : this.allMayoralCandidates;
 
     this.candidates = source.filter(c => c.city === countyId);
-    this.applyKpisFrom(this.candidates);
+    this.totalCandidates = this.candidates.length;
 
     this.selectedCandidate = null;
     this.selectedCandidateForTimeChart = null;
@@ -538,48 +538,185 @@ export class ElectionAnalysisComponent implements OnInit {
     maxRotation: 45
   };
 
-  // 圖表選項：跟立委／政治人物頁同一套 tooltip（畫在 canvas 內，不自訂定位）
+  // 圖表選項 - 動態調整標籤顯示
   get lineChartOptions(): any {
+    const component = this;
     return {
       responsive: true,
       maintainAspectRatio: false,
-      animation: { duration: 0 },
-      interaction: {
-        mode: 'nearest' as const,
-        intersect: false
-      },
       plugins: {
         legend: {
+          // 地方選舉：線條 <= 12 才顯示；黨主席：永遠顯示
           display: this.isLocalElection ? this.lineChartData.datasets.length <= 12 : true,
           position: 'top' as const,
+          align: 'start' as const,
           labels: {
             usePointStyle: true,
-            padding: 12,
+            padding: 15,
             boxWidth: 8,
+            boxHeight: 8,
             color: '#94a3b8',
-            font: { size: 11 }
-          }
+            font: {
+              size: 11
+            }
+          },
+          maxWidth: 800,
+          fullSize: true
+        },
+        interaction: {
+          mode: 'nearest' as const,
+          intersect: true,
         },
         tooltip: {
           enabled: true,
           mode: 'nearest' as const,
-          intersect: false,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          intersect: true,
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
           titleColor: '#fff',
           bodyColor: '#fff',
-          borderColor: '#fff',
+          borderColor: 'rgba(255, 255, 255, 0.2)',
           borderWidth: 1,
-          cornerRadius: 6,
+          cornerRadius: 10,
           displayColors: true,
-          padding: 12,
-          titleFont: { size: 14, weight: 'bold' as const },
-          bodyFont: { size: 14 },
+          padding: {
+            top: 16,
+            right: 20,
+            bottom: 16,
+            left: 20
+          },
+          titleFont: {
+            size: 16,
+            weight: 'bold' as const
+          },
+          bodyFont: {
+            size: 14
+          },
+          titleSpacing: 10,
+          bodySpacing: 8,
+          boxWidth: 12,
+          boxHeight: 12,
+          boxPadding: 6,
+          maxWidth: 300,
+          filter: (tooltipItem: any) => {
+            return tooltipItem.parsed.y !== null && tooltipItem.parsed.y !== undefined;
+          },
+          positioner: (elements: any[], eventPosition: any) => {
+            const tooltip = elements[0];
+            if (!tooltip || !tooltip.chart) {
+              return false;
+            }
+
+            const chart = tooltip.chart;
+            const chartCanvas = chart.canvas;
+            const chartRect = chartCanvas.getBoundingClientRect();
+
+            const tooltipWidth = tooltip.width || 280;
+            const tooltipHeight = tooltip.height || 180;
+
+            const canvasX = chartRect.left + eventPosition.x;
+            const canvasY = chartRect.top + eventPosition.y;
+
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            const offsetX = 15;
+            const margin = 30;
+
+            let tooltipY = canvasY - tooltipHeight / 2;
+            let tooltipX;
+
+            const rightSpaceAvailable = viewportWidth - canvasX - margin;
+
+            if (rightSpaceAvailable >= tooltipWidth + offsetX) {
+              tooltipX = canvasX + offsetX;
+            } else {
+              tooltipX = canvasX - tooltipWidth - offsetX;
+              if (tooltipX < margin) {
+                tooltipX = margin;
+              }
+            }
+
+            if (tooltipX + tooltipWidth > viewportWidth - margin) {
+              tooltipX = viewportWidth - tooltipWidth - margin;
+            }
+            if (tooltipX < margin) {
+              tooltipX = margin;
+            }
+
+            if (tooltipY < 20) {
+              tooltipY = 20;
+            } else if (tooltipY + tooltipHeight > viewportHeight - 20) {
+              tooltipY = viewportHeight - tooltipHeight - 20;
+              if (tooltipY < 20) {
+                tooltipY = 20;
+              }
+            }
+
+            const relativeX = tooltipX - chartRect.left;
+            const relativeY = tooltipY - chartRect.top;
+
+            return {
+              x: relativeX,
+              y: relativeY
+            };
+          },
           callbacks: {
-            title: (context: any) => context[0]?.label || '',
+            title: (tooltipItems: any[]) => {
+              if (tooltipItems && tooltipItems.length > 0) {
+                const label = tooltipItems[0].label;
+                return `日期：${label}`;
+              }
+              return '';
+            },
             label: (context: any) => {
-              const label = context.dataset.label || '';
-              const value = Number(context.parsed.y || 0).toLocaleString('zh-TW');
-              return `${label}: ${value} 人`;
+              const dataset = context.dataset;
+              const value = context.parsed.y;
+              const label = dataset.label || '未知';
+
+              const formattedValue = value.toLocaleString('zh-TW');
+
+              if (component.selectedCandidateForTimeChart && dataset.label) {
+                const positiveData = dataset.positiveData;
+                const negativeData = dataset.negativeData;
+
+                if (positiveData && negativeData && context.dataIndex !== undefined) {
+                  const positive = positiveData[context.dataIndex] || 0;
+                  const negative = negativeData[context.dataIndex] || 0;
+                  const total = positive + negative;
+
+                  return [
+                    `${label}: ${formattedValue}`,
+                    `  正面: ${positive.toLocaleString('zh-TW')}`,
+                    `  負面: ${negative.toLocaleString('zh-TW')}`,
+                    `  總計: ${total.toLocaleString('zh-TW')}`
+                  ];
+                }
+              }
+
+              return `${label} - 累計評論總網友數: ${formattedValue}`;
+            },
+            afterLabel: (context: any) => {
+              if (!component.selectedCandidateForTimeChart) {
+                const allDatasets = context.chart.data.datasets;
+                const dataIndex = context.dataIndex;
+                const allValues = allDatasets
+                  .map((ds: any) => ds.data[dataIndex])
+                  .filter((v: any) => v !== null && v !== undefined && !isNaN(v));
+                const currentValue = context.parsed.y;
+
+                if (allValues.length > 1) {
+                  const sortedValues = [...allValues].sort((a: number, b: number) => b - a);
+                  const rank = sortedValues.indexOf(currentValue) + 1;
+                  return `排名：第 ${rank} 名 / ${allValues.length} 位候選人`;
+                }
+              }
+              return '';
+            },
+            labelColor: (context: any) => {
+              return {
+                borderColor: context.dataset.borderColor || context.dataset.backgroundColor,
+                backgroundColor: context.dataset.borderColor || context.dataset.backgroundColor
+              };
             }
           }
         }
@@ -587,26 +724,70 @@ export class ElectionAnalysisComponent implements OnInit {
       scales: {
         x: {
           display: true,
-          title: { display: true, text: '時間', color: '#94a3b8' },
+          title: {
+            display: true,
+            text: '時間',
+            color: '#94a3b8',
+            font: {
+              size: 12,
+              weight: 'bold' as const
+            },
+            padding: {
+              top: 10,
+              bottom: 5
+            }
+          },
           ticks: {
             color: '#94a3b8',
-            maxTicksLimit: this.dynamicChartOptions.maxTicksLimit,
-            autoSkip: this.dynamicChartOptions.autoSkip,
-            maxRotation: this.dynamicChartOptions.maxRotation
+            font: {
+              size: 10
+            },
+            maxTicksLimit: component.dynamicChartOptions.maxTicksLimit,
+            autoSkip: component.dynamicChartOptions.autoSkip,
+            maxRotation: component.dynamicChartOptions.maxRotation,
+            minRotation: 0,
+            padding: 8
           },
-          grid: { color: 'rgba(148, 163, 184, 0.12)' },
+          grid: {
+            color: 'rgba(148, 163, 184, 0.12)',
+            display: true
+          },
           border: { color: 'rgba(148, 163, 184, 0.25)' }
         },
         y: {
           display: true,
           beginAtZero: true,
-          title: { display: true, text: '累計人數', color: '#94a3b8' },
+          title: {
+            display: true,
+            text: '累計評論總網友數',
+            color: '#94a3b8',
+            font: {
+              size: 12,
+              weight: 'bold' as const
+            },
+            padding: {
+              top: 5,
+              right: 10
+            }
+          },
           ticks: {
             color: '#94a3b8',
-            maxTicksLimit: 6,
-            callback: (value: any) => Number(value).toLocaleString('zh-TW')
+            font: {
+              size: 10
+            },
+            maxTicksLimit: 8,
+            padding: 8,
+            callback: function(value: any) {
+              if (value >= 10000) {
+                return (value / 10000).toFixed(1) + '萬';
+              }
+              return value.toLocaleString('zh-TW');
+            }
           },
-          grid: { color: 'rgba(148, 163, 184, 0.12)' },
+          grid: {
+            color: 'rgba(148, 163, 184, 0.12)',
+            display: true
+          },
           border: { color: 'rgba(148, 163, 184, 0.25)' }
         }
       }
@@ -618,38 +799,23 @@ export class ElectionAnalysisComponent implements OnInit {
   barChartOptions: ChartOptions<'bar'> = {
     responsive: true,
     maintainAspectRatio: false,
-    animation: { duration: 0 },
-    interaction: {
-      mode: 'index',
-      intersect: false
-    },
     plugins: {
       legend: {
         display: true,
         position: 'top',
         labels: {
           usePointStyle: true,
-          padding: 12,
-          boxWidth: 8,
+          padding: 16,
+          boxWidth: 12,
           color: '#94a3b8'
         }
       },
       tooltip: {
-        enabled: true,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleColor: '#fff',
-        bodyColor: '#fff',
-        borderColor: '#fff',
-        borderWidth: 1,
-        cornerRadius: 6,
-        padding: 12,
-        callbacks: {
-          label: (context: any) => {
-            const label = context.dataset.label || '';
-            const value = Number(context.parsed.y || 0).toLocaleString('zh-TW');
-            return `${label}: ${value} 人`;
-          }
-        }
+        backgroundColor: 'rgba(7, 19, 26, 0.92)',
+        titleColor: '#5eead4',
+        bodyColor: '#f1f5f9',
+        borderColor: 'rgba(45, 212, 191, 0.4)',
+        borderWidth: 1
       }
     },
     scales: {
@@ -729,7 +895,11 @@ export class ElectionAnalysisComponent implements OnInit {
       }
 
       if (this.electionId) {
-        // 地方選舉第一層是全台地圖，不要預設台北，否則 KPI 會變成 3 人
+        // 【地方選舉專用】預設選取台北市（ID 需與地圖 / countyList 一致：taipei-city）
+        if (this.isLocalElection) {
+          this.selectedCounty = 'taipei-city';
+          this.filterCandidatesByCounty('taipei-city');
+        }
         this.loadElectionData();
       } else {
         this.router.navigate(['/election-analysis']);
@@ -888,11 +1058,12 @@ export class ElectionAnalysisComponent implements OnInit {
             }
           );
 
-          if (this.currentView === 'city' && this.selectedCounty) {
+          if (this.selectedCounty) {
             this.filterCandidatesByCounty(this.selectedCounty);
           } else {
             this.candidates = this.allCandidatesWithStats;
-            this.resetTotalKpis();
+            this.totalCandidates = this.candidates.length;
+            this.updateCharts();
           }
 
           this.isLoading = false;
@@ -918,7 +1089,9 @@ export class ElectionAnalysisComponent implements OnInit {
           }));
 
           this.candidates = this.allCandidatesWithStats;
-          this.resetTotalKpis();
+          this.totalCandidates = this.candidates.length;
+
+          this.updateCharts();
           this.isLoading = false;
         }
       });
@@ -1041,8 +1214,10 @@ export class ElectionAnalysisComponent implements OnInit {
               backgroundColor: 'rgba(16, 185, 129, 0.1)',
               tension: 0.3,
               fill: true,
-              pointRadius: 0,
-              pointHoverRadius: 4
+              pointBackgroundColor: '#10b981',
+              pointBorderColor: '#10b981',
+              pointRadius: 4,
+              pointHoverRadius: 6
             } as any,
             {
               label: '負面',
@@ -1053,8 +1228,10 @@ export class ElectionAnalysisComponent implements OnInit {
               backgroundColor: 'rgba(239, 68, 68, 0.1)',
               tension: 0.3,
               fill: true,
-              pointRadius: 0,
-              pointHoverRadius: 4
+              pointBackgroundColor: '#ef4444',
+              pointBorderColor: '#ef4444',
+              pointRadius: 4,
+              pointHoverRadius: 6
             } as any
           ]
         };
@@ -1531,30 +1708,17 @@ export class ElectionAnalysisComponent implements OnInit {
     const source = this.allCandidatesWithStats && this.allCandidatesWithStats.length > 0
       ? this.allCandidatesWithStats
       : this.allMayoralCandidates;
-    this.applyKpisFrom(source);
-  }
 
-  // 從候選人清單算出 KPI：人數、累計評論、平均
-  private applyKpisFrom(source: any[]): void {
-    if (!source || source.length === 0) {
-      this.totalCandidates = 0;
-      this.totalSentiment = 0;
-      this.averageSentiment = 0;
-      return;
+    if (source && source.length > 0) {
+      this.totalCandidates = source.length;
+      this.totalSentiment = source.reduce(
+        (sum, c) => sum + (c.positive || 0) + (c.negative || 0),
+        0
+      );
+      this.averageSentiment = this.totalCandidates > 0
+        ? Math.round(this.totalSentiment / this.totalCandidates)
+        : 0;
     }
-
-    this.totalCandidates = source.length;
-    this.totalSentiment = source.reduce((sum, c) => sum + this.candidateVolume(c), 0);
-    this.averageSentiment = Math.round(this.totalSentiment / this.totalCandidates);
-  }
-
-  // 優先用 API 的 total（含中立），再退回正負面或支持數
-  private candidateVolume(c: any): number {
-    const pn =
-      (Number(c.positive) || 0) +
-      (Number(c.negative) || 0) +
-      (Number(c.neutral) || 0);
-    return Number(c.total) || pn || Number(c.support_count) || 0;
   }
 
   // 載入特定候選人的時間序列數據（依模式分流）
@@ -1708,8 +1872,10 @@ export class ElectionAnalysisComponent implements OnInit {
             backgroundColor: 'rgba(34, 211, 238, 0.15)',
             tension: 0.35,
             fill: true,
-            pointRadius: 0,
-            pointHoverRadius: 4
+            pointBackgroundColor: '#22d3ee',
+            pointBorderColor: '#22d3ee',
+            pointRadius: 3,
+            pointHoverRadius: 6
           } as any
         ]
       };
@@ -1734,8 +1900,10 @@ export class ElectionAnalysisComponent implements OnInit {
         backgroundColor: candidate.color + '20',
         tension: 0.3,
         fill: false,
-        pointRadius: 0,
-        pointHoverRadius: 4
+        pointBackgroundColor: candidate.color,
+        pointBorderColor: candidate.color,
+        pointRadius: 4,
+        pointHoverRadius: 6
       };
     });
 
@@ -1812,8 +1980,10 @@ export class ElectionAnalysisComponent implements OnInit {
           backgroundColor: candidate.color + '20',
           tension: 0.3,
           fill: false,
-          pointRadius: 0,
-          pointHoverRadius: 4
+          pointBackgroundColor: candidate.color,
+          pointBorderColor: candidate.color,
+          pointRadius: 4,
+          pointHoverRadius: 6
         };
       });
 
