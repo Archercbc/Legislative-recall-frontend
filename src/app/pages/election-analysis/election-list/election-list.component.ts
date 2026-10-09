@@ -108,16 +108,6 @@ export class ElectionListComponent implements OnInit {
     return election.candidates?.length || 0;
   }
 
-  // 地方選舉卡片用：統計有候選人的縣市數
-  getCountyCount(election: any): number {
-    const cities = new Set(
-      (election.candidates || [])
-        .map((c: any) => c.city)
-        .filter((city: string) => !!city)
-    );
-    return cities.size;
-  }
-
   getDateRange(election: any): string {
     const startDate = new Date(election.start_date).toLocaleDateString('zh-TW');
     const endDate = new Date(election.end_date).toLocaleDateString('zh-TW');
