@@ -298,7 +298,6 @@ export class ElectionAnalysisComponent implements OnInit {
 
     const cleanCandidate = candidateCity.toLowerCase().replace(/[^a-z0-9]/g, '');
     const cleanTarget = targetCountyId.toLowerCase().replace(/[^a-z0-9]/g, '');
-
     return cleanCandidate === cleanTarget;
   }
 
@@ -342,6 +341,7 @@ export class ElectionAnalysisComponent implements OnInit {
   }
 
   onCountyMouseEnter(location: any, event: MouseEvent): void {
+    console.log('Hovered Location:', location.id, location.name);
     this.hoveredCounty = this.getCountyHoverInfo(location.id, location.name);
     this.updateTooltipPos(event);
   }
