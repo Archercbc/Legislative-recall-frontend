@@ -1911,6 +1911,16 @@ export class LegislatorsDetailComponent {
     return Number.isFinite(n) ? n : null;
   }
 
+  get hasPlatformBarData(): boolean {
+    return !!(this.platformBarChartData.labels?.length);
+  }
+
+  get hasTrendData(): boolean {
+    const datasets = this.demoLineChartData?.datasets || [];
+    if (!this.demoLineChartData?.labels?.length || !datasets.length) return false;
+    return datasets.some(ds => (ds.data || []).some((v: any) => Number(v) > 0));
+  }
+
   // 更新平台統計長條圖
   private updatePlatformBarChart(platformDetail: any): void {
     if (!platformDetail || Object.keys(platformDetail).length === 0) {
@@ -1930,8 +1940,11 @@ export class LegislatorsDetailComponent {
       'unknown': '未知平台'
     };
 
-    // 提取平台數據
-    const platforms = Object.keys(platformDetail);
+    // 該平台正負面都是 0 就略過，不要留空欄
+    const platforms = Object.keys(platformDetail).filter(platform => {
+      const stats = platformDetail[platform] || {};
+      return (Number(stats.positive) || 0) + (Number(stats.negative) || 0) > 0;
+    });
     const labels = platforms.map(p => platformNameMap[p] || p);
     const positiveData: number[] = [];
     const negativeData: number[] = [];

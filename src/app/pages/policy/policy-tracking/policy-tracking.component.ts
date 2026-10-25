@@ -861,19 +861,11 @@ export class PolicyTrackingComponent {
       next: (dateRangeData) => {          // 設定日期範圍限制和初始值
           if (dateRangeData && dateRangeData.start_date && dateRangeData.end_date) {
             this.minDate = dateRangeData.start_date;
-            
-            // 強制設置 maxDate 為今天
-            const today = new Date();
-            this.maxDate = today.toISOString().split('T')[0];
-
-            // 計算一年前的日期
-            const oneYearAgo = new Date();
-            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-            this.oneYearAgoDate = oneYearAgo.toISOString().split('T')[0];
-
-            // 設定初始日期範圍為最近一年（僅作為備用，實際範圍由圖表數據決定）
-            this.startDate = this.oneYearAgoDate;
-            this.endDate = this.maxDate;
+            // 跟立委一樣：鎖在有資料的區間，不要用今天當終點
+            this.maxDate = dateRangeData.end_date;
+            this.oneYearAgoDate = dateRangeData.start_date;
+            this.startDate = dateRangeData.start_date;
+            this.endDate = dateRangeData.end_date;
             
             // 移除這行，避免在初始化時觸發setQuickFilter
             // this.setQuickFilter('1year');
@@ -1780,39 +1772,59 @@ export class PolicyTrackingComponent {
 
 
 
-  // 新增方法：根據時間範圍更新日期（與legislators頁面完全一致）
+  // 跟立委一樣：以「有資料的最後一天」當終點往回算，不用今天
+  private getDataAnchorDate(): Date {
+    if (this.maxDate) {
+      const fromApi = new Date(this.maxDate);
+      if (!isNaN(fromApi.getTime())) return fromApi;
+    }
+    const points =
+      this.data?.time_series_stats?.recent_365_days_cumulative?.stats_points ||
+      this.data?.time_series_stats?.recent_30_days_cumulative?.stats_points ||
+      [];
+    const last = points[points.length - 1]?.date;
+    if (last) {
+      const fromSeries = new Date(last);
+      if (!isNaN(fromSeries.getTime())) return fromSeries;
+    }
+    return new Date();
+  }
+
   private updateDateRangeForPeriod(period: string): void {
-    const today = new Date();
-    const endDate = today.toISOString().split('T')[0];
-    let startDate = new Date();
-    
+    const endDateObj = this.getDataAnchorDate();
+    const endDate = endDateObj.toISOString().split('T')[0];
+    let startDate = new Date(endDateObj);
+
     switch (period) {
       case 'week':
-        startDate.setDate(today.getDate() - 7);
+        startDate.setDate(endDateObj.getDate() - 6);
         break;
       case '2weeks':
-        startDate.setDate(today.getDate() - 14);
+        startDate.setDate(endDateObj.getDate() - 13);
         break;
       case 'month':
-        startDate.setDate(today.getDate() - 30);
+        startDate.setDate(endDateObj.getDate() - 29);
         break;
       case '3months':
-        startDate.setDate(today.getDate() - 90);
+        startDate.setDate(endDateObj.getDate() - 89);
         break;
       case '6months':
-        startDate.setDate(today.getDate() - 180);
+        startDate.setDate(endDateObj.getDate() - 179);
         break;
       case '1year':
-        startDate.setDate(today.getDate() - 365);
-        break;
       case 'all':
-        startDate.setDate(today.getDate() - 365);
+        startDate.setDate(endDateObj.getDate() - 364);
         break;
       default:
-        startDate.setDate(today.getDate() - 30);
+        startDate.setDate(endDateObj.getDate() - 29);
     }
-    
-    this.startDate = startDate.toISOString().split('T')[0];
+
+    let startDateStr = startDate.toISOString().split('T')[0];
+    if (this.minDate && startDateStr < this.minDate) {
+      startDateStr = this.minDate;
+    }
+
+    this.startDate = startDateStr;
     this.endDate = endDate;
     
     console.log('📅 更新時間範圍:', {
@@ -1974,45 +1986,41 @@ export class PolicyTrackingComponent {
       return `${this.startDate} - ${this.endDate} (${days}天)`;
     }
     
-    // 否則根據 currentFilter 計算
-    const today = new Date();
-    const endDate = today.toISOString().split('T')[0];
-    let startDate = new Date();
+    // 否則根據 currentFilter 計算（錨點用資料最後一天，不用今天）
+    const endDateObj = this.getDataAnchorDate();
+    const endDate = endDateObj.toISOString().split('T')[0];
+    let startDate = new Date(endDateObj);
     let days = 0;
-    
-    // 根據當前篩選器計算日期範圍（與legislators頁面完全一致）
+
     switch (this.currentFilter) {
       case 'week':
         days = 7;
-        startDate.setDate(today.getDate() - 6); // 包含今天，所以減6天
+        startDate.setDate(endDateObj.getDate() - 6);
         break;
       case '2weeks':
         days = 14;
-        startDate.setDate(today.getDate() - 13); // 包含今天，所以減13天
+        startDate.setDate(endDateObj.getDate() - 13);
         break;
       case 'month':
         days = 30;
-        startDate.setDate(today.getDate() - 29); // 包含今天，所以減29天
+        startDate.setDate(endDateObj.getDate() - 29);
         break;
       case '3months':
         days = 90;
-        startDate.setDate(today.getDate() - 89); // 包含今天，所以減89天
+        startDate.setDate(endDateObj.getDate() - 89);
         break;
       case '6months':
         days = 180;
-        startDate.setDate(today.getDate() - 179); // 包含今天，所以減179天
+        startDate.setDate(endDateObj.getDate() - 179);
         break;
       case '1year':
-        days = 365;
-        startDate.setDate(today.getDate() - 364); // 包含今天，所以減364天
-        break;
       case 'all':
         days = 365;
-        startDate.setDate(today.getDate() - 364);
+        startDate.setDate(endDateObj.getDate() - 364);
         break;
       default:
         days = 30;
-        startDate.setDate(today.getDate() - 29);
+        startDate.setDate(endDateObj.getDate() - 29);
     }
     
     const startDateStr = startDate.toISOString().split('T')[0];

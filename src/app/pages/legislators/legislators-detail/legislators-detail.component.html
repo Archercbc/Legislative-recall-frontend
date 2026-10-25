@@ -128,13 +128,16 @@
             </div>
             <!-- 用 ng2-charts canvas，避免 c-chart 在 absolute 容器內尺寸塌掉導致無色塊 -->
             <canvas
-              *ngIf="sentimentChartData?.datasets?.[0]?.data?.length"
+              *ngIf="positiveCount + negativeCount > 0 && sentimentChartData?.datasets?.[0]?.data?.length"
               baseChart
               class="sentiment-doughnut"
               [data]="sentimentChartData"
               [options]="doughnutOptions"
               [type]="'doughnut'">
             </canvas>
+            <div class="no-data-placeholder no-data-placeholder--sm" *ngIf="positiveCount + negativeCount === 0">
+              <p>暫無資料</p>
+            </div>
             <div class="gauge-center" *ngIf="positiveCount + negativeCount > 0">
               <span class="gauge-pct">{{ getSupportPercentage() }}%</span>
               <span class="gauge-sub">支持罷免</span>
@@ -158,8 +161,8 @@
       </section>
     </div>
 
-    <!-- 平台長條：壓縮高度 -->
-    <section class="hud-panel chart-card" *ngIf="platformBarChartData.labels && platformBarChartData.labels.length > 0">
+    <!-- 平台長條：沒資料的平台不畫欄，全空則顯示暫無資料 -->
+    <section class="hud-panel chart-card">
       <span class="hud-corner tl" aria-hidden="true"></span>
       <span class="hud-corner tr" aria-hidden="true"></span>
       <span class="hud-corner bl" aria-hidden="true"></span>
@@ -171,8 +174,11 @@
         <span class="panel-code">SIG-BAR</span>
       </div>
       <div class="panel-body panel-body--sm">
-        <div class="chart-tall chart-tall--sm">
+        <div class="chart-tall chart-tall--sm" *ngIf="hasPlatformBarData">
           <c-chart [data]="platformBarChartData" type="bar" [options]="platformBarChartOptions"></c-chart>
+        </div>
+        <div class="no-data-placeholder no-data-placeholder--sm" *ngIf="!hasPlatformBarData">
+          <p>暫無資料</p>
         </div>
       </div>
     </section>
@@ -252,8 +258,11 @@
         </div>
 
         <div class="panel-body panel-body--sm">
-          <div *ngIf="!isLoadingTimeData" class="chart-line-stage chart-line-stage--sm">
+          <div *ngIf="!isLoadingTimeData && hasTrendData" class="chart-line-stage chart-line-stage--sm">
             <c-chart #lineChart [data]="demoLineChartData" type="line" [options]="lineChartOptions"></c-chart>
+          </div>
+          <div *ngIf="!isLoadingTimeData && !hasTrendData" class="no-data-placeholder no-data-placeholder--sm">
+            <p>暫無資料</p>
           </div>
           <div *ngIf="isLoadingTimeData" class="loading-placeholder loading-placeholder--sm">
             <div class="spinner-border spinner-border-sm text-primary"></div>
