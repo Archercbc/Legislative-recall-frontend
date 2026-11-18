@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { election_config_list, getElectionTypeText, getStatusClass } from '../election-config';
+import { election_config_list, getElectionTypeText, getStatusClass, isPollBlackout } from '../election-config';
 import { IconModule } from '@coreui/icons-angular';
 
 @Component({
@@ -75,6 +75,15 @@ export class ElectionListComponent implements OnInit {
 
   onStatusChange(): void {
     // 狀態改變時重新過濾
+  }
+
+  // 民調封關中的選舉不能點進去
+  isBlackout(election: any): boolean {
+    return isPollBlackout(election.election_id);
+  }
+
+  isBlocked(election: any): boolean {
+    return election.disabled || this.isBlackout(election);
   }
 
   viewElectionDetails(electionId: string): void {

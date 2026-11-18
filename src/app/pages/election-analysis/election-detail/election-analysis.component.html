@@ -32,6 +32,19 @@
       </div>
     </header>
 
+    <!-- 民調封關：整頁只顯示提示 -->
+    <section *ngIf="isBlackout" class="polling-blocked-card hud-panel">
+      <div class="panel-head">
+        <i class="cil-ban" aria-hidden="true"></i>
+        <span>民調封關中</span>
+      </div>
+      <div class="panel-body blocked-content">
+        <h3>2026 縣市長選舉目前處於民調封關期間</h3>
+        <p>依法投票日前十日起不得發布選情相關數據，將於 2026/11/29 00:00 恢復顯示。</p>
+      </div>
+    </section>
+
+    <ng-container *ngIf="!isBlackout">
     <!-- KPI 三格：候選人個人戰情室（第三層）時不顯示，避免跟黨主席流程混淆 -->
     <div class="kpi-strip" *ngIf="!isLocalElection || currentView !== 'candidate'">
       <div class="progress-item hud-panel">
@@ -528,6 +541,8 @@
           </div>
         </section>
       </div>
+
+    </ng-container>
 
     </ng-container>
 

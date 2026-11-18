@@ -44,13 +44,13 @@
     <div class="elections-grid">
       <article
         class="election-card hud-panel"
-        [class.is-disabled]="election.disabled"
+        [class.is-disabled]="isBlocked(election)"
         [class.is-soon]="election.coming_soon || election.disabled"
         *ngFor="let election of filteredElections; let i = index"
-        [style.pointer-events]="election.disabled ? 'none' : 'auto'"
-        (click)="!election.disabled && viewElectionDetails(election.election_id)"
-        (keyup.enter)="!election.disabled && viewElectionDetails(election.election_id)"
-        [attr.tabindex]="election.disabled ? -1 : 0"
+        [style.pointer-events]="isBlocked(election) ? 'none' : 'auto'"
+        (click)="!isBlocked(election) && viewElectionDetails(election.election_id)"
+        (keyup.enter)="!isBlocked(election) && viewElectionDetails(election.election_id)"
+        [attr.tabindex]="isBlocked(election) ? -1 : 0"
         role="button">
         <span class="hud-corner tl" aria-hidden="true"></span>
         <span class="hud-corner tr" aria-hidden="true"></span>
@@ -114,9 +114,9 @@
         </div>
 
         <div class="card-action">
-          <span class="action-btn" [class.disabled]="election.disabled">
-            <i [class]="election.disabled ? 'cil-calendar-check' : 'cil-chart-line'" aria-hidden="true"></i>
-            {{ election.disabled ? '敬請期待' : '進入戰情' }}
+          <span class="action-btn" [class.disabled]="isBlocked(election)">
+            <i [class]="isBlocked(election) ? 'cil-calendar-check' : 'cil-chart-line'" aria-hidden="true"></i>
+            {{ isBlackout(election) ? '民調封關中' : (election.disabled ? '敬請期待' : '進入戰情') }}
           </span>
         </div>
       </article>

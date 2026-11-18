@@ -177,6 +177,17 @@ export function getElectionTypeText(type: string): string {
   return ELECTION_TYPES[type as keyof typeof ELECTION_TYPES] || '未知類型';
 }
 
+// 2026 縣市長選舉民調封關：投票日前十日起，至投票結束（台灣時間）
+export const POLL_BLACKOUT = {
+  electionId: 'local-2026',
+  start: new Date('2026-11-18T00:00:00+08:00'),
+  end: new Date('2026-11-29T00:00:00+08:00')
+};
+
+export function isPollBlackout(id: string, now: Date = new Date()): boolean {
+  return id === POLL_BLACKOUT.electionId && now >= POLL_BLACKOUT.start && now < POLL_BLACKOUT.end;
+}
+
 // 根據ID獲取選舉配置
 export function getElectionById(id: string) {
   return election_config_list.find(election => election.election_id === id);

@@ -8,7 +8,7 @@ import { IconModule } from '@coreui/icons-angular';
 import { ChartjsComponent } from '@coreui/angular-chartjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ElectionService } from '../../../services/election.service';
-import { election_config_list, getElectionById } from '../election-config';
+import { election_config_list, getElectionById, isPollBlackout } from '../election-config';
 import taiwan from '@svg-maps/taiwan';
 
 // 自定義數據集類型
@@ -703,6 +703,7 @@ export class ElectionAnalysisComponent implements OnInit {
 
   // 狀態
   isLoading = false;
+  isBlackout = false;
   totalCandidates = 0;
   totalSentiment = 0;
   averageSentiment = 0;
@@ -722,6 +723,14 @@ export class ElectionAnalysisComponent implements OnInit {
   ngOnInit(): void {
     this.route.params.subscribe(params => {
       this.electionId = params['id'];
+
+      // 民調封關期間：只顯示封關提示，不載入任何數據
+      this.isBlackout = isPollBlackout(this.electionId);
+      if (this.isBlackout) {
+        this.election = getElectionById(this.electionId);
+        this.isLoading = false;
+        return;
+      }
 
       // 【地方選舉專用】地圖 viewBox
       if (this.isLocalElection && this.taiwanMap && (this.taiwanMap as any).viewBox) {
