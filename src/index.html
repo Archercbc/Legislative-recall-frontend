@@ -10,11 +10,30 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-  <app-root></app-root>
-  <div style="position:fixed;inset:0;z-index:2147483647;background:#fff;display:flex;align-items:center;justify-content:center;padding:16px;text-align:center;line-height:1.8;font-family:system-ui,'Microsoft JhengHei',sans-serif;">
-    <div>
+  <style>
+    .poi-pause { position:fixed; inset:0; z-index:2147483647; display:flex; align-items:center; justify-content:center; padding:16px;
+      background: radial-gradient(circle at 20% 10%, rgba(13,148,136,.25), transparent 50%),
+                  radial-gradient(circle at 85% 90%, rgba(240,115,99,.18), transparent 45%), #07131a;
+      color:#f8fafc; font-family:system-ui,"Noto Sans TC","Microsoft JhengHei",sans-serif; text-align:center; }
+    .poi-pause-card { width:100%; max-width:520px; padding:40px 28px; border-radius:20px;
+      background:rgba(255,255,255,.04); border:1px solid rgba(94,234,212,.25); box-shadow:0 20px 60px rgba(0,0,0,.45); }
+    .poi-pause-icon { width:72px; height:72px; margin:0 auto 20px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+      font-size:30px; color:#5eead4; background:rgba(13,148,136,.18); border:1px solid rgba(94,234,212,.4); }
+    .poi-pause-brand { margin:0 0 6px; font-size:.85rem; letter-spacing:.15em; color:#5eead4; }
+    .poi-pause h1 { margin:0 0 16px; font-size:1.8rem; font-weight:700; }
+    .poi-pause p { margin:0; line-height:1.9; color:#cbd5e1; }
+    .poi-pause-date { display:inline-block; margin:20px 0; padding:10px 18px; border-radius:999px; font-weight:600;
+      color:#f8fafc; background:rgba(240,115,99,.15); border:1px solid rgba(240,115,99,.45); }
+    .poi-pause-foot { margin-top:8px; font-size:.9rem; color:#94a3b8; }
+  </style>
+  <div class="poi-pause">
+    <div class="poi-pause-card">
+      <div class="poi-pause-icon"><i class="fa-solid fa-pause"></i></div>
+      <p class="poi-pause-brand">公民意見指數平台 POI</p>
       <h1>暫停服務公告</h1>
-      <p>依選罷法第53條，民調封關期間（11/18–11/28 16:00）暫停服務。</p>
+      <p>依選罷法第53條，民調封關期間暫停服務。</p>
+      <div class="poi-pause-date">11/18 – 11/28 16:00</div>
+      <p class="poi-pause-foot">封關結束後將恢復服務，造成不便敬請見諒。</p>
     </div>
   </div>
 </body>
